@@ -1,0 +1,345 @@
+.layout {
+  display: grid;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-4);
+  }
+}
+
+.mainCol {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.heroCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 4%, transparent);
+}
+
+.heroTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.problemRef {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.deadlineBlock {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.deadlineLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.deadlineValue {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.deadlineLate {
+  color: #dc2626;
+}
+
+.myStrip {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 22%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
+  display: grid;
+  gap: 8px;
+}
+
+.myStripHead {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.myStripBody {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.myStripMeta {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.ctaRow {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.primaryLinkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.primaryLinkBtn:hover {
+  filter: brightness(0.96);
+}
+
+.secondaryLinkBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.secondaryLinkBtn:hover {
+  background: var(--color-surface-muted);
+}
+
+.descCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.descHeading {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.descBody {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.sideCard {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 4%, transparent);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sideHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.sideTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.sideCount {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.sideToolbar {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sortTab,
+.sortTabActive {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-muted);
+}
+
+.sortTab:hover {
+  color: var(--color-text);
+}
+
+.sortTabActive {
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+  color: var(--color-text);
+}
+
+.sideList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  max-height: min(420px, 55vh);
+  overflow-y: auto;
+}
+
+.sideRow {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+}
+
+.sideLink {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sideRowHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.sideAuthor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sideAvatar {
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.sideName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideTitleLine {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideTime {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.sideMetaBadges {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sideFullLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.sideFullLink:hover {
+  color: var(--color-primary);
+}
+
+.sideNewWrap {
+  width: 100%;
+}
+
+.sidePrimaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  box-sizing: border-box;
+}
+
+.sidePrimaryLink:hover {
+  filter: brightness(0.96);
+}
+
+.sideEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+  padding: 16px 8px;
+}
