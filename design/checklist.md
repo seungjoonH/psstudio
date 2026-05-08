@@ -845,13 +845,13 @@ UI 작업은 다음 기준을 따릅니다. 페이지 단위 디자인은 작업
 - [ ] AI 리뷰 실패 시: 자동 1회 재시도 후에도 실패하면 제출 작성자에게 실패 알림.
 - [ ] 사용자 토큰 잔액 모델과 관리자 충전 API.
 - [ ] 과제 집단 코드 비교 분석(`design.md` 5.4.5, `api-spec.md` 11.3).
-  - [ ] 큐 job(가칭 `assignment.cohort-analysis`) + worker consumer.
-  - [ ] `ASSIGNMENT_COHORT_ANALYSES`, `ASSIGNMENT_COHORT_ANALYSIS_MEMBERS` 마이그레이션 및 과제 삭제 시 cascade.
-  - [ ] `POST/GET /assignments/:assignmentId/cohort-analysis`(경로는 OpenAPI에 맞춤).
-  - [ ] 마감 전·제출 2 미만·`translationLanguage=none`·동시 `RUNNING` 등 거절 규칙. 과제당 `DONE` 1회만.
-  - [ ] 성공 전 재시도 시 최신 유효 제출 집합 재수집, 성공 시 버전 스냅샷 기록.
-  - [ ] 모델명·프롬프트 버전·시드 등 메타 **비저장**(DB·로그·응답 포함).
-  - [ ] 정적 분석 기반 데드 코드 표시 데이터 생성(상호 diff 판단과 분리).
+  - [ ] 큐 job(가칭 `assignment.cohort-analysis`) + worker consumer. (1차: Nest 백그라운드 Promise로 대체)
+  - [x] `ASSIGNMENT_COHORT_ANALYSES`, `ASSIGNMENT_COHORT_ANALYSIS_MEMBERS` 마이그레이션 및 과제 삭제 시 cascade.
+  - [x] `POST/GET /assignments/:assignmentId/cohort-analysis`(경로는 OpenAPI에 맞춤).
+  - [x] 마감 전·제출 2 미만·`translationLanguage=none`·동시 `RUNNING` 등 거절 규칙. 과제당 `DONE` 1회만.
+  - [x] 성공 전 재시도 시 최신 유효 제출 집합 재수집, 성공 시 버전 스냅샷 기록.
+  - [x] 모델명·프롬프트 버전·시드 등 메타 **비저장**(DB·응답; 별도 관측 로그 미추가).
+  - [ ] 정적 분석 기반 데드 코드 표시 데이터 생성(상호 diff 판단과 분리). (1차: `deadSpansBySubmission` 빈 배열)
 
 ### 15.3 FE
 
@@ -866,7 +866,7 @@ UI 작업은 다음 기준을 따릅니다. 페이지 단위 디자인은 작업
 - [ ] AI 코드 리뷰 진행 상태 UI(`AI_REVIEW_RUNS` 기준 PENDING/RUNNING/DONE/FAILED).
 - [ ] 토큰 부족 메시지 UI.
 - [ ] 분석 실패 시 사용자 직접 입력 fallback UI.
-- [ ] 마감 후 과제 상세(또는 전용 화면)에서 집단 코드 비교 분석 트리거·진행·결과(MD + 파일별 diff). `translationLanguage=none`이면 미노출.
+- [x] 마감 후 과제 상세(또는 전용 화면)에서 집단 코드 비교 분석 트리거·진행·결과(MD + 파일별 diff). `translationLanguage=none`이면 미노출. (가상 파일 `main` 1개 기준)
 
 ### 15.4 테스트
 
@@ -881,14 +881,14 @@ UI 작업은 다음 기준을 따릅니다. 페이지 단위 디자인은 작업
 - [ ] AI 봇 댓글 삭제 권한 테스트(그룹장/그룹 관리자만, 일반 그룹원과 제출 작성자는 거부).
 - [ ] 큐 consumer 실패 후 재시도/실패 알림 단위 테스트.
 - [ ] AI 댓글·리뷰가 사람 댓글과 같은 스레드에서 정렬되는 시각 회귀(Phase 14에서 자동화).
-- [ ] 집단 코드 비교 분석: 실패 재시도, `DONE` 후 재트리거 거절, 성공 스냅샷 멤버 일치 단위 테스트.
+- [x] 집단 코드 비교 분석: 트리거 거절 규칙 단위 테스트(`assignment-cohort-analysis.policy.spec.ts`). (통합·스냅샷 일치 테스트는 미작성)
 
 ### 15.5 완료 정의
 
 - 제출 후 비동기로 AI 코드 리뷰가 사람 댓글과 같은 시스템에 등록됩니다.
 - 토큰 부족 시 등록이 차단되고 명확한 메시지가 표시됩니다.
 - 문제 URL 분석 결과가 과제 메타에 머지되고 사용자가 수동 수정할 수 있습니다.
-- 마감 후 과제당 1회 성공하는 집단 코드 비교 분석이 동작하고, 메타 비저장 정책을 만족합니다.
+- 마감 후 과제당 1회 성공하는 집단 코드 비교 분석이 동작하고, 메타 비저장 정책을 만족합니다. (워커 큐·데드코드 정적 분석·토큰 잔액 연동은 미완)
 
 ---
 

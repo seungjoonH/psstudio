@@ -1,13 +1,14 @@
 .layout {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: start;
+  min-width: 0;
 }
 
 @media (min-width: 980px) {
   .layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: var(--space-4);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: var(--space-6);
   }
 }
 
@@ -24,12 +25,42 @@
   box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 4%, transparent);
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 12px;
+}
+
+.assignmentTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
 .heroTop {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.heroRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.heroActionRow {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .badgeRow {
@@ -46,29 +77,35 @@
   font-weight: 600;
 }
 
-.deadlineBlock {
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.deadlineLabel {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.deadlineValue {
-  margin-top: 4px;
-  font-size: 15px;
-  font-weight: 800;
+.iconActionBtn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   color: var(--color-text);
+  text-decoration: none;
 }
 
-.deadlineLate {
-  color: #dc2626;
+.iconActionBtn:hover {
+  background: var(--color-surface-muted);
+}
+
+.dueToggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.dueToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .myStrip {
@@ -157,10 +194,18 @@
 }
 
 .descHeading {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 14px;
   font-weight: 800;
   color: var(--color-text);
+}
+
+.descHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 10px;
 }
 
 .descBody {
@@ -169,6 +214,31 @@
   line-height: 1.65;
   color: var(--color-text);
   white-space: pre-wrap;
+}
+
+.lockedBody {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.revealBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.revealBtn:hover {
+  background: var(--color-surface-muted);
 }
 
 .sideCard {
@@ -242,6 +312,7 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface-muted);
+  min-width: 0;
 }
 
 .sideLink {
@@ -250,6 +321,7 @@
   padding: 10px 12px;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
 }
 
 .sideRowHead {
@@ -281,17 +353,13 @@
 }
 
 .sideTitleLine {
+  min-width: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--color-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.sideTime {
-  font-size: 11px;
-  color: var(--color-muted);
 }
 
 .sideMetaBadges {
@@ -342,4 +410,131 @@
   color: var(--color-muted);
   text-align: center;
   padding: 16px 8px;
+}
+
+.cohortCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: grid;
+  gap: 12px;
+}
+
+.cohortHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cohortTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.cohortLead {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.cohortBlocked {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-warning, #b45309);
+}
+
+.cohortError {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger, #b91c1c);
+}
+
+.cohortMuted {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.cohortStatus {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cohortPrimaryBtn {
+  justify-self: start;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.cohortPrimaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cohortSubheading {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.cohortMd {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: color-mix(in oklab, var(--color-surface) 96%, var(--color-text));
+  max-height: 480px;
+  overflow: auto;
+}
+
+.cohortDiffControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.cohortSelectLabel {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.cohortSelect {
+  min-width: 200px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.cohortDiffPre {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in oklab, var(--color-text) 6%, var(--color-surface));
+  font-size: 12px;
+  line-height: 1.45;
+  overflow: auto;
+  max-height: 360px;
+  white-space: pre;
 }
