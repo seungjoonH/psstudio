@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { createPatch } from "diff";
+import { jsonrepair } from "jsonrepair";
 import { MAX_SUBMISSION_CODE_BYTES } from "@psstudio/shared";
 import type { DataSource } from "typeorm";
 import { In } from "typeorm";
@@ -387,11 +388,18 @@ function extractBalancedJsonObject(text: string): string | null {
 }
 
 function tryJsonParseAiPayload(jsonStr: string): Partial<AiReviewPayload> | null {
+  let data: unknown;
   try {
-    return JSON.parse(jsonStr) as Partial<AiReviewPayload>;
+    data = JSON.parse(jsonStr);
   } catch {
-    return null;
+    try {
+      data = JSON.parse(jsonrepair(jsonStr));
+    } catch {
+      return null;
+    }
   }
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return null;
+  return data as Partial<AiReviewPayload>;
 }
 
 /** 모델이 전체 JSON을 summary 문자열 안에 넣은 경우 펼칩니다. */
@@ -421,7 +429,7 @@ function tryParseAiReviewPayloadFromRaw(raw: string): Partial<AiReviewPayload> |
     if (c.length === 0 || seen.has(c)) continue;
     seen.add(c);
     const parsed = tryJsonParseAiPayload(c);
-    if (parsed !== null && typeof parsed === "object") return unwrapEmbeddedPayloadInSummary(parsed);
+    if (parsed !== null) return unwrapEmbeddedPayloadInSummary(parsed);
   }
   return null;
 }

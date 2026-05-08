@@ -61,4 +61,27 @@ describe("parseAiReviewPayload", () => {
     expect(out.summary).toBe("내부 요약");
     expect(out.lineComments.length).toBe(1);
   });
+
+  it("문자열 값 안에 실제 줄바꿈이 있어도 jsonrepair로 파싱한다", () => {
+    const raw = [
+      '{"summary":"요약","lineComments":[',
+      '{"startLine":1,"endLine":1,"anchorText":"","body":"문제: a',
+      "",
+      "근거: b",
+      "",
+      '개선: c"}]}',
+    ].join("\n");
+    const out = parseAiReviewPayload(raw);
+    expect(out.summary).toBe("요약");
+    expect(out.lineComments.length).toBe(1);
+    expect(out.lineComments[0].body).toContain("문제:");
+  });
+
+  it("후행 쉼표가 있어도 파싱한다", () => {
+    const raw =
+      '{"summary":"요약","lineComments":[{"startLine":1,"endLine":1,"anchorText":"x","body":"문제: p\\n\\n근거: q\\n\\n개선: r",},]}';
+    const out = parseAiReviewPayload(raw);
+    expect(out.summary).toBe("요약");
+    expect(out.lineComments.length).toBe(1);
+  });
 });
