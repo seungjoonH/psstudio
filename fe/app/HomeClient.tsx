@@ -160,15 +160,12 @@ export function HomeClient({
               {submissions.map((s) => (
                 <li key={s.id}>
                   <Link href={s.href} className={styles.feedRow}>
-                    <UserAvatar
-                      nickname={me.nickname}
-                      imageUrl={me.profileImageUrl}
-                      size={40}
-                      className={styles.feedAvatar}
-                    />
                     <div className={styles.feedMain}>
                       <span className={styles.listTitle}>{s.title}</span>
-                      <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
+                      <span className={styles.listMeta}>
+                        <span className={styles.listLang}>{s.language}</span>
+                        <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
+                      </span>
                     </div>
                   </Link>
                 </li>
