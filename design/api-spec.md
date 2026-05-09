@@ -537,17 +537,20 @@
 
 - `POST /assignments/:assignmentId/cohort-analysis`
   - 권한: 같은 그룹의 모든 멤버(세부는 구현 시 `design.md`와 동일한 그룹원 공개 모델을 따름).
-  - 헤더: `Accept-Language`로 리포트·역할 라벨 로케일(`ko`/`en` 등)을 결정한다.
+  - 헤더: `Accept-Language`로 리포트·역할 라벨 로케일(`ko`/`en` 등)을 결정한다. 웹 클라이언트는 브라우저 기본 헤더 대신 **앱에서 선택한 UI 언어**를 우선 반영해 요청한다.
+  - 본문(선택): JSON `{ "rerun": true }` — 완료(`DONE`) 또는 실패(`FAILED`) 집단 분석 행을 **DB에서 삭제**(멤버 행 포함)한 뒤 새 분석 행을 만들고 파이프라인을 다시 시작한다. `RUNNING`이면 `409 Conflict`. 기본(본문 없음 또는 `rerun` 미설정)은 기존과 같다(`DONE`이면 `409`, `FAILED`면 동일 행을 초기화해 재시도).
   - 전제: 과제 마감 경과, `rules.translationLanguage !== 'none'`, 유효 제출 2건 이상.
-  - 동작: 비동기 파이프라인 실행. 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
+  - 동작: 비동기 파이프라인 실행. `rerun` 없이 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
   - 실패한 이전 시도가 있으면 재시도 허용. 성공(`DONE`) 확정 전까지는 새 제출·새 버전이 다음 시도의 입력 집합에 포함될 수 있음.
 - `GET /assignments/:assignmentId/cohort-analysis`
   - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(`submissions[]`: 제출별 `normalizedCode`, `regions[]`의 `roleId`·`roleLabel`·줄 범위), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`submissionId`, `versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등).
 
 #### 정책
 
-- 정규화·역할 구역·리포트 문체는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행 검증은 하지 않음**.
-- 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다.
+- 정규화·역할 구역·리포트 문체는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행·컴파일 검증은 하지 않음**(요구 수준은 프롬프트로만 통일). `submissions[].normalizedCode`는 그룹 `ruleTranslationLanguage`(과제 집단 분석의 `targetLanguage`) **한 종류 문법으로만** 채워져야 하며, 서버는 휴리스틱으로 **서로 다른 언어 문법이 섞인 응답**을 거절할 수 있다(`pseudo`는 예외). 구역 `regions`의 줄 번호는 모델이 자주 어길 수 있어 **허용 범위로 클램프**한다. 이후 **제출당 구역은 1~5개**, **모든 제출의 `roleId` 집합이 동일**해야 하며, 예약 식별자 `whole_file` 및 제출 내 `roleId` 중복은 거절한다. 정규화 코드 **전체 줄 수가 12줄 이상**이면 각 구역은 **최소 2줄** 범위를 가져야 한다(과도한 한 줄 단위 분할 방지). 유효 구역 파싱 결과가 위 규칙을 만족하지 않으면 `FAILED`이다.
+- 리포트 `reportMarkdown`의 코드 펜스는 **설명과 연결된 발췌**만 두고, `normalizedCode` 전체를 그대로 붙이지 않는 것을 프롬프트로 요구한다. 본문에서 구역 `roleId`를 언급해 UI 색 대응과 맞추도록 요구한다.
+- 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다. 파싱 직후 서버가 알려진 `submissionId`에 한해 본문의 노출 UUID·`submission <uuid>` 형태를 동일 플레이스홀더로 치환해 저장한다.
+- 리포트 서술은 **통일된 목표 언어 관점의 로직 비교**만 하도록 하며, 원본 프로그래밍 언어 이름을 드러내거나 목표와 다른 코드 펜스 태그를 쓴 응답은 서버 검증에서 거절할 수 있다(`pseudo` 등 예외는 파서와 동일).
 - 데드 코드(미사용 선언) 강조는 **정적 분석** 기반이며 집단 비교 역할 구역 판단에는 사용하지 않음.
 - 결과 산출물·API 응답·DB·로그 어디에도 **모델명·프롬프트 버전·시드 등 LLM 구성 메타를 저장하지 않음**.
 - 과제 삭제 시 집단 분석 결과는 제출·번역 캐시 등과 함께 삭제.

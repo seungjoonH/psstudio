@@ -845,6 +845,7 @@ UI 작업은 다음 기준을 따릅니다. 페이지 단위 디자인은 작업
 - [ ] AI 리뷰 실패 시: 자동 1회 재시도 후에도 실패하면 제출 작성자에게 실패 알림.
 - [ ] 사용자 토큰 잔액 모델과 관리자 충전 API.
 - [ ] 과제 집단 코드 비교 분석(`design.md` 5.4.5, `api-spec.md` 11.3).
+  - [x] 집단 번들 `regions` 정책(제출당 1~5·교차 `roleId` 집합 일치·12줄+ 시 구역 최소 2줄·`whole_file` 금지) 및 리포트 발췌-only 프롬프트(`cohort-analysis-bundle.ts`, `assignment-cohort-analysis.service.ts`).
   - [ ] 큐 job(가칭 `assignment.cohort-analysis`) + worker consumer. (1차: Nest 백그라운드 Promise로 대체)
   - [x] `ASSIGNMENT_COHORT_ANALYSES`, `ASSIGNMENT_COHORT_ANALYSIS_MEMBERS` 마이그레이션 및 과제 삭제 시 cascade.
   - [x] `POST/GET /assignments/:assignmentId/cohort-analysis`(경로는 OpenAPI에 맞춤).
