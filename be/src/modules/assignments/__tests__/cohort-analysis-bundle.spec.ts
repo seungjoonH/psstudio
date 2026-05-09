@@ -135,12 +135,34 @@ describe("parseAndValidateCohortBundle", () => {
     );
   });
 
-  it("제출 간 roleId 집합이 다르면 거절한다", () => {
+  it("구역 개수가 같고 roleId 문자열만 다르면 첫 제출 슬롯 기준으로 통일한다", () => {
+    const bundle = {
+      ...validJson,
+      submissions: [
+        { ...validJson.submissions[0], regions: [{ roleId: "alpha", roleLabel: "알파", startLine: 1, endLine: 2 }] },
+        { ...validJson.submissions[1], regions: [{ roleId: "beta", roleLabel: "베타", startLine: 1, endLine: 2 }] },
+      ],
+    };
+    const out = parseAndValidateCohortBundle(JSON.stringify(bundle), ids, "javascript", "ko");
+    const a = out.artifacts.submissions.find((x) => x.submissionId === ids[0]);
+    const b = out.artifacts.submissions.find((x) => x.submissionId === ids[1]);
+    expect(a?.regions[0]?.roleId).toBe("alpha");
+    expect(b?.regions[0]?.roleId).toBe("alpha");
+    expect(b?.regions[0]?.roleLabel).toBe("알파");
+  });
+
+  it("제출 간 구역 개수가 다르면 거절한다", () => {
     const bad = {
       ...validJson,
       submissions: [
-        { ...validJson.submissions[0], regions: [{ roleId: "a", roleLabel: "A", startLine: 1, endLine: 2 }] },
-        { ...validJson.submissions[1], regions: [{ roleId: "b", roleLabel: "B", startLine: 1, endLine: 2 }] },
+        {
+          ...validJson.submissions[0],
+          regions: [
+            { roleId: "a", roleLabel: "A", startLine: 1, endLine: 1 },
+            { roleId: "b", roleLabel: "B", startLine: 2, endLine: 2 },
+          ],
+        },
+        { ...validJson.submissions[1], regions: [{ roleId: "c", roleLabel: "C", startLine: 1, endLine: 2 }] },
       ],
     };
     expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(

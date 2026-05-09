@@ -97,6 +97,42 @@ const REGIONS_MIN_PER_SUBMISSION = 1;
 const RESERVED_ROLE_IDS = new Set(["whole_file"]);
 
 /**
+ * 구역을 시작 줄 기준으로 정렬한 뒤, submissionId 정렬상 첫 제출의 슬롯별 roleId·roleLabel로 나머지 제출을 맞춥니다.
+ * 구역 **개수**가 제출마다 다르면 cohort_bundle_regions_role_mismatch.
+ * (LLM이 이름만 다르게 준 경우 색·축을 맞추기 위한 정규화.)
+ */
+export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArtifactDto[]): void {
+  if (submissions.length === 0) return;
+
+  for (const sub of submissions) {
+    sub.regions.sort((a, b) => a.startLine - b.startLine || a.endLine - b.endLine);
+  }
+
+  const head = submissions[0];
+  if (head === undefined) return;
+
+  const k = head.regions.length;
+  for (const sub of submissions) {
+    if (sub.regions.length !== k) {
+      throw new Error("cohort_bundle_regions_role_mismatch");
+    }
+  }
+
+  const template = head.regions;
+  for (let s = 1; s < submissions.length; s += 1) {
+    const sub = submissions[s];
+    if (sub === undefined) continue;
+    for (let i = 0; i < k; i += 1) {
+      const t = template[i];
+      const r = sub.regions[i];
+      if (t === undefined || r === undefined) continue;
+      r.roleId = t.roleId;
+      r.roleLabel = t.roleLabel;
+    }
+  }
+}
+
+/**
  * 모든 제출의 regions가 집단 비교 UI·정책과 맞는지 검증합니다.
  * - 제출당 1~5개, 제출 간 roleId 집합 동일, 예약 roleId 금지, 긴 코드는 구역당 최소 2줄.
  */
@@ -420,6 +456,7 @@ export function parseAndValidateCohortBundle(
 
   submissions.sort((a, b) => a.submissionId.localeCompare(b.submissionId));
 
+  canonicalizeCohortRegionsBySlot(submissions);
   assertCohortRegionsAligned(submissions);
 
   const artifacts: CohortAnalysisArtifactsDto = {
