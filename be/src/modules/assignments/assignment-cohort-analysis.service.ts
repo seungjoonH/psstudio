@@ -27,7 +27,7 @@ const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
 
 /** 재시도 시 이전 응답이 형식에 맞지 않았음을 알리고, regions만 다시 맞추라고 지시합니다(소비자·서버 언급 없음). */
 const COHORT_SEMANTIC_RETRY_HINT =
-  "\n\n[재시도 — 이전 JSON은 regions 규칙을 어겼다] 각 제출 `code` 줄 수를 다시 세어라. **12줄 이상**이면 제출마다 `regions`를 **2~5개**(서로 다른 snake_case `roleId`)로만 출력하라. **`entire_code`·`whole_file`·「코드 전체」 라벨 금지.** **startLine=1 & endLine=마지막줄 인 구역이 유일**한 형태(한 덩어리로 전 파일) 금지. 헬퍼 함수 블록 / 메인 시뮬레이션 루프 / 입출력·파싱 등 **실제 논점**으로 나눠라. 각 region은 **연속 구간** 하나이고 그 안의 빈 줄·`}`·`break`까지 포함. 모든 제출에 **동일한 roleId 집합·같은 개수 k**.";
+  "\n\n[재시도 — 이전 JSON은 regions 규칙을 어겼다] 각 제출 `code` 줄 수를 다시 세어라. **12줄 이상**이면 제출마다 `regions`를 **2~5개**(서로 다른 snake_case `roleId`)로만 출력하라. **`entire_code`·`whole_file`·「코드 전체」 라벨 금지.** **startLine=1 & endLine=마지막줄 인 구역이 유일**한 형태(한 덩어리로 전 파일) 금지. 헬퍼 함수 블록 / 메인 시뮬레이션 루프 / 입출력·파싱 등 **실제 논점**으로 나눠라. 각 region은 **연속 구간** 하나이고 그 안의 빈 줄·`}`·`break`까지 포함. 모든 제출에 **동일한 roleId 집합·같은 개수 k**. 특히 **주요 루프·`main_loop`** 구역은 **`for`/`while`/`do` 헤더 줄이 구간 안에** 들어가야 하며, 닫는 꼬리만·함수 앞부분만 칠하지 마라.";
 
 async function openRouterCompletion(
   messages: { role: "system" | "user"; content: string }[],
@@ -147,6 +147,7 @@ function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
       "- **12+ lines**: **2–5** regions per submission, **distinct** snake_case `roleId`. Never `entire_code` / `whole_file` / a **single** region from line 1 through the last line. Split by real comparison themes (time normalization, weekday filter, main simulation loop, parse/I/O, etc.).",
       "- Each region = **one** inclusive contiguous [startLine,endLine]; include **every** blank line and brace inside that span (no striping).",
       "- **Identical** roleId set and **same** region count k on **every** submission.",
+      "- **Main/simulation loop** spans **must include** the line with `for` / `while` / `do` — not only tails after `break`, closing braces alone, or function preamble without the loop header.",
     ].join("\n");
   }
   return [
@@ -157,6 +158,7 @@ function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
     "- **12줄 이상**: 제출마다 regions **2~5개**, 서로 다른 **snake_case** roleId. **`entire_code`/`whole_file`/1행~마지막행을 한 구역으로만 덮기 금지.** 시간 보정·평일 필터·메인 루프·입출력 등 **실제 비교 축**으로 나눈다.",
     "- region은 연속 [startLine,endLine] **한 덩어리**; 그 안의 **빈 줄·주석·`}`·`break`**까지 포함(줄무늬 금지).",
     "- 모든 제출에 **동일한** roleId 집합·**같은** k.",
+    "- **주요 루프·시뮬레이션**: 구간 안에 **`for`/`while`/`do`가 있는 줄**이 반드시 포함되어야 한다. 닫는 꼬리·함수 선언부만 칠하지 마라.",
   ].join("\n");
 }
 
@@ -546,6 +548,15 @@ export class AssignmentCohortAnalysisService {
         "## 어떤 덩어리를 하나의 region으로 묶는가(자르는 단위)",
         "- **함수·메서드 전체**가 그 축이면 시그니처부터 닫는 `}` 까지 **한 구간**으로 묶는다. 함수 안에서 빈 줄이 있어도 **전부 포함**한다.",
         "- **특정 반복문 하나**(외곽 for, 안쪽 while 등)가 축이면 **루프 헤더부터 해당 닫는 중괄호까지** 한 구간. 루프 **안의 빈 줄·주석·`break`/`continue`/내장 if 전부** 포함한다. **헤더 줄만 칠하고 본문은 미색으로 두는 것은 금지**다.",
+        "",
+        "## 루프·시뮬레이션 축 (`main_loop`, `주요 루프`, 메인 지각 루프 등) — 오탐 방지(필수)",
+        "- roleLabel·역할이 **메인/주요 루프·시뮬레이션 반복**을 뜻하면, 해당 region의 `[startLine,endLine]` **안에 반드시** `for` / `while` / `do` / range-for 등 **반복문을 여는 키워드가 있는 줄**이 포함되어야 한다. 구간 전체에 루프 키워드가 **한 줄도 없으면 무조건 잘못된 출력**이다.",
+        "- **절대 금지 — 실제로 자주 발생한 오류:**",
+        "  (a) `break` 다음에만 이어지는 **닫는 `}` 묶음·루프 밖 증감(`day++`)·후처리 if**만 칠하고, 정작 **`for`/`while` 헤더가 있는 줄은 구간 밖**에 두는 것.",
+        "  (b) **함수 시그니처·헬퍼 함수의 끝(`return`·`}`)·다음 함수의 선언부·`int ans = 0` 같은 초기화만** 칠하고, **그 아래 줄에서 시작하는 진짜 `for (…)` 루프는 미색**으로 남기는 것.",
+        "  (c) 역할 이름만 『루프』인데 구간 안에는 **중괄호와 빈 줄만** 있는 것.",
+        "- **올바른 패턴:** 문제의 핵심 이중 루프·사람×날짜 시뮬레이션 등은 **바깥 `for`/`while`이 시작되는 줄을 startLine으로 잡고**, 그 반복문 본문 전체와 **그 반복문을 닫는 짝이 맞는 `}` 줄까지** endLine으로 잡는다. 안쪽 중첩 루프가 있으면 **바깥 루프 한 연속 블록** 안에 포함한다.",
+        "- 출력 전에 각 제출 코드에서 해당 region 줄들을 **실제로 읽고**, 『이 구간만 보면 루프가 어디서 도는지 알 수 있는가?』에 **아니오**면 start/end를 다시 계산한다.",
         "- **자료구조·상태 선언**(예: `vector<vector<int>>`, `priority_queue`, 누적 배열, 방문 배열)이 비교 포인트면 **그 선언과 바로 이어지는 초기화**까지 한 덩어리로 묶을 수 있다.",
         "- **이름 붙일 수 있는 알고리즘 덩어리**(다익스트라, 누적 합, 슬라이딩 윈도우 등)는 해당 코드가 이어지는 **연속 물리 줄 전체**를 한 region으로 한다.",
         "- **한 region 안에서는 줄을 골라 칠하지 않는다.** ‘의미 있는 줄만’ 골라 연속이 아닌 집합을 만들면 UI가 줄무늬가 된다.",
@@ -570,6 +581,7 @@ export class AssignmentCohortAnalysisService {
         "- 논리 블록 **안쪽에서** 칠한 줄 → 미색 빈 줄 → 칠한 줄 … **줄무늬·양자화**.",
         "- `for`/`if`/`while` **선언 줄만** 칠하고, 변수 초기화·본문·`break` 는 미색.",
         "- **연속이 아닌** 여러 작은 조각으로 같은 축을 표현하기(한 축은 **반드시 한 번의 start~end**).",
+        "- 『루프』류 역할인데 구간에 **`for`/`while`/`do` 헤더 줄이 없음**(닫는 꼬리·다른 함수 앞부분만 포함).",
         "",
         "## JSON 내기 전 자기 점검(아래가 모두 참일 때만 출력)",
         "- **N≥12** 제출마다 regions 개수가 **2 이상 5 이하**인가. **N<12** 는 1개도 가능한가.",
@@ -577,6 +589,7 @@ export class AssignmentCohortAnalysisService {
         "- 모든 제출의 roleId 집합·개수 k가 **동일한가**.",
         "- 각 region에 대해 **start~end 사이**에 빈 줄을 **일부러 빼지 않았는가**(줄무늬 방지).",
         "- 각 roleId에 대해 **한 문장으로 역할**을 말할 수 있는가. 제출 간 같은 roleId는 **같은 문제 풀이 단계**인가.",
+        "- **`main_loop`·『주요 루프』·『메인 … 루프』 류**: 해당 구간 줄 텍스트를 합쳤을 때 **`for`/`while`/`do`** 중 하나가 **최소 한 줄** 나오는가. 아니면 구간을 **루프 헤더가 포함되도록** 다시 잡는다.",
         "",
         "## English (must follow even when report locale is Korean)",
         "- If a submission has **12+ lines**, **never** use `entire_code` or a **single** region from line 1 through last line; output **2–5** semantic roles with distinct snake_case ids.",
@@ -584,6 +597,7 @@ export class AssignmentCohortAnalysisService {
         "- Same roleId across submissions means **the same solution-stage responsibility** (e.g. normalize time, weekday filter, main double loop), not merely similar syntax.",
         "- Uncolored lines are intentionally **out of scope** for the chosen k themes; do not stripe inside a theme block.",
         "- Never highlight only loop/function headers; always span the **full** logical block.",
+        "- For **main loop / simulation loop** roles: the span **must include** the line containing **`for` / `while` / `do`**. **Never** assign that role only to closing braces, tail code after `break`, function preamble, or `int ans = 0` **without** the loop header line.",
       ].join("\n");
 
       const userPrompt = JSON.stringify(bundleInput) + cohortUserRegionsContractReminder(reportLocale);
