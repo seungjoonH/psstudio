@@ -4,18 +4,21 @@ import {
   Dependencies,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { createPatch } from "diff";
 import { jsonrepair } from "jsonrepair";
-import { MAX_SUBMISSION_CODE_BYTES } from "@psstudio/shared";
+import { MAX_SUBMISSION_CODE_BYTES, NOTIFICATION_TYPES } from "@psstudio/shared";
 import type { DataSource } from "typeorm";
 import { In } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { Assignment } from "../assignments/assignment.entity.js";
+import { requestLlmChat } from "../ai/llm-chat-client.js";
 import { fetchProblemPromptFromUrl, type ProblemPromptContext } from "../assignments/problem-prompt-from-url.js";
 import { Comment } from "../comments/comment.entity.js";
+import { Notification } from "../notifications/notification.entity.js";
 import { ReactionsService, type ReactionSummaryItem } from "../reactions/reactions.service.js";
 import { Review } from "../reviews/review.entity.js";
 import { ReviewReply } from "../reviews/review-reply.entity.js";
@@ -181,6 +184,10 @@ function markdownFenceForSubmissionLanguage(language: string): string {
   return safe.length > 0 ? safe : "text";
 }
 
+function collapseWs(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
 function validateAiLineCommentAgainstCode(
   lineComment: AiReviewLineComment,
   codeLines: string[],
@@ -189,12 +196,68 @@ function validateAiLineCommentAgainstCode(
   if (lineComment.endLine > codeLines.length) return false;
   const anchorText = lineComment.anchorText;
   if (typeof anchorText !== "string" || anchorText.length === 0) return true;
-  const collapseWs = (s: string): string => s.replace(/\s+/g, " ").trim();
   const needle = collapseWs(anchorText);
   if (needle.length === 0) return true;
   const lineSlice = codeLines.slice(lineComment.startLine - 1, lineComment.endLine);
-  if (lineSlice.some((line) => collapseWs(line).includes(needle))) return true;
-  return codeLines.some((line) => collapseWs(line).includes(needle));
+  return lineSlice.some((line) => collapseWs(line).includes(needle));
+}
+
+/** 범위 전체가 공백 줄이면 아래쪽 코드 줄을 우선해 한 줄로 스냅한다(LLM이 빈 줄에 달 때 UI 앵커가 어긋나는 문제 완화). */
+export function snapLineCommentOffWhitespaceOnlyRange(
+  lineComment: AiReviewLineComment,
+  codeLines: string[],
+): AiReviewLineComment {
+  const max = codeLines.length;
+  const { startLine, endLine } = lineComment;
+  let allWs = true;
+  for (let ln = startLine; ln <= endLine; ln++) {
+    if (ln < 1 || ln > max) continue;
+    if (codeLines[ln - 1].trim().length > 0) {
+      allWs = false;
+      break;
+    }
+  }
+  if (!allWs) return lineComment;
+
+  let target = -1;
+  for (let ln = endLine + 1; ln <= max; ln++) {
+    if (codeLines[ln - 1].trim().length > 0) {
+      target = ln;
+      break;
+    }
+  }
+  if (target < 0) {
+    for (let ln = startLine - 1; ln >= 1; ln--) {
+      if (codeLines[ln - 1].trim().length > 0) {
+        target = ln;
+        break;
+      }
+    }
+  }
+  if (target < 0) return lineComment;
+  return { ...lineComment, startLine: target, endLine: target };
+}
+
+/** anchorText가 지정 범위에 없고 파일 어딘가에는 있으면 그 줄로 스냅한다(줄 번호만 틀린 경우 보정). */
+export function snapLineCommentRangeToAnchorMatch(
+  lineComment: AiReviewLineComment,
+  codeLines: string[],
+): AiReviewLineComment {
+  const anchorText = lineComment.anchorText;
+  if (typeof anchorText !== "string" || anchorText.trim().length === 0) return lineComment;
+  const needle = collapseWs(anchorText);
+  if (needle.length === 0) return lineComment;
+
+  const slice = codeLines.slice(lineComment.startLine - 1, lineComment.endLine);
+  if (slice.some((line) => collapseWs(line).includes(needle))) return lineComment;
+
+  for (let i = 0; i < codeLines.length; i++) {
+    if (collapseWs(codeLines[i]).includes(needle)) {
+      const ln = i + 1;
+      return { ...lineComment, startLine: ln, endLine: ln };
+    }
+  }
+  return lineComment;
 }
 
 function isLowValueReviewSuggestion(body: string): boolean {
@@ -213,24 +276,6 @@ function isLowValueReviewSuggestion(body: string): boolean {
     "주석을 추가",
   ];
   return bannedHints.some((hint) => normalized.includes(hint));
-}
-
-function hasImprovementSignal(text: string): boolean {
-  const normalized = text.toLowerCase();
-  const hints = [
-    "개선",
-    "보완",
-    "여지",
-    "필요",
-    "권장",
-    "추천",
-    "문제",
-    "주의",
-    "리팩터",
-    "최적화",
-    "복잡도",
-  ];
-  return hints.some((hint) => normalized.includes(hint));
 }
 
 function isTooAbstractFeedback(body: string): boolean {
@@ -408,12 +453,6 @@ function parseLineCommentsArray(commentsRaw: unknown): AiReviewLineComment[] {
     .filter((value): value is AiReviewLineComment => value !== null);
 }
 
-function parseAiReviewLineCommentsOnly(raw: string): AiReviewLineComment[] {
-  const parsed = tryParseAiReviewPayloadFromRaw(raw);
-  if (parsed === null) return [];
-  return parseLineCommentsArray(parsed.lineComments);
-}
-
 export function parseAiReviewPayload(raw: string): AiReviewPayload {
   const parsed = tryParseAiReviewPayloadFromRaw(raw);
   if (parsed === null) {
@@ -455,6 +494,8 @@ export function parseAiReviewPayload(raw: string): AiReviewPayload {
 @Injectable()
 @Dependencies(ReactionsService, ReviewsService)
 export class SubmissionsService {
+  private readonly logger = new Logger(SubmissionsService.name);
+
   constructor(
     private readonly reactions: ReactionsService,
     private readonly reviews: ReviewsService,
@@ -949,12 +990,13 @@ export class SubmissionsService {
     if (assignment === null || assignment.deletedAt !== null) {
       throw new NotFoundException("과제를 찾을 수 없습니다.");
     }
+    let parentComment: Comment | null = null;
     if (parentCommentId !== null) {
-      const parent = await this.ds.getRepository(Comment).findOne({ where: { id: parentCommentId } });
-      if (parent === null || parent.submissionId !== submissionId) {
+      parentComment = await this.ds.getRepository(Comment).findOne({ where: { id: parentCommentId } });
+      if (parentComment === null || parentComment.submissionId !== submissionId) {
         throw new NotFoundException("부모 댓글을 찾을 수 없습니다.");
       }
-      if (parent.parentCommentId !== null) {
+      if (parentComment.parentCommentId !== null) {
         throw new BadRequestException("답글의 답글은 지원하지 않습니다.");
       }
     }
@@ -970,13 +1012,48 @@ export class SubmissionsService {
       }),
     );
     const user = await this.ds.getRepository(User).findOne({ where: { id: authorUserId }, withDeleted: true });
+    const authorNickname = user?.nickname ?? "탈퇴한 사용자";
+    const notifRepo = this.ds.getRepository(Notification);
+    if (parentCommentId === null) {
+      if (submission.authorUserId !== authorUserId) {
+        await notifRepo.save(
+          notifRepo.create({
+            recipientUserId: submission.authorUserId,
+            type: NOTIFICATION_TYPES.COMMENT_ON_MY_SUBMISSION,
+            payload: {
+              title: `${authorNickname}님이 내 제출에 댓글을 남겼습니다.`,
+              submissionId,
+              assignmentId: submission.assignmentId,
+              groupId: assignment.groupId,
+              commentId: comment.id,
+            },
+          }),
+        );
+      }
+    } else if (parentComment !== null && parentComment.authorUserId !== authorUserId) {
+      await notifRepo.save(
+        notifRepo.create({
+          recipientUserId: parentComment.authorUserId,
+          type: NOTIFICATION_TYPES.REPLY_ON_MY_COMMENT,
+          payload: {
+            title: `${authorNickname}님이 내 댓글에 답글을 남겼습니다.`,
+            submissionId,
+            assignmentId: submission.assignmentId,
+            groupId: assignment.groupId,
+            commentId: comment.id,
+            parentCommentId,
+          },
+        }),
+      );
+    }
+
     if (parentCommentId === null) {
       return {
         id: comment.id,
         body: comment.body,
         submissionVersionNo: comment.submissionVersionNo,
         authorUserId,
-        authorNickname: user?.nickname ?? "탈퇴한 사용자",
+        authorNickname,
         authorProfileImageUrl: user?.profileImageUrl ?? "",
         createdAt: comment.createdAt,
         reactions: [],
@@ -988,7 +1065,7 @@ export class SubmissionsService {
       body: comment.body,
       submissionVersionNo: comment.submissionVersionNo,
       authorUserId,
-      authorNickname: user?.nickname ?? "탈퇴한 사용자",
+      authorNickname,
       authorProfileImageUrl: user?.profileImageUrl ?? "",
       parentCommentId,
       createdAt: comment.createdAt,
@@ -1037,7 +1114,7 @@ export class SubmissionsService {
       difficulty: assignment.difficulty,
       hintPlain: assignment.hintPlain,
     };
-    const aiPayload = await this.generateAiReview(
+    const aiPayload = await this.requestAiReviewFromModel(
       version.code,
       submission.noteMarkdown,
       assignmentContext,
@@ -1049,29 +1126,14 @@ export class SubmissionsService {
       comments
         .map((lineComment) => clampLineCommentToCode(lineComment, codeLines))
         .filter((lineComment): lineComment is AiReviewLineComment => lineComment !== null)
+        .map((lineComment) => snapLineCommentOffWhitespaceOnlyRange(lineComment, codeLines))
+        .map((lineComment) => snapLineCommentRangeToAnchorMatch(lineComment, codeLines))
         .filter((lineComment) => validateAiLineCommentAgainstCode(lineComment, codeLines))
         .filter((lineComment) => !isLowValueReviewSuggestion(lineComment.body))
         .filter((lineComment) => !isTooAbstractFeedback(lineComment.body))
         .filter((lineComment) => hasStructuredImprovementFormat(lineComment.body));
 
-    let validLineComments = pickValidLineComments(aiPayload.lineComments);
-    let supplementAttempts = 0;
-    while (
-      validLineComments.length === 0 &&
-      hasImprovementSignal(aiPayload.summary) &&
-      supplementAttempts < 2
-    ) {
-      const extra = await this.requestLineCommentsSupplement(
-        aiPayload.summary.trim(),
-        version.code,
-        submission.noteMarkdown,
-        assignmentContext,
-        problemPromptContext,
-        version.language,
-      );
-      validLineComments = pickValidLineComments(extra);
-      supplementAttempts += 1;
-    }
+    const validLineComments = pickValidLineComments(aiPayload.lineComments);
 
     const fallbackTrivialComment = detectTrivialSubmissionLineComment(codeLines);
     const lineComments =
@@ -1145,153 +1207,100 @@ export class SubmissionsService {
     return repo.save(created);
   }
 
-  /** 요약에는 개선이 있는데 라인 코멘트가 비었을 때만 호출. 내용은 전부 LLM이 코드·문맥에서 생성한다. */
-  private async requestLineCommentsSupplement(
-    lockedSummary: string,
-    code: string,
-    noteMarkdown: string,
-    context: AssignmentReviewContext,
-    problemContext: ProblemPromptContext | null,
-    codeLanguage: string,
-  ): Promise<AiReviewLineComment[]> {
-    const fenceLang = markdownFenceForSubmissionLanguage(codeLanguage);
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${ENV.llmApiKey()}`,
-      },
-      body: JSON.stringify({
-        model: ENV.llmModelSubmissionReview(),
-        messages: [
-          {
-            role: "system",
-            content: [
-              "너는 앞 단계에서 이미 확정된 요약 리뷰에 대응하는 lineComments만 채우는 보완 단계다.",
-              "반드시 JSON만 출력하고, JSON 외 설명문은 절대 출력하지 않는다.",
-              '형식(이 키만): {"lineComments":[{"startLine":number,"endLine":number,"anchorText":string,"body":string}]}',
-              "lineComments는 1개 이상 필수. summary 필드는 넣지 않는다.",
-              "각 body는 반드시 문제·근거·개선 세 섹션을 포함한다. 라벨은 **문제:** / **근거:** / **개선:** 형식 권장, 섹션 사이는 빈 줄(\\n\\n)로 구분한다. 한 줄로 이어 붙이지 않는다.",
-              "여러 줄 예시·수정 코드는 ```" +
-                fenceLang +
-                " 코드블록을 쓴다. JSON 문자열 안에서는 개행으로 블록을 나눈다.",
-              "확정 요약 문장을 body 안에 길게 인용·복붙하지 말고, 실제 코드 줄에서 무엇이 어떻게 잘못될 수 있는지 구체적으로 써라.",
-              "서로 다른 lineComments가 사실상 같은 결함·같은 수정이라면 하나로 합쳐라.",
-            ].join("\n"),
-          },
-          {
-            role: "user",
-            content: [
-              "[확정 요약 — 수정하지 말고, 이에 대응하는 라인 코멘트만 생성]",
-              lockedSummary,
-              "",
-              "[문제 문맥]",
-              buildAssignmentContextText(context),
-              "[/문제 문맥]",
-              "",
-              "[문제 본문 핵심]",
-              problemContext !== null
-                ? [
-                    `[요약] ${problemContext.summary}`,
-                    `[입력] ${problemContext.input}`,
-                    `[출력] ${problemContext.output}`,
-                  ].join("\n")
-                : "(문제 본문 추출 실패: URL 응답/파싱 실패)",
-              "[/문제 본문 핵심]",
-              "",
-              "[메모]",
-              noteMarkdown.trim().length > 0 ? noteMarkdown : "(메모 없음)",
-              "[/메모]",
-              "",
-              "각 lineComments body는 Markdown으로 **문제:** / **근거:** / **개선:** 섹션을 빈 줄로 나누고, 필요하면 코드블록을 써서 가독성 있게 작성해줘.",
-              "",
-              `[제출 언어] ${codeLanguage.trim()} (마크다운 펜스: ${fenceLang})`,
-              "",
-              `\`\`\`${fenceLang}`,
-              code,
-              "```",
-            ].join("\n"),
-          },
-        ],
-        temperature: 0.15,
-      }),
-    });
-    if (!response.ok) {
-      return [];
-    }
-    const body = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = body.choices?.[0]?.message?.content ?? "";
-    return parseAiReviewLineCommentsOnly(content);
-  }
-
   private async requestAiReviewFromModel(
     code: string,
     noteMarkdown: string,
     context: AssignmentReviewContext,
     problemContext: ProblemPromptContext | null,
     codeLanguage: string,
-    retryMode: boolean,
   ): Promise<AiReviewPayload> {
     const fenceLang = markdownFenceForSubmissionLanguage(codeLanguage);
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${ENV.llmApiKey()}`,
-      },
-      body: JSON.stringify({
+    try {
+      const response = await requestLlmChat({
         model: ENV.llmModelSubmissionReview(),
+        temperature: 0.2,
         messages: [
           {
             role: "system",
             content: [
-              "너는 실제 코드를 근거로만 리뷰하는 AI 코드 리뷰어다.",
-              "반드시 **유효한 JSON 객체 한 개만** 출력한다. 앞뒤에 설명문·마크다운 제목·코드펜스(```)를 절대 붙이지 않는다.",
-              "summary 값에는 요약 문장만 넣고, 전체 응답 JSON을 summary 문자열 안에 다시 넣지 않는다.",
-              "형식:",
+              "너는 실제 실행 결과를 기준으로 검증하는 AI 코드 리뷰어다.",
+              "**가장 중요한 목표:** (1) 존재하지 않는 버그(False Positive)를 만들지 않는 것, 동시에 (2) 실제 버그를 실행 기반으로 검출하는 것. 둘 다 중요하지만, 충돌 시 (1)이 (2)보다 우선한다.",
+              "리뷰 기준은 **오직 같은 메시지 안의 [문제 문맥]·[문제 본문 핵심]**이다. 다른 문제의 관행·정석·스타일 선호를 기준으로 판단하지 않는다.",
+              "",
+              "── 출력 형식 ──",
+              "반드시 **유효한 JSON 객체 한 개만** 출력한다. 앞뒤에 설명문·마크다운 제목·코드펜스(```) 금지.",
               "{\"summary\":string,\"lineComments\":[{\"startLine\":number,\"endLine\":number,\"anchorText\":string,\"body\":string}]}",
-              "규칙:",
-              "1) 실제 코드에서 근거를 찾을 수 있는 경우에만 리뷰를 남긴다. 근거가 약하면 생략한다.",
-              "2) startLine/endLine은 1-based이며 여러 줄 범위 리뷰 가능. 범위가 겹쳐도 되지만, **실질적으로 다른 결함·다른 수정 방향**일 때만 별도 lineComments로 둔다. 같은 결함을 넓은 범위와 좁은 범위에 두 번 달지 않는다.",
-              "3) anchorText는 지정한 라인 범위 안에 실제로 존재하는 부분 문자열이어야 한다.",
-              "4) summary와 lineComments의 body는 한국어로 부드러운 제안형(~하면 좋습니다)을 쓴다. 둘 다 UI에서 Markdown(GFM)으로 렌더되므로 가독성을 최우선한다.",
-              "5) 함수/변수/키워드·짧은 식은 `인라인 코드`로 감싼다. 2줄 이상의 예시·수정안은 반드시 fenced 코드블록으로 제시한다.",
-              `6) fenced 코드블록은 반드시 \`\`\`${fenceLang} 로 시작한다. [제출 코드]와 같은 언어·문법이어야 하며 다른 언어 태그는 금지한다. JSON 문자열 안에서는 줄바꿈을 실제 개행(\\n)으로 넣어 문단·블록을 구분한다.`,
-              "7) 주석/Docstring/JSDoc/매개변수 설명 추가 제안은 금지한다.",
-              "8) '설명이 있으면 좋습니다' 같은 문서화 위주 피드백은 절대 쓰지 않는다.",
-              "9) 리뷰는 반드시 다음 범주 중 하나에 해당해야 한다: 로직 오류 가능성, 더 나은 코드 표현/구조, 더 적합한 알고리즘, 시간·공간복잡도 개선.",
-              "10) 특정 식별자 변경 제안 시 해당 식별자가 anchor 라인 범위에 실제로 있을 때만 제안한다.",
-              "11) 매 실행마다 summary는 반드시 1개 작성한다. summary도 필요하면 빈 줄로 문단을 나누고, 항목이 여러 개면 `- ` 목록을 써도 된다.",
-              "12) '코드가 잘 작성되었다'고 결론 내리기 전에, 경계값/반례를 아주 꼼꼼히 점검한다.",
-              "13) 특히 숫자/시간 계산 로직은 반드시 경계값을 수동 시뮬레이션한다. 예: 50, 59, 60, 23시/24시 넘어감, > 와 >= 조건 차이.",
-              "14) 루프/인덱스/요일 계산/오프바이원(+1, -1, %, 길이 기반 반복)을 반드시 샅샅이 검토한다.",
-              "15) 오류 가능성이 조금이라도 보이면 긍정-only 응답을 금지하고, 해당 라인에 lineComments를 남긴다.",
-              "16) 개선할 점이 없으면 summary는 긍정 코멘트만 1~2문장, lineComments는 빈 배열([]).",
-              "17) 개선할 점이 있으면 summary는 긍정 + 개선 여지 언급 톤으로 1~2문장, 그리고 반드시 lineComments는 1개 이상(서로 다른 지적이 여러 개일 때만 2개 이상).",
-              "18) lineComments body는 반드시 문제·근거·개선 세 섹션을 포함한다. 각 라벨은 줄 시작에 `**문제:**`, `**근거:**`, `**개선:**`처럼 쓰거나 동등하게 `문제:` 형태로 쓴다. 세 섹션 사이에는 반드시 빈 줄 한 줄(\\n\\n)을 넣어 한 줄 장문으로 붙이지 않는다.",
-              "19) 추상 문구(예: '조금 더 명확하게', '개선 여지')만 있는 코멘트는 금지한다.",
-              "20) 코드 주석 문구를 그대로 믿지 말고, 실제 코드 실행 의미를 우선으로 판단한다.",
-              "21) 문제 문맥(제목/URL/힌트)과 무관한 템플릿 리뷰는 금지한다.",
-              "22) 제출 코드가 문제 해결 로직 없이 출력/스텁 수준이면 반드시 개선 코멘트를 남긴다.",
-              "23) lineComments는 최대 10개다.",
-              "24) **중복 라인 코멘트 금지**: 두 개 이상의 lineComments가 같은 근거·같은 수정 제안(예: 동일한 경계값/`>` vs `>=`/같은 오프바이원)을 말하면 **하나로 합친다**. 대표적인 한 줄 또는 짧은 범위에만 단일 코멘트로 정리한다.",
-              "25) lineComments가 2개 이상이면 각각이 **서로 다른 문제**(독립된 로직 오류, 다른 알고리즘 이슈, 별도의 복잡도 문제 등)인지 출력 전에 스스로 검증한다. 애매하면 개수를 줄인다.",
-              "26) 가독성: 근거에 입력·중간값·기대값을 적을 때는 필요하면 `- ` 목록이나 짧은 표 형태(파이프 표)를 써도 된다. 핵심 조건·수식은 코드블록 또는 인라인 코드로 구분해 눈에 띄게 한다.",
+              "summary 값에는 요약 문장만 넣는다. summary 안에 응답 JSON을 다시 넣지 않는다.",
+              "",
+              "── 리뷰 원칙 ──",
+              "- 실제 결함이 검증된 경우에만 lineComments를 작성한다.",
+              "- 검증되지 않은 추측·스타일 선호·취향 리뷰는 금지한다.",
+              "- 결함이 없으면 lineComments는 빈 배열(`[]`)이어도 된다. **결함 0개는 정상 결과**다.",
+              "- '뭐라도 지적해야 한다'는 압박을 의식적으로 거부한다.",
+              "",
+              "── 결함으로 인정되는 경우 (이 4가지에만 한정) ──",
+              "1) [문제 명세] 기준 잘못된 출력이 발생한다 (반례 존재).",
+              "2) 시간·공간복잡도가 명확히 악화된다 (정량 비교 가능).",
+              "3) 자료구조 사용 오류로 정확성이 깨진다.",
+              "4) 불필요한 중복 계산이 명확히 존재한다 (측정 가능한 제거).",
+              "그 외(변수명, 코드 스타일, 함수 분리, early return 취향, 선언 방식, stream/filter/reduce 선호, '더 깔끔한 표현', 자료구조 취향, 삼항 vs if/else 등)는 결함이 아니다.",
+              "",
+              "── 가장 중요한 규칙: 실제 실행 추적 ──",
+              "결함을 주장하기 전 반드시 **실제 입력으로 코드를 끝까지 실행 추적**한다. 다음 패턴은 특히 실제 상태 변화를 단계별로 계산한다: `push`/`append`, `+=`, 누적합, mutation, 루프 내부 상태 변경, special-case guard, `break`/`return`/`continue`.",
+              "예) 배열에 값을 넣는 코드라면 (i) 각 반복에서 몇 번 호출되는지, (ii) 최종 배열 길이가 얼마인지, (iii) 실제 반환값이 무엇인지를 단계별로 계산한다.",
+              "**'특수 케이스 처리처럼 보인다'는 추측만으로 정상 처리라고 판단하지 않는다.** 가드절(`if (x === c) ...`)이 정상 패턴인지 진짜 누락인지는 실제 실행 추적으로만 결정한다.",
+              "**'이후 반복에서 덮어씌워진다'·'뒤에서 다시 계산된다'·'다음 루프에서 값이 바뀐다' 같은 주장도 실제 실행 경로(`break`/`return`/`continue`/도달 가능 인덱스)를 검증한 뒤에만 쓴다.**",
+              "제출 코드 내부의 보조 함수·헬퍼는 정의를 따라가 반환값을 단계 시뮬레이션으로 확정한 뒤 결함 주장에 사용한다. 동작을 추측만 한 채 호출부만 보고 출력 오류를 단정하지 않는다.",
+              "",
+              "── lineComment 작성 조건 ──",
+              "각 lineComment의 body는 **세 섹션**을 반드시 포함한다. 라벨은 `**문제:**` / `**근거:**` / `**개선:**`이며, 섹션 사이는 빈 줄(\\n\\n)로 구분한다.",
+              "- **문제:** 무엇이 잘못되었는지.",
+              "- **근거:** 다음 중 **최소 하나**를 반드시 포함. (i) 실제 입력 예시, (ii) 실행 단계 추적(변수값 변화), (iii) 기대 출력 vs 실제 출력 직접 비교, (iv) 시간·공간복잡도 정량 비교(예: `O(n²) → O(n log n)`).",
+              "- **개선:** 어떻게 수정하면 되는지.",
+              "모호한 표현('i가 증가하면서…', '경우에 따라…', '위험해 보인다', '문제가 될 수 있는…')만으로는 결함을 주장할 수 없다.",
+              "",
+              "── 실행 추적 체크리스트 (출력 직전 필수) ──",
+              "각 lineComment에 대해 출력 직전 다음 5개를 모두 점검한다. **하나라도 만족 못 하면 그 lineComment는 작성하지 않는다.**",
+              "1. 실제 입력으로 코드를 끝까지 시뮬레이션했는가?",
+              "2. `break`/`return`/`continue` 흐름을 추적했는가?",
+              "3. 기대 출력과 실제 출력이 실제로 다른가? (같다면 결함이 아니므로 폐기)",
+              "4. 실제 실행되지 않는 분기·인덱스를 근거로 삼지 않았는가?",
+              "5. 단순 스타일 차이를 버그로 오인하지 않았는가? (위 '결함으로 인정되는 경우' 4가지에 해당하는가?)",
+              "",
+              "── summary 규칙 ──",
+              "- lineComments가 비어 있으면: **긍정·관찰형 summary만** 작성한다. '문제'·'개선 필요'·'주의'·'여지' 같은 결함 시사 단어를 쓰지 않는다.",
+              "- lineComments가 있으면: summary는 실제 검증된 문제만 간단히 요약한다. summary가 시사하는 결함과 lineComments는 1:1로 대응해야 한다.",
+              "- 매 실행마다 summary는 1개. 1~2문장 또는 짧은 목록.",
+              "",
+              "── 균형 (중요) ──",
+              "**'확신이 부족하다'는 이유만으로 즉시 빈 배열을 선택하지 않는다.** 대신 실제 입력을 실행 추적하고, 기대 출력과 실제 출력을 비교한 뒤, 차이가 검증되면 결함으로 판단한다. 리뷰의 핵심은 추측이 아니라 **실행 기반 검증**이다.",
+              "",
+              "── 출력 가독성 (Markdown 렌더 환경) ──",
+              "- summary와 lineComments의 body는 한국어 부드러운 제안형(~하면 좋습니다). UI에서 Markdown(GFM)으로 렌더된다.",
+              "- 함수·변수·키워드·짧은 식은 `인라인 코드`로 감싼다. 2줄 이상의 예시·수정안은 fenced 코드블록으로.",
+              `- fenced 코드블록은 반드시 \`\`\`${fenceLang} 로 시작한다 ([제출 코드]와 같은 언어). JSON 문자열 안에서는 줄바꿈을 실제 개행(\\n)으로 넣어 문단·블록을 구분한다.`,
+              "- 근거에 입력·중간값·기대값을 적을 때는 `- ` 목록이나 짧은 표를 써도 된다.",
+              "",
+              "── 앵커·범위 ──",
+              "- startLine/endLine은 1-based, 여러 줄 범위 가능. **공백만 있는 줄을 가리키면 안 된다.** 토큰·식이 있는 코드 줄을 지정한다.",
+              "- anchorText는 지정한 라인 범위 안에 실제로 존재하는 부분 문자열이어야 한다.",
+              "- 특정 식별자 변경 제안 시 그 식별자가 anchor 범위에 실제로 있어야 한다.",
+              "",
+              "── 추가 제약 ──",
+              "- 주석/Docstring/JSDoc/매개변수 설명 추가 제안은 금지. '설명이 있으면 좋습니다' 같은 문서화 위주 피드백 금지.",
+              "- 코드 주석 문구를 그대로 믿지 말고 실제 코드 실행 의미로 판단한다.",
+              "- lineComments 최대 10개. 같은 결함을 여러 코멘트로 쪼개지 말고 한 곳에 단일 코멘트로 정리한다.",
+              "- 두 lineComments가 사실상 같은 근거·같은 수정이라면 하나로 합친다.",
+              "- 제출 코드가 문제 해결 로직 없이 출력/스텁 수준이면 그 사실을 결함으로 적는다.",
             ].join("\n"),
           },
           {
             role: "user",
             content: [
-              retryMode
-                ? "직전 응답이 규칙 위반이었습니다. 개선점이 있다면 lineComments를 1개 이상 채우고, 추상 표현 없이 구체적 근거를 적어주세요. 각 body는 Markdown으로 섹션마다 빈 줄을 넣고, 내용이 거의 같으면 하나로 합쳐 주세요."
-                : "다음 코드를 문제 맥락을 고려해 리뷰해줘.",
-              "실제로 피드백이 필요한 지점만 lineComments에 넣어줘.",
-              "같은 버그·같은 수정 포인트를 여러 lineComments로 쪼개지 말고, 한 곳에만 명확히 달아줘.",
-              "한 줄 리뷰만 고집하지 말고 필요하면 여러 줄 범위를 써줘.",
-              "중요: 오류가 있는지 아주아주 꼼꼼히 샅샅이 점검하고, 경계값/반례를 먼저 검토한 뒤 결론을 내려줘.",
-              "아래 문제 문맥을 반드시 참고해서, 코드가 문제를 실제로 해결하는지 먼저 판단해줘.",
+              "다음 코드를 [문제 문맥]·[문제 본문 핵심] 기준으로 리뷰해줘.",
+              "검증된 결함만 lineComments에 넣어줘. **결함 0개도 정상 결과**다.",
+              "같은 결함을 여러 lineComments로 쪼개지 말고 한 곳에 단일 코멘트로 정리해줘. 필요하면 여러 줄 범위를 써줘.",
+              "결함을 주장하기 전 반드시 실제 입력으로 코드를 끝까지 실행 추적하고, 기대 출력과 실제 출력을 비교해줘. 둘이 같으면 그 lineComment는 폐기.",
               "",
               "[문제 문맥]",
               buildAssignmentContextText(context),
@@ -1304,10 +1313,8 @@ export class SubmissionsService {
                     `[입력] ${problemContext.input}`,
                     `[출력] ${problemContext.output}`,
                   ].join("\n")
-                : "(문제 본문 추출 실패: URL 응답/파싱 실패)",
+                : "(문제 본문 추출 실패: URL 응답/파싱 실패) — 본문 정보 없이는 결함 단정을 극히 줄이고, 일반론으로 빈칸을 메우지 말 것.",
               "[/문제 본문 핵심]",
-              "아래 메모가 있으면 코드 의도/문맥 판단에 참고해줘.",
-              "summary와 각 lineComments의 body는 Markdown으로 줄바꿈·문단 구분·코드블록을 적극 써서 읽기 쉽게 작성해줘.",
               "",
               "[메모]",
               noteMarkdown.trim().length > 0 ? noteMarkdown : "(메모 없음)",
@@ -1321,40 +1328,20 @@ export class SubmissionsService {
             ].join("\n"),
           },
         ],
-        temperature: 0.2,
-      }),
-    });
-    if (!response.ok) {
+      });
+      return parseAiReviewPayload(response.content);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("_http_")) {
+        this.logger.warn(`AI 리뷰 LLM 업스트림 실패: ${message}`);
+        throw new BadRequestException("AI 리뷰 요청에 실패했습니다.");
+      }
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.warn(`AI 리뷰 처리 실패: ${message.length > 0 ? message : String(error)}`);
       throw new BadRequestException("AI 리뷰 요청에 실패했습니다.");
     }
-    const body = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = body.choices?.[0]?.message?.content ?? "";
-    return parseAiReviewPayload(content);
   }
 
-  private async generateAiReview(
-    code: string,
-    noteMarkdown: string,
-    context: AssignmentReviewContext,
-    problemContext: ProblemPromptContext | null,
-    codeLanguage: string,
-  ): Promise<AiReviewPayload> {
-    const first = await this.requestAiReviewFromModel(
-      code,
-      noteMarkdown,
-      context,
-      problemContext,
-      codeLanguage,
-      false,
-    );
-    if (
-      first.lineComments.some((line) => hasStructuredImprovementFormat(line.body)) ||
-      !hasImprovementSignal(first.summary)
-    ) {
-      return first;
-    }
-    return this.requestAiReviewFromModel(code, noteMarkdown, context, problemContext, codeLanguage, true);
-  }
 }
