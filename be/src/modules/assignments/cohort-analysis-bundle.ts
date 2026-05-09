@@ -1,8 +1,5 @@
 // 집단 코드 비교 단일 LLM JSON 번들을 파싱·검증하는 유틸입니다.
-import type { SupportedLanguage } from "@psstudio/shared";
-import { SUPPORTED_LANGUAGES } from "@psstudio/shared";
 import { jsonrepair } from "jsonrepair";
-import { detectLanguage } from "../submissions/language-detect.js";
 
 export type CohortReportLocale = "ko" | "en";
 
@@ -13,16 +10,25 @@ export type CohortRegionDto = {
   endLine: number;
 };
 
+/** 저장소·API에 남는 제출별 아티팩트(LLM은 regions만 생성, 코드는 DB 스냅샷). */
 export type CohortSubmissionArtifactDto = {
   submissionId: string;
-  normalizedCode: string;
-  originalLanguage: string;
   regions: CohortRegionDto[];
 };
 
 /** FE·저장소 공통 아티팩트(JSON에 그대로 저장) */
 export type CohortAnalysisArtifactsDto = {
   submissions: CohortSubmissionArtifactDto[];
+};
+
+/** 조회 시 제출 버전 코드·언어를 붙인 응답용 아티팩트 */
+export type CohortSubmissionArtifactPublicDto = CohortSubmissionArtifactDto & {
+  code: string;
+  language: string;
+};
+
+export type CohortAnalysisArtifactsPublicDto = {
+  submissions: CohortSubmissionArtifactPublicDto[];
 };
 
 export type CohortLlmBundleParsed = {
@@ -55,13 +61,43 @@ function unmaskSubmissionChips(markdown: string, chipsOut: string[]): string {
   });
 }
 
+/** LLM이 자주 쓰는 빈 꼭지 `##` 한 줄만 제거합니다(본문은 유지). */
+function stripCohortBoilerplateHeadingLines(markdown: string): string {
+  return markdown
+    .replace(/^##\s+제출\s*간\s*비교\s*개요\s*$/gim, "")
+    .replace(/^##\s+문제\s*요약과\s*목표\s*$/gim, "")
+    .replace(/^##\s+문제\s*요약[^\n]*$/gim, "")
+    .replace(/^##\s+비교\s*개요\s*$/gim, "")
+    .replace(/^##\s*요약\s*$/gim, "")
+    .replace(/^##\s+Cross-submission\s+overview[^\n]*$/gim, "")
+    .replace(/^##\s+Problem\s+summary[^\n]*$/gim, "")
+    .replace(/^##\s+Submission\s+overview[^\n]*$/gim, "")
+    .replace(/^##\s+Summary\s*$/gim, "")
+    .replace(/^##\s+Overview\s*$/gim, "")
+    .replace(/^##\s+마무리\s*$/gim, "")
+    .replace(/^##\s+Closing\s*$/gim, "")
+    .replace(/^##\s+Conclusion\s*$/gim, "");
+}
+
+/**
+ * LLM이 구 스타일로 붙이는 "제출 요약" 절(화면에 별도 목록이 있을 때 쓰이던 형식)을 제거합니다.
+ */
+function stripCohortSubmissionSummarySection(markdown: string): string {
+  let w = markdown.replace(/\r\n/g, "\n");
+  w = w
+    .replace(/(^|\n)##\s+제출\s*요약[^\n]*\n([\s\S]*?)(?=\n##\s|$)/g, "$1")
+    .replace(/(^|\n)##\s+Submission\s+summary[^\n]*\n([\s\S]*?)(?=\n##\s|$)/gi, "$1");
+  w = stripCohortBoilerplateHeadingLines(w);
+  return w.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /**
  * 리포트 본문에 노출된 제출 UUID를 FE 칩 플레이스홀더로 통일합니다.
  * 기존 [[SUBMISSION:…]] 토큰은 유지하고, 알려진 submissionId에 한해 치환합니다.
  */
 export function sanitizeCohortReportMarkdown(markdown: string, submissionIds: string[]): string {
   const uniq = [...new Set(submissionIds.map((id) => id.trim().toLowerCase()))].filter((id) => UUID_RE.test(id));
-  let work = markdown;
+  let work = stripCohortSubmissionSummarySection(markdown);
   for (const id of uniq) {
     const chips: string[] = [];
     let masked = maskSubmissionChips(work, chips);
@@ -96,16 +132,122 @@ const REGIONS_MAX_PER_SUBMISSION = 5;
 const REGIONS_MIN_PER_SUBMISSION = 1;
 const RESERVED_ROLE_IDS = new Set(["whole_file"]);
 
+function sortRegionsByLine(regions: CohortRegionDto[]): void {
+  regions.sort((a, b) => a.startLine - b.startLine || a.endLine - b.endLine);
+}
+
+/** 문서 순서로 인접한 두 구역 중 병합 비용(줄 간격)이 가장 작은 쌍을 합칩니다. */
+function mergeClosestAdjacentPair(regions: CohortRegionDto[]): void {
+  sortRegionsByLine(regions);
+  if (regions.length < 2) {
+    throw new Error("cohort_bundle_regions_role_mismatch");
+  }
+  let bestI = 0;
+  let bestGap = Infinity;
+  for (let i = 0; i < regions.length - 1; i += 1) {
+    const a = regions[i];
+    const b = regions[i + 1];
+    if (a === undefined || b === undefined) continue;
+    const gap = b.startLine - a.endLine - 1;
+    const score = gap < 0 ? 0 : gap;
+    if (score < bestGap) {
+      bestGap = score;
+      bestI = i;
+    }
+  }
+  const a = regions[bestI];
+  const b = regions[bestI + 1];
+  if (a === undefined || b === undefined) {
+    throw new Error("cohort_bundle_regions_role_mismatch");
+  }
+  regions[bestI] = {
+    roleId: a.roleId,
+    roleLabel: `${a.roleLabel} · ${b.roleLabel}`,
+    startLine: Math.min(a.startLine, b.startLine),
+    endLine: Math.max(a.endLine, b.endLine),
+  };
+  regions.splice(bestI + 1, 1);
+}
+
+/**
+ * 긴 코드에서는 구역당 최소 줄 수를 지키며 가장 긴 구역을 둘로 나눕니다.
+ * @returns 분할 성공 여부
+ */
+function splitLargestSplittableRegion(regions: CohortRegionDto[], totalLines: number): boolean {
+  const minPiece = totalLines >= REGIONS_MIN_LINES_FOR_SPAN_RULE ? 2 : 1;
+  sortRegionsByLine(regions);
+  let bestIdx = -1;
+  let bestSpan = -1;
+  for (let i = 0; i < regions.length; i += 1) {
+    const r = regions[i];
+    if (r === undefined) continue;
+    const span = r.endLine - r.startLine + 1;
+    if (span >= minPiece * 2 && span > bestSpan) {
+      bestSpan = span;
+      bestIdx = i;
+    }
+  }
+  if (bestIdx < 0) return false;
+  const r = regions[bestIdx];
+  if (r === undefined) return false;
+  const leftEnd = r.startLine + minPiece - 1;
+  const rightStart = leftEnd + 1;
+  if (rightStart > r.endLine) return false;
+  if (r.endLine - rightStart + 1 < minPiece) return false;
+  const left: CohortRegionDto = {
+    roleId: `${r.roleId}_a`,
+    roleLabel: `${r.roleLabel} (앞)`,
+    startLine: r.startLine,
+    endLine: leftEnd,
+  };
+  const right: CohortRegionDto = {
+    roleId: `${r.roleId}_b`,
+    roleLabel: `${r.roleLabel} (뒤)`,
+    startLine: rightStart,
+    endLine: r.endLine,
+  };
+  regions.splice(bestIdx, 1, left, right);
+  return true;
+}
+
+/**
+ * LLM이 제출마다 구역 개수를 다르게 주는 경우, submissionId 정렬 **첫 제출**의 개수 k에 맞춰
+ * 나머지 제출의 regions를 병합(많을 때)·분할(적을 때)해 맞춥니다.
+ * 맞출 수 없으면 cohort_bundle_regions_role_mismatch.
+ */
+export function normalizeSubmissionRegionCountsToHeadTemplate(
+  submissions: CohortSubmissionArtifactDto[],
+  codeBySubmissionId: ReadonlyMap<string, string>,
+): void {
+  if (submissions.length === 0) return;
+  const targetK = submissions[0].regions.length;
+
+  for (const sub of submissions) {
+    const raw = codeBySubmissionId.get(sub.submissionId) ?? "";
+    const code = raw.trim();
+    const totalLines = countLines(code);
+
+    while (sub.regions.length > targetK) {
+      mergeClosestAdjacentPair(sub.regions);
+    }
+    while (sub.regions.length < targetK) {
+      const ok = splitLargestSplittableRegion(sub.regions, totalLines);
+      if (!ok) {
+        throw new Error("cohort_bundle_regions_role_mismatch");
+      }
+    }
+  }
+}
+
 /**
  * 구역을 시작 줄 기준으로 정렬한 뒤, submissionId 정렬상 첫 제출의 슬롯별 roleId·roleLabel로 나머지 제출을 맞춥니다.
- * 구역 **개수**가 제출마다 다르면 cohort_bundle_regions_role_mismatch.
  * (LLM이 이름만 다르게 준 경우 색·축을 맞추기 위한 정규화.)
  */
 export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArtifactDto[]): void {
   if (submissions.length === 0) return;
 
   for (const sub of submissions) {
-    sub.regions.sort((a, b) => a.startLine - b.startLine || a.endLine - b.endLine);
+    sortRegionsByLine(sub.regions);
   }
 
   const head = submissions[0];
@@ -135,8 +277,12 @@ export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArt
 /**
  * 모든 제출의 regions가 집단 비교 UI·정책과 맞는지 검증합니다.
  * - 제출당 1~5개, 제출 간 roleId 집합 동일, 예약 roleId 금지, 긴 코드는 구역당 최소 2줄.
+ * - 줄 번호는 각 제출의 DB 원문 코드(codeBySubmissionId) 기준입니다.
  */
-export function assertCohortRegionsAligned(submissions: CohortSubmissionArtifactDto[]): void {
+export function assertCohortRegionsAligned(
+  submissions: CohortSubmissionArtifactDto[],
+  codeBySubmissionId: ReadonlyMap<string, string>,
+): void {
   if (submissions.length === 0) return;
 
   const first = submissions[0];
@@ -162,7 +308,8 @@ export function assertCohortRegionsAligned(submissions: CohortSubmissionArtifact
       }
     }
 
-    const lines = countLines(sub.normalizedCode);
+    const code = codeBySubmissionId.get(sub.submissionId) ?? "";
+    const lines = countLines(code);
     if (lines >= REGIONS_MIN_LINES_FOR_SPAN_RULE) {
       for (const r of regions) {
         const span = r.endLine - r.startLine + 1;
@@ -183,122 +330,6 @@ export function assertCohortRegionsAligned(submissions: CohortSubmissionArtifact
   }
 }
 
-/** TS↔JS, C↔CPP 등 인접 언어는 허용 */
-const NORMALIZED_LANGUAGE_COMPATIBLE_BEST: Partial<Record<string, Set<SupportedLanguage>>> = {
-  typescript: new Set(["typescript", "javascript", "other"]),
-  javascript: new Set(["javascript", "typescript", "other"]),
-  cpp: new Set(["cpp", "c", "other"]),
-  c: new Set(["c", "cpp", "other"]),
-};
-
-/** 다른 언어 흔적이 명백할 때만 거절(짧은 코드도 커버). */
-const HARD_LANGUAGE_MARKERS: Record<string, RegExp[]> = {
-  python: [
-    /\bpublic\s+class\b/,
-    /#include\s*[<"]/,
-    /\busing\s+namespace\s+std\b/,
-    /\bSystem\.out\.println/,
-    /\bpublic\s+static\s+void\s+main\s*\(\s*String\[\]/,
-  ],
-  java: [/^\s*def\s+\w+\s*\(/m, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/, /\bcout\s*<</],
-  cpp: [/^\s*def\s+\w+\s*\(/m, /\bpublic\s+static\s+void\s+main\s*\(\s*String\[\]/],
-  c: [/^\s*def\s+\w+\s*\(/m, /\bpublic\s+class\b/],
-  javascript: [/\bpublic\s+class\b/, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/],
-  typescript: [/\bpublic\s+class\b/, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/],
-  go: [/^\s*def\s+\w+\s*\(/m, /\bpublic\s+class\b/, /#include\s*[<"]/],
-  rust: [/^\s*def\s+\w+\s*\(/m, /\bpublic\s+class\b/, /#include\s*[<"]/],
-  kotlin: [/^\s*def\s+\w+\s*\(/m, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/],
-  swift: [/^\s*def\s+\w+\s*\(/m, /#include\s*[<"]/, /\bpublic\s+class\b/],
-  ruby: [/\bpublic\s+class\b/, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/],
-  csharp: [/^\s*def\s+\w+\s*\(/m, /#include\s*[<"]/, /\busing\s+namespace\s+std\b/],
-};
-
-/**
- * 그룹 공통 언어(target)로 통일되지 않은 normalizedCode를 걸러낸다.
- * pseudo·detect 미지원 키는 휴리스틱·점수 검사 생략. 애매하면(other) 통과시켜 오탐을 줄인다.
- */
-export function assertNormalizedCodeMatchesTargetLanguage(code: string, targetKey: string): void {
-  if (targetKey === "pseudo" || targetKey === "none") return;
-  const markers = HARD_LANGUAGE_MARKERS[targetKey];
-  if (markers !== undefined) {
-    for (const re of markers) {
-      if (re.test(code)) {
-        throw new Error("cohort_bundle_normalized_language_mismatch");
-      }
-    }
-  }
-  if (!SUPPORTED_LANGUAGES.includes(targetKey as SupportedLanguage)) return;
-  const target = targetKey as SupportedLanguage;
-  const { best, scores } = detectLanguage(code);
-  const compat = NORMALIZED_LANGUAGE_COMPATIBLE_BEST[targetKey];
-  if (compat !== undefined && compat.has(best)) return;
-  if (best === target) return;
-  if (best === "other") return;
-  const bestScore = scores[best];
-  const targetScore = scores[target] ?? 0;
-  if (bestScore >= 2 && targetScore === 0) {
-    throw new Error("cohort_bundle_normalized_language_mismatch");
-  }
-}
-
-/** 리포트 코드 펜스 태그는 목표 언어와 일치해야 한다(pseudo는 생략). */
-const REPORT_FENCE_TAGS_BY_TARGET: Record<string, string[]> = {
-  python: ["python"],
-  java: ["java"],
-  cpp: ["cpp", "c++"],
-  c: ["c"],
-  javascript: ["javascript", "js"],
-  typescript: ["typescript", "ts"],
-  go: ["go"],
-  rust: ["rust"],
-  kotlin: ["kotlin"],
-  swift: ["swift"],
-  ruby: ["ruby"],
-  csharp: ["csharp", "cs"],
-};
-
-export function assertReportMarkdownCodeFencesMatchTarget(markdown: string, targetKey: string): void {
-  if (targetKey === "pseudo") return;
-  const tags = REPORT_FENCE_TAGS_BY_TARGET[targetKey] ?? [targetKey];
-  const allowed = new Set(tags.map((t) => t.toLowerCase()));
-  const re = /```([^\s`\n]+)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(markdown)) !== null) {
-    const tag = m[1].trim().toLowerCase();
-    if (tag.length === 0) continue;
-    if (!allowed.has(tag)) {
-      throw new Error("cohort_bundle_report_fence_mismatch");
-    }
-  }
-}
-
-/** 통일된 목표 언어 기준 리포트에서 다른 프로그래밍 언어 이름·관용 표현 금지. */
-const REPORT_ALIEN_LANG_MARKERS: Array<{ lang: string; re: RegExp }> = [
-  { lang: "java", re: /\bJava\b|자바\s*(?:로|에서|언어)/ },
-  { lang: "python", re: /\bPython\b|파이썬\s*(?:으로|로|언어)/ },
-  { lang: "cpp", re: /\bC\+\+\b|씨플플/ },
-  { lang: "javascript", re: /\bJavaScript\b/ },
-  { lang: "typescript", re: /\bTypeScript\b/ },
-  { lang: "csharp", re: /\bC#\b/ },
-  { lang: "go", re: /\bGo\b/ },
-  { lang: "rust", re: /\bRust\b/ },
-  { lang: "kotlin", re: /\bKotlin\b/ },
-  { lang: "swift", re: /\bSwift\b/ },
-  { lang: "ruby", re: /\bRuby\b/ },
-];
-
-export function assertReportMarkdownUsesUnifiedVoice(markdown: string, targetKey: string): void {
-  if (targetKey === "pseudo") return;
-  const tsOrJs = targetKey === "typescript" || targetKey === "javascript";
-  for (const { lang, re } of REPORT_ALIEN_LANG_MARKERS) {
-    if (lang === targetKey) continue;
-    if (tsOrJs && (lang === "typescript" || lang === "javascript")) continue;
-    if (re.test(markdown)) {
-      throw new Error("cohort_bundle_report_original_language_mentioned");
-    }
-  }
-}
-
 function normalizeLineNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.round(value);
@@ -312,7 +343,7 @@ function normalizeLineNumber(value: unknown): number | null {
 
 function wholeFileRegion(lines: number, locale: CohortReportLocale): CohortRegionDto {
   return {
-    roleId: "whole_file",
+    roleId: "entire_code",
     roleLabel: locale === "en" ? "Full program" : "코드 전체",
     startLine: 1,
     endLine: lines,
@@ -320,14 +351,31 @@ function wholeFileRegion(lines: number, locale: CohortReportLocale): CohortRegio
 }
 
 /**
+ * 원문이 충분히 긴데 한 구역만 두거나 `entire_code`로 전체를 덮으면 집단 비교 UI가 무의미해집니다.
+ */
+function assertSemanticRegionsRequiredForLongFiles(regions: CohortRegionDto[], sourceCode: string): void {
+  const lines = countLines(sourceCode);
+  if (lines < REGIONS_MIN_LINES_FOR_SPAN_RULE) return;
+
+  if (regions.length < 2) {
+    throw new Error("cohort_bundle_regions_semantic_required");
+  }
+  for (const r of regions) {
+    if (r.roleId === "entire_code") {
+      throw new Error("cohort_bundle_regions_semantic_required");
+    }
+  }
+}
+
+/**
  * LLM이 자주 범위를 어기므로 줄 번호를 클램프하고 비었으면 전체 구역 한 개를 둡니다.
  */
 export function parseRegionsLenient(
   regionsRaw: unknown,
-  normalizedCode: string,
+  sourceCode: string,
   locale: CohortReportLocale,
 ): CohortRegionDto[] {
-  const lines = countLines(normalizedCode);
+  const lines = countLines(sourceCode);
   if (!Array.isArray(regionsRaw)) {
     return [wholeFileRegion(lines, locale)];
   }
@@ -381,13 +429,13 @@ function parseJsonObject(raw: string): Record<string, unknown> | null {
 }
 
 /**
- * LLM 원문에서 번들을 추출하고, 기대 제출 id 집합과 대상 언어 맥락에 맞게 검증합니다.
+ * LLM 원문에서 번들을 추출하고, 기대 제출 id 집합과 DB 원문 코드 줄 범위에 맞게 검증합니다.
  * 실패 시 Error를 throw합니다.
  */
 export function parseAndValidateCohortBundle(
   rawLlmText: string,
   expectedSubmissionIdsSorted: string[],
-  targetLanguageKey: string,
+  codeBySubmissionId: ReadonlyMap<string, string>,
   reportLocale: CohortReportLocale,
 ): CohortLlmBundleParsed {
   const obj = parseJsonObject(rawLlmText);
@@ -417,8 +465,6 @@ export function parseAndValidateCohortBundle(
     }
     const row = item as Record<string, unknown>;
     const submissionId = row.submissionId;
-    const normalizedCode = row.normalizedCode;
-    const originalLanguage = row.originalLanguage;
     const regionsRaw = row.regions;
 
     if (typeof submissionId !== "string" || !UUID_RE.test(submissionId)) {
@@ -432,20 +478,16 @@ export function parseAndValidateCohortBundle(
     }
     seenIds.add(submissionId);
 
-    if (typeof normalizedCode !== "string" || normalizedCode.trim().length === 0) {
+    const code = codeBySubmissionId.get(submissionId);
+    if (code === undefined || code.trim().length === 0) {
       throw new Error("cohort_bundle_code_empty");
     }
-    if (typeof originalLanguage !== "string" || originalLanguage.trim().length === 0) {
-      throw new Error("cohort_bundle_lang_missing");
-    }
-    const trimmedCode = normalizedCode.trim();
-    assertNormalizedCodeMatchesTargetLanguage(trimmedCode, targetLanguageKey);
+    const trimmedCode = code.trim();
     const regions = parseRegionsLenient(regionsRaw, trimmedCode, reportLocale);
+    assertSemanticRegionsRequiredForLongFiles(regions, trimmedCode);
 
     submissions.push({
       submissionId,
-      normalizedCode: trimmedCode,
-      originalLanguage: originalLanguage.trim(),
       regions,
     });
   }
@@ -456,16 +498,15 @@ export function parseAndValidateCohortBundle(
 
   submissions.sort((a, b) => a.submissionId.localeCompare(b.submissionId));
 
+  normalizeSubmissionRegionCountsToHeadTemplate(submissions, codeBySubmissionId);
   canonicalizeCohortRegionsBySlot(submissions);
-  assertCohortRegionsAligned(submissions);
+  assertCohortRegionsAligned(submissions, codeBySubmissionId);
 
   const artifacts: CohortAnalysisArtifactsDto = {
     submissions,
   };
 
   const trimmedMd = reportMarkdown.trim();
-  assertReportMarkdownCodeFencesMatchTarget(trimmedMd, targetLanguageKey);
-  assertReportMarkdownUsesUnifiedVoice(trimmedMd, targetLanguageKey);
   return {
     reportMarkdown: sanitizeCohortReportMarkdown(trimmedMd, expectedSubmissionIdsSorted),
     artifacts,

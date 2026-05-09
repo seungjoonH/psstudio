@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  assertReportMarkdownCodeFencesMatchTarget,
   normalizeCohortReportLocale,
   parseAndValidateCohortBundle,
   parseRegionsLenient,
@@ -21,20 +20,22 @@ describe("normalizeCohortReportLocale", () => {
 
 describe("parseAndValidateCohortBundle", () => {
   const ids = ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"].sort();
+  const codeA = "line1\nline2";
+  const codeB = "a\nb";
+  const codeById = new Map<string, string>([
+    ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", codeA],
+    ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", codeB],
+  ]);
 
   const validJson = {
     reportMarkdown: "Hello [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]",
     submissions: [
       {
         submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        normalizedCode: "line1\nline2",
-        originalLanguage: "javascript",
         regions: [{ roleId: "main", roleLabel: "Main", startLine: 1, endLine: 2 }],
       },
       {
         submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        normalizedCode: "a\nb",
-        originalLanguage: "javascript",
         regions: [{ roleId: "main", roleLabel: "Main", startLine: 1, endLine: 2 }],
       },
     ],
@@ -42,9 +43,10 @@ describe("parseAndValidateCohortBundle", () => {
 
   it("parses minimal fenced JSON", () => {
     const raw = "```json\n" + JSON.stringify(validJson) + "\n```";
-    const out = parseAndValidateCohortBundle(raw, ids, "javascript", "ko");
+    const out = parseAndValidateCohortBundle(raw, ids, codeById, "ko");
     expect(out.reportMarkdown).toContain("Hello");
     expect(out.artifacts.submissions).toHaveLength(2);
+    expect(out.artifacts.submissions[0].regions).toHaveLength(1);
   });
 
   it("sanitizes bare uuid and submission phrase into placeholders", () => {
@@ -53,7 +55,7 @@ describe("parseAndValidateCohortBundle", () => {
       reportMarkdown:
         "Submission aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa 와 bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb 비교",
     };
-    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, "javascript", "ko");
+    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, codeById, "ko");
     expect(out.reportMarkdown).toContain("[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]");
     expect(out.reportMarkdown).toContain("[[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]]");
   });
@@ -61,89 +63,49 @@ describe("parseAndValidateCohortBundle", () => {
   it("클램프하여 범위 밖 줄 번호도 받아들인다", () => {
     const bad = {
       ...validJson,
-      submissions: validJson.submissions.map((s, i) =>
-        i === 0
-          ? { ...s, regions: [{ roleId: "x", roleLabel: "X", startLine: 1, endLine: 99 }] }
-          : { ...s, regions: [{ roleId: "x", roleLabel: "X", startLine: 1, endLine: 2 }] },
-      ),
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [{ roleId: "x", roleLabel: "X", startLine: 1, endLine: 99 }],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "x", roleLabel: "X", startLine: 1, endLine: 2 }],
+        },
+      ],
     };
-    const out = parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko");
+    const out = parseAndValidateCohortBundle(JSON.stringify(bad), ids, codeById, "ko");
     expect(out.artifacts.submissions[0].regions[0].endLine).toBe(2);
   });
 
-  it("목표 언어가 python일 때 Java 문법이 남아 있으면 거절한다", () => {
-    const bad = {
-      ...validJson,
-      submissions: validJson.submissions.map((s, i) =>
-        i === 0
-          ? {
-              ...s,
-              normalizedCode: "public class A {\n  public static void main(String[] args) {}\n}",
-            }
-          : s,
-      ),
-    };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "python", "ko")).toThrow(
-      "cohort_bundle_normalized_language_mismatch",
-    );
-  });
-
-  it("pseudo 목표일 때는 언어 휴리스틱을 적용하지 않는다", () => {
-    const pseudoMix = {
-      ...validJson,
-      submissions: validJson.submissions.map((s, i) =>
-        i === 0
-          ? {
-              ...s,
-              normalizedCode: "public class A {}\n# include is ok in pseudo notes",
-              regions: [{ roleId: "chunk_one", roleLabel: "첫 구역", startLine: 1, endLine: 2 }],
-            }
-          : {
-              ...s,
-              normalizedCode: "def x():\n  pass",
-              regions: [{ roleId: "chunk_one", roleLabel: "첫 구역", startLine: 1, endLine: 2 }],
-            },
-      ),
-    };
-    const out = parseAndValidateCohortBundle(JSON.stringify(pseudoMix), ids, "pseudo", "ko");
-    expect(out.artifacts.submissions).toHaveLength(2);
-  });
-
-  it("리포트 코드 펜스 태그가 목표 언어와 다르면 거절한다", () => {
-    const bad = {
+  it("리포트에 여러 언어 펜스가 있어도 거절하지 않는다", () => {
+    const json = {
       ...validJson,
       reportMarkdown: "비교 ```java\nint x;\n``` [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]",
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
-      "cohort_bundle_report_fence_mismatch",
-    );
+    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, codeById, "ko");
+    expect(out.reportMarkdown).toContain("```java");
   });
 
-  it("리포트 본문에 다른 프로그래밍 언어 이름을 쓰면 거절한다", () => {
-    const pyBundle = {
+  it("리포트 본문에 Java 등 언어 이름을 써도 거절하지 않는다", () => {
+    const json = {
       reportMarkdown:
-        "[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] 은 Java로 작성된 스타일입니다.",
-      submissions: validJson.submissions.map((s) => ({
-        ...s,
-        normalizedCode: "def x():\n    return 1\n",
-        originalLanguage: "java",
-        regions: [{ roleId: "main", roleLabel: "Main", startLine: 1, endLine: 2 }],
-      })),
+        "[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] 은 Java 스타일과 비슷합니다.",
+      submissions: validJson.submissions,
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(pyBundle), ids, "python", "ko")).toThrow(
-      "cohort_bundle_report_original_language_mentioned",
-    );
+    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, codeById, "ko");
+    expect(out.reportMarkdown).toContain("Java");
   });
 
   it("구역 개수가 같고 roleId 문자열만 다르면 첫 제출 슬롯 기준으로 통일한다", () => {
     const bundle = {
       ...validJson,
       submissions: [
-        { ...validJson.submissions[0], regions: [{ roleId: "alpha", roleLabel: "알파", startLine: 1, endLine: 2 }] },
-        { ...validJson.submissions[1], regions: [{ roleId: "beta", roleLabel: "베타", startLine: 1, endLine: 2 }] },
+        { submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", regions: [{ roleId: "alpha", roleLabel: "알파", startLine: 1, endLine: 2 }] },
+        { submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", regions: [{ roleId: "beta", roleLabel: "베타", startLine: 1, endLine: 2 }] },
       ],
     };
-    const out = parseAndValidateCohortBundle(JSON.stringify(bundle), ids, "javascript", "ko");
+    const out = parseAndValidateCohortBundle(JSON.stringify(bundle), ids, codeById, "ko");
     const a = out.artifacts.submissions.find((x) => x.submissionId === ids[0]);
     const b = out.artifacts.submissions.find((x) => x.submissionId === ids[1]);
     expect(a?.regions[0]?.roleId).toBe("alpha");
@@ -151,23 +113,28 @@ describe("parseAndValidateCohortBundle", () => {
     expect(b?.regions[0]?.roleLabel).toBe("알파");
   });
 
-  it("제출 간 구역 개수가 다르면 거절한다", () => {
+  it("제출 간 구역 개수가 다르면 서버에서 분할·병합해 첫 제출 개수에 맞춘다", () => {
     const bad = {
       ...validJson,
       submissions: [
         {
-          ...validJson.submissions[0],
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           regions: [
             { roleId: "a", roleLabel: "A", startLine: 1, endLine: 1 },
             { roleId: "b", roleLabel: "B", startLine: 2, endLine: 2 },
           ],
         },
-        { ...validJson.submissions[1], regions: [{ roleId: "c", roleLabel: "C", startLine: 1, endLine: 2 }] },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "c", roleLabel: "C", startLine: 1, endLine: 2 }],
+        },
       ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
-      "cohort_bundle_regions_role_mismatch",
-    );
+    const out = parseAndValidateCohortBundle(JSON.stringify(bad), ids, codeById, "ko");
+    expect(out.artifacts.submissions).toHaveLength(2);
+    expect(out.artifacts.submissions[0].regions).toHaveLength(2);
+    expect(out.artifacts.submissions[1].regions).toHaveLength(2);
+    expect(out.artifacts.submissions[1].regions[0]?.roleId).toBe("a");
   });
 
   it("구역이 6개 이상이면 거절한다", () => {
@@ -178,15 +145,18 @@ describe("parseAndValidateCohortBundle", () => {
       endLine: i + 1,
     }));
     const code = Array.from({ length: 6 }, (_, i) => `line${i}`).join("\n");
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code],
+    ]);
     const bad = {
       ...validJson,
-      submissions: validJson.submissions.map((s) => ({
-        ...s,
-        normalizedCode: code,
-        regions: sixRegions,
-      })),
+      submissions: [
+        { submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", regions: sixRegions },
+        { submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", regions: sixRegions },
+      ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, map, "ko")).toThrow(
       "cohort_bundle_regions_count",
     );
   });
@@ -198,15 +168,18 @@ describe("parseAndValidateCohortBundle", () => {
       { roleId: "r1", roleLabel: "R1", startLine: 2, endLine: 2 },
       { roleId: "r2", roleLabel: "R2", startLine: 3, endLine: 3 },
     ];
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code12],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code12],
+    ]);
     const bad = {
       ...validJson,
-      submissions: validJson.submissions.map((s) => ({
-        ...s,
-        normalizedCode: code12,
-        regions: thinRegions,
-      })),
+      submissions: [
+        { submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", regions: thinRegions },
+        { submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", regions: thinRegions },
+      ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, map, "ko")).toThrow(
       "cohort_bundle_regions_too_fine",
     );
   });
@@ -216,14 +189,14 @@ describe("parseAndValidateCohortBundle", () => {
       ...validJson,
       submissions: [
         {
-          ...validJson.submissions[0],
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           regions: [
             { roleId: "dup", roleLabel: "A", startLine: 1, endLine: 1 },
             { roleId: "dup", roleLabel: "B", startLine: 2, endLine: 2 },
           ],
         },
         {
-          ...validJson.submissions[1],
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           regions: [
             { roleId: "dup", roleLabel: "A", startLine: 1, endLine: 1 },
             { roleId: "dup", roleLabel: "B", startLine: 2, endLine: 2 },
@@ -231,7 +204,7 @@ describe("parseAndValidateCohortBundle", () => {
         },
       ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, codeById, "ko")).toThrow(
       "cohort_bundle_regions_duplicate_role",
     );
   });
@@ -239,39 +212,107 @@ describe("parseAndValidateCohortBundle", () => {
   it("roleId whole_file 이면 거절한다", () => {
     const bad = {
       ...validJson,
-      submissions: validJson.submissions.map((s) => ({
-        ...s,
-        regions: [{ roleId: "whole_file", roleLabel: "X", startLine: 1, endLine: 2 }],
-      })),
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [{ roleId: "whole_file", roleLabel: "X", startLine: 1, endLine: 2 }],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "whole_file", roleLabel: "X", startLine: 1, endLine: 2 }],
+        },
+      ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, codeById, "ko")).toThrow(
       "cohort_bundle_regions_reserved_role",
     );
   });
 
-  it("유효 regions가 없어 whole_file이 되면 거절한다", () => {
+  it("빈 regions면 lenient가 entire_code 한 구역으로 채워 통과한다(짧은 코드)", () => {
     const bad = {
       ...validJson,
-      submissions: validJson.submissions.map((s) => ({ ...s, regions: [] })),
+      submissions: [
+        { submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", regions: [] },
+        { submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", regions: [] },
+      ],
     };
-    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, "javascript", "ko")).toThrow(
-      "cohort_bundle_regions_reserved_role",
+    const out = parseAndValidateCohortBundle(JSON.stringify(bad), ids, codeById, "ko");
+    expect(out.artifacts.submissions[0].regions[0].roleId).toBe("entire_code");
+    expect(out.artifacts.submissions[1].regions[0].roleId).toBe("entire_code");
+  });
+
+  it("12줄 이상인데 빈 regions(entire_code 폴백)이면 거절한다", () => {
+    const code12 = Array.from({ length: 12 }, (_, i) => `L${i + 1}`).join("\n");
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code12],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code12],
+    ]);
+    const bad = {
+      ...validJson,
+      submissions: [
+        { submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", regions: [] },
+        { submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", regions: [] },
+      ],
+    };
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, map, "ko")).toThrow(
+      "cohort_bundle_regions_semantic_required",
     );
   });
-});
 
-describe("assertReportMarkdownCodeFencesMatchTarget", () => {
-  it("언어 태그 없는 펜스는 무시한다", () => {
-    expect(() =>
-      assertReportMarkdownCodeFencesMatchTarget("설명 ```\nPlain\n``` 끝", "python"),
-    ).not.toThrow();
+  it("12줄 이상에서 entire_code 식별자를 쓰면 거절한다", () => {
+    const code12 = Array.from({ length: 12 }, (_, i) => `L${i + 1}`).join("\n");
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code12],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code12],
+    ]);
+    const bad = {
+      ...validJson,
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [{ roleId: "entire_code", roleLabel: "코드 전체", startLine: 1, endLine: 12 }],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "entire_code", roleLabel: "코드 전체", startLine: 1, endLine: 12 }],
+        },
+      ],
+    };
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, map, "ko")).toThrow(
+      "cohort_bundle_regions_semantic_required",
+    );
   });
+
+  it("12줄 이상에서 구역이 1개만 있으면 거절한다", () => {
+    const code12 = Array.from({ length: 12 }, (_, i) => `L${i + 1}`).join("\n");
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", code12],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", code12],
+    ]);
+    const bad = {
+      ...validJson,
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [{ roleId: "mono", roleLabel: "한 덩어리", startLine: 1, endLine: 12 }],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "mono", roleLabel: "한 덩어리", startLine: 1, endLine: 12 }],
+        },
+      ],
+    };
+    expect(() => parseAndValidateCohortBundle(JSON.stringify(bad), ids, map, "ko")).toThrow(
+      "cohort_bundle_regions_semantic_required",
+    );
+  });
+
 });
 
 describe("parseRegionsLenient", () => {
   it("regions가 없으면 코드 전체 구역 한 개를 둔다", () => {
     expect(parseRegionsLenient(null, "a\nb", "ko")).toEqual([
-      { roleId: "whole_file", roleLabel: "코드 전체", startLine: 1, endLine: 2 },
+      { roleId: "entire_code", roleLabel: "코드 전체", startLine: 1, endLine: 2 },
     ]);
   });
 });
@@ -289,5 +330,28 @@ describe("sanitizeCohortReportMarkdown", () => {
     expect(sanitizeCohortReportMarkdown(md, ids)).toBe(
       "see [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]",
     );
+  });
+
+  it("strips 제출 요약 section before chip normalization", () => {
+    const md =
+      "## 도입\n\n본문\n\n## 제출 요약\n\n- (JS) foo\n\n## 알고리즘 비교\n\n[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] 내용";
+    const out = sanitizeCohortReportMarkdown(md, ids);
+    expect(out).not.toContain("제출 요약");
+    expect(out).toContain("## 알고리즘 비교");
+    expect(out).toContain("[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]");
+  });
+
+  it("strips Submission summary section (English heading)", () => {
+    const md = "## Intro\n\nText\n\n## Submission summary\n\n- item\n\n## Compare\n\nMore.";
+    const out = sanitizeCohortReportMarkdown(md, ids);
+    expect(out).not.toMatch(/submission\s+summary/i);
+    expect(out).toContain("## Compare");
+  });
+
+  it("strips single-line boilerplate ## headings (e.g. 제출 간 비교 개요)", () => {
+    const md = "# T\n\n## 제출 간 비교 개요\n\n- [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]: JavaScript\n\n## 코드 비교\n\nx";
+    const out = sanitizeCohortReportMarkdown(md, ids);
+    expect(out).not.toContain("제출 간 비교 개요");
+    expect(out).toContain("## 코드 비교");
   });
 });
