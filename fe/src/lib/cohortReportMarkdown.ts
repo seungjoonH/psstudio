@@ -11,9 +11,24 @@ export function normalizeCohortReportMarkdownTypography(markdown: string): strin
     /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s+(?=[\uAC00-\uD7A3])/gi,
     "$1",
   );
-  w = w.replace(/다음과\s+같습니다\s*:/g, "다음과 같습니다.");
-  w = w.replace(/다음과\s+같다\s*:/g, "다음과 같다.");
+  w = stripCohortReportAsFollowsFillerLines(w);
   return w;
+}
+
+/** 펜스 앞 상투구(다음과 같습니다 등) 한 줄 전체 제거 — BE `stripCohortReportAsFollowsFillerLines`와 동일. */
+function stripCohortReportAsFollowsFillerLines(markdown: string): string {
+  let w = markdown;
+  w = w.replace(/^\s*그냥\s+이\s+부분은\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
+  w = w.replace(/^\s*(그냥\s+)?이\s+부분은\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
+  w = w.replace(/^\s*코드의\s*일부는\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
+  w = w.replace(
+    /^\s*(?:그냥\s+)?(?:해당\s+)?(?:코드\s+)?발췌(는|가|은|이)\s+다음과\s+같습니?다[\.:：]?\s*$/gim,
+    "",
+  );
+  w = w.replace(/^\s*(?:아래|위의?)\s+코드(는|가|은|이)\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
+  w = w.replace(/^\s*다음과\s+같습니?다[\.:：]?\s*$/gim, "");
+  w = w.replace(/^\s*다음과\s+같다[\.:：]?\s*$/gim, "");
+  return w.replace(/\n{3,}/g, "\n\n");
 }
 
 /** 칩 렌더 직전에 호출. BE 저장 정규화와 동일 규칙. */
