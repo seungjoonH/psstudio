@@ -2,11 +2,13 @@
 "use client";
 
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { isValidElement } from "react";
+import { Children, isValidElement } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import rehypeSanitize from "rehype-sanitize";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import type { Options as RehypeSanitizeSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import { normalizeLlmMarkdown } from "../lib/normalizeLlmMarkdown";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock";
 import styles from "./MarkdownPreview.module.css";
 
@@ -27,18 +29,36 @@ function extractText(node: ReactNode): string {
   return "";
 }
 
-function PreRenderer({ children, ...rest }: ComponentPropsWithoutRef<"pre">) {
-  let codeChild: ReactNode = null;
-  if (isValidElement<{ className?: string; children?: ReactNode }>(children)) {
-    codeChild = children;
-  }
-  if (codeChild !== null && isValidElement<{ className?: string; children?: ReactNode }>(codeChild)) {
-    const className = codeChild.props.className ?? "";
-    const match = /language-([\w+-]+)/.exec(className);
-    if (match !== null) {
-      const text = extractText(codeChild.props.children).replace(/\n$/, "");
-      return <MarkdownCodeBlock code={text} language={match[1]} />;
+/** rehype → React 과정에서 `<pre>` 자식이 단일 `<code>`가 아니라 공백 텍스트+`<code>` 배열일 수 있다(특히 HTML 표 안). */
+function findFirstCodeElement(nodes: ReactNode): React.ReactElement<{
+  className?: string;
+  children?: ReactNode;
+}> | null {
+  let found: React.ReactElement<{ className?: string; children?: ReactNode }> | null = null;
+  Children.forEach(nodes, (child) => {
+    if (found !== null) return;
+    if (!isValidElement(child)) return;
+    const el = child as React.ReactElement<{ className?: string; children?: ReactNode }>;
+    if (el.type === "code") {
+      found = el;
+      return;
     }
+    if (el.props.children !== undefined) {
+      const inner = findFirstCodeElement(el.props.children);
+      if (inner !== null) found = inner;
+    }
+  });
+  return found;
+}
+
+function PreRenderer({ children, ...rest }: ComponentPropsWithoutRef<"pre">) {
+  const codeEl = findFirstCodeElement(children);
+  if (codeEl !== null) {
+    const className = codeEl.props.className ?? "";
+    const match = /language-([\w+-]+)/.exec(className);
+    const lang = match !== null ? match[1] : null;
+    const text = extractText(codeEl.props.children).replace(/\n$/, "");
+    return <MarkdownCodeBlock code={text} language={lang} />;
   }
   return <pre {...rest}>{children}</pre>;
 }
@@ -47,11 +67,24 @@ function InlineParagraph({ children }: { children?: ReactNode }) {
   return <span className={styles.inlineParagraph}>{children}</span>;
 }
 
+/** 표 안 `<pre class="hljs">` 등 — 기본 스키마는 `*`에 className이 없어 `pre`의 클래스가 전부 제거된다 */
+const REHYPE_SANITIZE_SCHEMA: RehypeSanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    pre: [["className", /^hljs-/, /^language-/, /^shiki/, /^markdown-/]],
+  },
+};
+
 /** 블록 마크다운에서만 허용. 인라인(칩 옆) 조각에는 원시 HTML을 넣지 않는다. */
-const REHYPE_PLUGINS_BLOCK = [rehypeRaw, rehypeSanitize];
+const REHYPE_PLUGINS_BLOCK = [
+  rehypeRaw,
+  [rehypeSanitize, REHYPE_SANITIZE_SCHEMA],
+] as [typeof rehypeRaw, [typeof rehypeSanitize, typeof REHYPE_SANITIZE_SCHEMA]];
 
 export function MarkdownPreview({ content, className, inline = false }: Props) {
   const innerClass = inline ? styles.markdownInlineRoot : styles.markdown;
+  const markdownSource = inline ? content : normalizeLlmMarkdown(content);
   const components = inline
     ? { pre: PreRenderer, p: InlineParagraph }
     : { pre: PreRenderer };
@@ -64,7 +97,7 @@ export function MarkdownPreview({ content, className, inline = false }: Props) {
         rehypePlugins={inline ? undefined : REHYPE_PLUGINS_BLOCK}
         components={components}
       >
-        {content}
+        {markdownSource}
       </ReactMarkdown>
     </Root>
   );
