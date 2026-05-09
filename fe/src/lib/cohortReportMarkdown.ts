@@ -1,5 +1,26 @@
 // 집단 비교 리포트 마크다운에서 제출 UUID를 칩 플레이스홀더로 정규화합니다.
 
+/** BE `normalizeCohortReportMarkdownTypography`와 동일. 표시·저장 전 가독성·태그 붙임 보정. */
+export function normalizeCohortReportMarkdownTypography(markdown: string): string {
+  let w = markdown.replace(/\r\n/g, "\n");
+  w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
+    "$1",
+  );
+  w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s+(?=[\uAC00-\uD7A3])/gi,
+    "$1",
+  );
+  w = w.replace(/다음과\s+같습니다\s*:/g, "다음과 같습니다.");
+  w = w.replace(/다음과\s+같다\s*:/g, "다음과 같다.");
+  return w;
+}
+
+/** 칩 렌더 직전에 호출. BE 저장 정규화와 동일 규칙. */
+export function prepareCohortReportMarkdownForDisplay(markdown: string): string {
+  return normalizeCohortReportMarkdownTypography(markdown);
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -56,6 +77,7 @@ function stripCohortSubmissionSummarySection(markdown: string): string {
 export function sanitizeCohortReportMarkdown(markdown: string, submissionIds: string[]): string {
   const uniq = [...new Set(submissionIds.map((id) => id.trim().toLowerCase()))].filter((id) => UUID_RE.test(id));
   let work = stripCohortSubmissionSummarySection(markdown);
+  work = normalizeCohortReportMarkdownTypography(work);
   for (const id of uniq) {
     const chips: string[] = [];
     let masked = maskSubmissionChips(work, chips);

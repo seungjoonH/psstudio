@@ -4,7 +4,8 @@
   font-size: 15px;
   line-height: 1.6;
   white-space: normal;
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* 칩·쉼표와 같은 줄에 붙일 때 쓰는 루트(블록 마크다운은 inline 모드로 넣지 말 것). */
@@ -15,7 +16,8 @@
   line-height: inherit;
   vertical-align: baseline;
   min-width: 0;
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   white-space: normal;
 }
 

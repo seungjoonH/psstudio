@@ -79,6 +79,22 @@ function stripCohortBoilerplateHeadingLines(markdown: string): string {
     .replace(/^##\s+Conclusion\s*$/gim, "");
 }
 
+/** 한국어 가독성·태그 직후 조사 붙임 등 리포트 마크다운을 저장 전에 보정합니다(FE `normalizeCohortReportMarkdownTypography`와 동일). */
+function normalizeCohortReportMarkdownTypography(markdown: string): string {
+  let w = markdown.replace(/\r\n/g, "\n");
+  w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
+    "$1",
+  );
+  w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s+(?=[\uAC00-\uD7A3])/gi,
+    "$1",
+  );
+  w = w.replace(/다음과\s+같습니다\s*:/g, "다음과 같습니다.");
+  w = w.replace(/다음과\s+같다\s*:/g, "다음과 같다.");
+  return w;
+}
+
 /**
  * LLM이 구 스타일로 붙이는 "제출 요약" 절(화면에 별도 목록이 있을 때 쓰이던 형식)을 제거합니다.
  */
@@ -98,6 +114,7 @@ function stripCohortSubmissionSummarySection(markdown: string): string {
 export function sanitizeCohortReportMarkdown(markdown: string, submissionIds: string[]): string {
   const uniq = [...new Set(submissionIds.map((id) => id.trim().toLowerCase()))].filter((id) => UUID_RE.test(id));
   let work = stripCohortSubmissionSummarySection(markdown);
+  work = normalizeCohortReportMarkdownTypography(work);
   for (const id of uniq) {
     const chips: string[] = [];
     let masked = maskSubmissionChips(work, chips);

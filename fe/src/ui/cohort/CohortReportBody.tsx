@@ -5,18 +5,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MarkdownPreview } from "../MarkdownPreview";
 import { UserAvatar } from "../UserAvatar";
+import { prepareCohortReportMarkdownForDisplay } from "../../lib/cohortReportMarkdown";
 import styles from "./CohortReportBody.module.css";
 
 const SUBMISSION_TOKEN =
   /\[\[SUBMISSION:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})\]\]/gi;
-
-/** `]]` 직후 줄바꿈이 있으면 칩만 한 블록·본문은 다음 블록으로 갈라져 한 줄을 다 쓴 것처럼 보이므로 붙인다. */
-function collapseNewlinesAfterSubmissionChips(markdown: string): string {
-  return markdown.replace(
-    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
-    "$1",
-  );
-}
 
 export type CohortIncludedLite = {
   submissionId: string;
@@ -57,7 +50,7 @@ type Part = { kind: "md"; text: string } | { kind: "chip"; id: string };
 
 export function CohortReportBody({ reportMarkdown, groupId, assignmentId, included }: Props) {
   const meta = metaById(included);
-  const md = collapseNewlinesAfterSubmissionChips(reportMarkdown);
+  const md = prepareCohortReportMarkdownForDisplay(reportMarkdown);
   const parts: Part[] = [];
   let last = 0;
   let m: RegExpExecArray | null;

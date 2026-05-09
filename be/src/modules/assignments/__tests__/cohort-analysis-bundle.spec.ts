@@ -354,4 +354,14 @@ describe("sanitizeCohortReportMarkdown", () => {
     expect(out).not.toContain("제출 간 비교 개요");
     expect(out).toContain("## 코드 비교");
   });
+
+  it("joins [[SUBMISSION]] to following Hangul and removes trailing colon after 다음과 같습니다", () => {
+    const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const md = `[[SUBMISSION:${id}]]\n\n의 설명\n\n다음과 같습니다:\n\`\`\`js\nx\n\`\`\``;
+    const out = sanitizeCohortReportMarkdown(md, [id]);
+    expect(out).toContain(`[[SUBMISSION:${id}]]의`);
+    expect(out).not.toMatch(/\]\]\s+\n/);
+    expect(out).toContain("다음과 같습니다.");
+    expect(out).not.toContain("다음과 같습니다:");
+  });
 });
