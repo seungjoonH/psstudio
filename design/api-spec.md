@@ -127,8 +127,6 @@
       "maxMembers": 10,
       "joinByCodeEnabled": true,
       "joinByLinkEnabled": true,
-      "joinByRequestEnabled": true,
-      "joinByEmailEnabled": true,
       "ruleUseDeadline": true,
       "ruleDefaultDeadlineTime": "23:59",
       "ruleAllowLateSubmission": true,
@@ -139,7 +137,7 @@
     ```
   - 위 필드는 선택적으로 생략 가능하며, 생략 시 서버 기본값을 적용합니다.
   - 논리 구조로 표현하면 다음과 같습니다.
-    - `joinMethods.code/link/request/email` ↔ `joinByCodeEnabled` 등.
+    - `joinMethods.code/link` ↔ `joinByCodeEnabled`, `joinByLinkEnabled`.
     - `rules.*` ↔ `ruleUseDeadline`, `ruleDefaultDeadlineTime`, ….
   - 응답에 `groupCode`(8자, 새로 생성된 영구 코드)를 포함합니다.
 - `GET /groups`
@@ -185,10 +183,9 @@
 
 ### 4.1 진입 메타데이터 조회
 
-- `GET /invites/preview?code=:code` 또는 `GET /invites/preview?link=:linkToken` 또는 `GET /invites/preview?emailToken=:emailToken`
-  - 응답: `{ groupId, name, description, memberCount, maxMembers, joinMethods }` (작성자/제출 코드 등 비공개 정보 미포함)
+- `GET /invites/preview?code=:code` 또는 `GET /invites/preview?link=:linkToken`
+  - 응답: `{ groupId, name, description, memberCount, maxMembers, joinMethods: { code, link } }` (작성자/제출 코드 등 비공개 정보 미포함)
   - 그룹 코드 갱신 등으로 무효화된 코드 또는 링크는 `404 NOT_FOUND`.
-  - 만료된 이메일 초대 토큰은 `404 INVITE_EXPIRED`.
 
 ### 4.2 그룹 코드로 가입
 
@@ -215,40 +212,6 @@
     - `joinMethods.link`가 `false`면 `FORBIDDEN JOIN_DISABLED`.
     - 무효화/미존재 토큰은 `404 GROUP_CODE_INVALID`.
     - 그룹 가득 시 `CONFLICT GROUP_FULL`.
-
-### 4.4 가입 신청
-
-- `POST /groups/:groupId/join-requests`
-  - `joinMethods.request`가 `false`면 `FORBIDDEN JOIN_DISABLED`.
-  - 이미 멤버인 경우 `CONFLICT`. 같은 PENDING이 있으면 그대로 반환.
-  - 정원이 가득해도 신청 자체는 받습니다(승인 시점에 가득 검사).
-- `GET /groups/:groupId/join-requests?status=PENDING|APPROVED|REJECTED`
-- `POST /groups/:groupId/join-requests/:requestId/decide`
-  - body: `{ "decision": "APPROVED" | "REJECTED" }`. 트랜잭션 안에서 멤버 추가까지 수행. 승인 시점에 그룹이 가득 차 있으면 `CONFLICT GROUP_FULL`로 거부합니다(`PENDING` 상태 유지).
-  - `joinMethods.request`가 `false`(가입 신청 토글 off)일 때 `APPROVED`는 `FORBIDDEN JOIN_DISABLED`로 거부하고 `REJECTED`는 그대로 허용합니다. 토글이 다시 켜지면 두 결정 모두 허용됩니다.
-
-정책
-
-- 가입 신청 메시지 없음.
-
-### 4.5 이메일 초대
-
-- `POST /groups/:groupId/email-invites`
-  - 권한: 그룹장/그룹 관리자
-  - body: `{ "emails": ["a@x.com", "b@y.com"] }` (배치 발송, 최대 20개)
-  - `joinMethods.email`이 `false`면 `FORBIDDEN JOIN_DISABLED`.
-  - 각 주소에 1회용 토큰을 만들어 Resend로 발송. TTL 7일.
-  - 그룹당 1시간 내 50건 발송 제한. 초과 시 `RATE_LIMITED`로 거부합니다(이미 발송된 N건은 성공, 초과분만 실패).
-  - 같은 주소에 활성 PENDING 토큰이 있으면 기존 토큰을 만료 처리한 뒤 새 토큰을 발급합니다(중복 발송 방지).
-  - 응답: `{ sent: number, failed: [{ email, reason }] }`.
-- `GET /groups/:groupId/email-invites`
-  - 응답: 활성/만료된 초대 목록.
-- `DELETE /groups/:groupId/email-invites/:inviteId`
-  - 즉시 만료 처리.
-- `POST /invites/email/:token/accept`
-  - 인증 필요. 미인증이면 FE는 `/login?next=...`로 안내.
-  - 토큰 만료/사용됨이면 `404 INVITE_EXPIRED`.
-  - `joinMethods.email`이 `false`면 `FORBIDDEN JOIN_DISABLED`.
 
 ## 5. 과제(Assignment)
 
@@ -317,6 +280,7 @@
   - query: `sort=createdAtAsc|createdAtDesc`, `authorId`, `language`, `isLate=true|false`
 - `GET /submissions/:submissionId`
   - 응답에 `versions[]`(versionNo·language·createdAt) 포함, `latestCode`도 포함
+  - 응답에 `currentVersionHasAiFeedback`(boolean): 현재 `currentVersionNo`에 대해 AI 튜터가 작성한 삭제되지 않은 제출 댓글 또는 해당 버전 인라인 리뷰가 하나라도 있으면 `true`(UI에서 동일 버전 재요청 버튼 비활성화 등에 사용)
 - `GET /submissions/:submissionId/versions/:versionNo`
   - 응답: `{ language, code }`
 - `PATCH /submissions/:submissionId/code`
@@ -375,6 +339,7 @@
 
 - `POST /api/v1/submissions/:submissionId/comments`
   - body: `{ "body": "...", "parentCommentId"?: "<uuid>" }`. `parentCommentId`가 비어 있으면 새 댓글, 있으면 답글입니다(8.4).
+  - 성공 시 인앱 알림 행을 `notifications`에 기록합니다. 최상위 댓글이면 제출 작성자에게 `COMMENT_ON_MY_SUBMISSION`(본인 제출에 본인이 단 경우 제외), 답글이면 원 댓글 작성자에게 `REPLY_ON_MY_COMMENT`(본인에게 본인이 단 경우 제외)입니다.
 - `GET /api/v1/submissions/:submissionId/comments`
   - 응답: 부모 댓글 배열. 각 항목은 `replies`(같은 제출에 달린 답글 평면 배열)와 `reactions` 인라인 요약을 포함합니다.
 - `POST /api/v1/submissions/:submissionId/reviews`
@@ -468,10 +433,10 @@
 
 - `POST /submissions/:submissionId/ai-review`
   - 권한: 제출 작성자, 그룹장, 그룹 관리자.
-  - 동작: 명시적 트리거. 현재 최신 버전 또는 명시한 버전(`?versionNo=...`)에 대해 AI 코드 리뷰 작업을 큐로 발행합니다.
+  - 동작: 명시적 트리거. 현재 최신 버전 또는 body의 `versionNo`에 대해 동기 처리되는 AI 코드 리뷰를 실행합니다.
   - 새 제출 또는 새 코드 버전이 자동으로 이 API를 호출하지 않습니다.
   - `rules.useAiFeedback`이 `false`인 그룹은 `FORBIDDEN`.
-  - 이미 같은 버전에 `RUNNING` 상태 run이 있으면 `CONFLICT`로 거부합니다.
+  - **같은 제출 버전**에 AI 튜터 댓글 또는 해당 버전 인라인 리뷰가 이미 있으면(삭제되지 않은 행 기준) `CONFLICT`로 거부합니다.
 - `GET /submissions/:submissionId/ai-reviews`
   - 응답: `[{ runId, versionNo, status, startedAt, finishedAt, tokenUsed, failureReason }]`.
 
@@ -487,10 +452,11 @@
 - 실패/타임아웃/취소는 0 차감.
 - 토큰 부족 시 `INSUFFICIENT_AI_TOKENS`.
 - LLM 호출 실패 시 worker가 자동 1회 재시도(짧은 backoff). 재시도까지 실패하면 `AI_REVIEW_RUNS.status='FAILED'`로 기록하고 제출 작성자에게만 실패 알림 발송.
-- 같은 버전에 AI 리뷰를 여러 번 트리거하면 결과가 누적됩니다. 이전 봇 댓글을 자동 삭제하지 않으며 작성 시각으로 구분합니다.
+- 같은 버전에 AI 리뷰는 **한 번만** 트리거할 수 있습니다. 관리자 등이 해당 버전의 AI 봇 댓글·리뷰를 모두 삭제(소프트 삭제)한 뒤에는 다시 요청할 수 있습니다.
 - AI 봇 댓글·리뷰 삭제는 그룹장/그룹 관리자만 가능합니다(작성자는 답글만 가능).
 - 작성자 표시는 단일 시스템 사용자 `AI 튜터`(`is_system_bot=true`)입니다.
 - AI 코드 리뷰 완료/실패 알림 수신자는 제출 작성자 1명입니다(트리거 사용자에게 별도 알림 없음).
+- 라인 리뷰(`Review.startLine`/`endLine`)는 LLM 출력을 저장하기 전에 보정한다. 범위가 공백 줄만이면 바로 아래(없으면 위)의 비어 있지 않은 코드 줄로 스냅하고, `anchorText`가 지정 줄 범위에 없고 파일 안 다른 줄에만 있으면 그 줄로 스냅한다. `anchorText`는 반드시 최종 줄 범위 안에서 매칭되어야 한다(전 파일 느슨 매칭으로 통과시키지 않음).
 - AI 코드 리뷰는 프롬프트 구성 시 과제 `problemUrl`을 서버가 직접 fetch해 문제 본문 핵심(`요약`, `입력`, `출력`)을 추출하고, 코드+메모와 함께 LLM 입력으로 전달합니다.
 - 추출된 문제 본문 원문 HTML/텍스트는 저장하지 않고 요청 처리 중 메모리에서만 사용 후 폐기합니다.
 - 문제 URL fetch 요청의 `User-Agent`는 매 요청마다 랜덤하게 선택합니다.
@@ -550,9 +516,9 @@
 - 그룹 삭제 이후에도 기존 알림 유지
 - 알림 클릭 대상이 삭제된 경우 `관련 페이지가 삭제되었습니다` 메시지 표시
 
-### 12.2 홈 대시보드 (미구현 — TODO)
+### 12.2 홈 대시보드
 
-홈 화면(`/`)의 “최근 알림”, “최근 푼 문제” 카드는 현재 FE(`fe/app/HomeClient.tsx`)에 비어 있는 props로만 연결돼 있습니다. 다음 두 API를 추가해 서버 컴포넌트에서 주입합니다.
+홈 화면(`/`)은 서버 컴포넌트에서 내 활동 데이터를 조합해 칸반형 보드로 주입합니다.
 
 - `GET /api/v1/users/me/notifications?limit=5`
   - 응답: `[{ id, title, createdAt }]` 최신순.
@@ -561,6 +527,7 @@
   - 응답: `[{ id, title, language, createdAt, href }]` 최신 제출순.
   - `href`는 `/groups/:groupId/assignments/:assignmentId/submissions/:submissionId` 형태.
   - 권한: 본인. 같은 그룹의 다른 사용자 제출은 별도 API에서 처리합니다.
+- `해야 할 일` 컬럼은 FE 서버 컴포넌트에서 `GET /groups`, `GET /groups/:groupId/assignments`, `GET /assignments/:assignmentId/submissions?authorId=me`를 조합해 내 제출이 없는 과제를 마감 임박순으로 계산합니다.
 
 ## 13. 캘린더/검색/게시판
 

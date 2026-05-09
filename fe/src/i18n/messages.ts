@@ -285,8 +285,6 @@ export const messages = {
         title: "허용 가입 방법",
         code: "그룹 코드",
         link: "초대 링크",
-        request: "가입 신청",
-        email: "이메일 초대",
       },
       rules: {
         title: "그룹 규칙",
@@ -364,15 +362,13 @@ export const messages = {
     invite: {
       managePage: {
         title: "{name} 초대 관리",
-        subtitle: "초대 코드, 초대 링크, 가입 신청을 한 곳에서 관리합니다.",
+        subtitle: "초대 코드와 초대 링크를 한 곳에서 관리합니다.",
         fallbackTitle: "초대 관리",
         errorTitle: "초대 정보를 불러오지 못했습니다.",
       },
       tabs: {
         code: "그룹 코드",
         links: "초대 링크 {count}",
-        email: "이메일 초대",
-        requests: "가입 신청 {count}",
       },
       code: {
         lead: "그룹원 모두에게 보이는 8자 코드입니다. 재발급 시 기존 초대 링크는 무효화됩니다.",
@@ -388,16 +384,6 @@ export const messages = {
         revoke: "무효화",
         empty: "활성 초대 링크가 없습니다.",
       },
-      email: {
-        lead: "7일 유효 일회용 링크를 이메일로 보냅니다. 그룹당 시간당 50통 제한.",
-        label: "이메일 목록 (줄바꿈 또는 쉼표)",
-        send: "발송",
-      },
-      requests: {
-        approve: "승인",
-        reject: "거절",
-        empty: "대기 중인 가입 신청이 없습니다.",
-      },
       link: {
         title: "초대 받기",
         subtitle: "초대 링크로 그룹에 참여합니다.",
@@ -405,13 +391,6 @@ export const messages = {
         join: "그룹에 참여하기",
         list: "그룹 목록으로",
         errorTitle: "초대 링크가 유효하지 않습니다.",
-      },
-      emailLanding: {
-        title: "이메일 초대",
-        meta: "멤버 {count}명 · 최대 {max}명",
-        join: "그룹에 참여하기",
-        list: "그룹 목록으로",
-        errorTitle: "초대를 사용할 수 없습니다.",
       },
     },
     assignment: {
@@ -460,7 +439,6 @@ export const messages = {
         hintHeading: "풀이 힌트",
         revealHint: "힌트 보기",
         revealAlgorithms: "알고리즘 보기",
-        hintLocked: "코드를 제출하면 힌트가 영구 공개됩니다. 지금은 버튼으로 일시 확인할 수 있습니다.",
         mySubmissionHeading: "나의 제출",
         mySubmissionView: "내 제출 보기",
         notSubmitted: "아직 제출하지 않았습니다.",
@@ -585,6 +563,7 @@ export const messages = {
         codeEdit: "코드 수정",
         aiFeedback: "AI 피드백",
         aiFeedbackRequesting: "요청 중...",
+        aiFeedbackAlreadyUsed: "이 버전에는 이미 AI 피드백이 있습니다.",
         noteTitle: "메모",
         noteEdit: "메모 수정",
         notePlaceholder: "메모를 Markdown으로 입력하세요.",
@@ -937,8 +916,6 @@ export const messages = {
         title: "Allowed join methods",
         code: "Group code",
         link: "Invite link",
-        request: "Join request",
-        email: "Email invite",
       },
       rules: {
         title: "Group rules",
@@ -1016,15 +993,13 @@ export const messages = {
     invite: {
       managePage: {
         title: "{name} invites",
-        subtitle: "Manage invite code, links, and join requests in one place.",
+        subtitle: "Manage invite code and invite links in one place.",
         fallbackTitle: "Invites",
         errorTitle: "Failed to load invites.",
       },
       tabs: {
         code: "Group code",
         links: "Invite links {count}",
-        email: "Email invite",
-        requests: "Join requests {count}",
       },
       code: {
         lead: "An 8-char code visible to all members. Regenerating it invalidates existing invite links.",
@@ -1040,16 +1015,6 @@ export const messages = {
         revoke: "Revoke",
         empty: "No active invite links.",
       },
-      email: {
-        lead: "Sends a 7-day single-use link to each email. Limit: 50 per group per hour.",
-        label: "Email list (newline or comma)",
-        send: "Send",
-      },
-      requests: {
-        approve: "Approve",
-        reject: "Reject",
-        empty: "No pending join requests.",
-      },
       link: {
         title: "You're invited",
         subtitle: "Join the group via invite link.",
@@ -1057,13 +1022,6 @@ export const messages = {
         join: "Join group",
         list: "Back to groups",
         errorTitle: "Invalid invite link.",
-      },
-      emailLanding: {
-        title: "Email invite",
-        meta: "{count} of {max} members",
-        join: "Join group",
-        list: "Back to groups",
-        errorTitle: "Invite unavailable.",
       },
     },
     assignment: {
@@ -1112,7 +1070,6 @@ export const messages = {
         hintHeading: "Solution hint",
         revealHint: "Show hint",
         revealAlgorithms: "Show algorithms",
-        hintLocked: "This hint becomes permanently visible after submission. You can reveal it temporarily now.",
         mySubmissionHeading: "My submission",
         mySubmissionView: "View my submission",
         notSubmitted: "You have not submitted yet.",
@@ -1237,6 +1194,7 @@ export const messages = {
         codeEdit: "Edit code",
         aiFeedback: "AI Feedback",
         aiFeedbackRequesting: "Requesting...",
+        aiFeedbackAlreadyUsed: "AI feedback has already been generated for this version.",
         noteTitle: "Note",
         noteEdit: "Edit note",
         notePlaceholder: "Write a note in Markdown.",

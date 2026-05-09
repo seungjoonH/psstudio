@@ -1,6 +1,7 @@
 // 제출 CRUD/버전/diff를 관리하는 서비스입니다.
 import {
   BadRequestException,
+  ConflictException,
   Dependencies,
   ForbiddenException,
   Injectable,
@@ -51,6 +52,8 @@ export type SubmissionDetail = SubmissionListItem & {
   latestCode: string;
   noteMarkdown: string;
   versions: Array<{ versionNo: number; language: string; createdAt: Date }>;
+  /** 현재 최신 버전에 AI 튜터 댓글 또는 인라인 리뷰가 이미 있는지(삭제되지 않은 행 기준). */
+  currentVersionHasAiFeedback: boolean;
 };
 
 export type SubmissionReviewItem = {
@@ -571,6 +574,39 @@ export class SubmissionsService {
     if (!this.ds.isInitialized) await this.ds.initialize();
   }
 
+  /** AI 튜터 사용자 행이 없거나 소프트삭제된 경우 null입니다(getDetail 등 읽기 전용 경로용). */
+  private async getAiTutorUserId(): Promise<string | null> {
+    await this.ensureInitialized();
+    const user = await this.ds.getRepository(User).findOne({
+      where: { provider: "system", providerUserId: "ai-tutor" },
+      withDeleted: true,
+    });
+    if (user === null || user.deletedAt !== null) return null;
+    return user.id;
+  }
+
+  private async submissionVersionHasAiFeedback(
+    submissionId: string,
+    version: SubmissionVersion,
+    botUserId: string,
+  ): Promise<boolean> {
+    const existingComment = await this.ds.getRepository(Comment).findOne({
+      where: {
+        submissionId,
+        submissionVersionNo: version.versionNo,
+        authorUserId: botUserId,
+      },
+    });
+    if (existingComment !== null) return true;
+    const existingReview = await this.ds.getRepository(Review).findOne({
+      where: {
+        submissionVersionId: version.id,
+        authorUserId: botUserId,
+      },
+    });
+    return existingReview !== null;
+  }
+
   async list(assignmentId: string, filters: ListFilters): Promise<SubmissionListItem[]> {
     await this.ensureInitialized();
     const qb = this.ds
@@ -624,6 +660,14 @@ export class SubmissionsService {
       .getRepository(SubmissionVersion)
       .find({ where: { submissionId }, order: { versionNo: "ASC" } });
     const u = await this.ds.getRepository(User).findOne({ where: { id: s.authorUserId }, withDeleted: true });
+    const currentVersionRow = versions.find((v) => v.versionNo === s.currentVersionNo);
+    let currentVersionHasAiFeedback = false;
+    if (currentVersionRow !== undefined) {
+      const botId = await this.getAiTutorUserId();
+      if (botId !== null) {
+        currentVersionHasAiFeedback = await this.submissionVersionHasAiFeedback(s.id, currentVersionRow, botId);
+      }
+    }
     return {
       id: s.id,
       assignmentId: s.assignmentId,
@@ -643,6 +687,7 @@ export class SubmissionsService {
         language: v.language,
         createdAt: v.createdAt,
       })),
+      currentVersionHasAiFeedback,
     };
   }
 
@@ -1168,6 +1213,9 @@ export class SubmissionsService {
       throw new NotFoundException("과제를 찾을 수 없습니다.");
     }
     const botUser = await this.ensureAiTutorUser();
+    if (await this.submissionVersionHasAiFeedback(submissionId, version, botUser.id)) {
+      throw new ConflictException("이 버전에는 이미 AI 피드백이 있습니다.");
+    }
     const problemPromptContext = await fetchProblemPromptFromUrl(assignment.problemUrl);
     const assignmentContext: AssignmentReviewContext = {
       title: assignment.title,
