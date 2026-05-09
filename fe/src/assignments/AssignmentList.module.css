@@ -12,6 +12,20 @@
   background: var(--color-surface);
 }
 
+/* 해결 완료: 카드 전체를 살짝 눌러 우선순위가 낮아 보이게 함 */
+.rowSolved {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.rowSolved .title {
+  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
+}
+
+.rowSolved .titleIcon {
+  opacity: 0.82;
+}
+
 .link {
   display: grid;
   gap: 8px;

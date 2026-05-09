@@ -117,14 +117,9 @@
   border-color: color-mix(in oklab, #ef4444 38%, var(--color-border));
 }
 
+/* 마감 후(D+): 강한 블랙 대신 낮은 우선순위가 읽히도록 회색 톤 */
 .duePast {
-  background: #171717;
-  color: #fafafa;
-  border-color: #404040;
-}
-
-[data-theme="dark"] .duePast {
-  background: #e5e5e5;
-  color: #0a0a0a;
-  border-color: #a3a3a3;
+  background: color-mix(in oklab, var(--color-muted) 14%, var(--color-surface));
+  color: var(--color-muted);
+  border-color: color-mix(in oklab, var(--color-muted) 30%, var(--color-border));
 }

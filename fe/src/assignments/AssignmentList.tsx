@@ -8,6 +8,7 @@ import { formatAssignmentAlgorithmLabel } from "./algorithmLabels";
 import { dueBadgeTone } from "../lib/dueBadgeTone";
 import { Badge } from "../ui/Badge";
 import { DifficultyBadge } from "../ui/DifficultyBadge";
+import { buildCls } from "../lib/buildCls";
 import { Icon } from "../ui/Icon";
 import styles from "./AssignmentList.module.css";
 
@@ -49,8 +50,10 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
   const statusLabel = item.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
   const dueTone = dueBadgeTone(item.isLate, daysLeft);
 
+  const solvedDimmed = item.hasMySubmission === true;
+
   return (
-    <li className={styles.row}>
+    <li className={buildCls(styles.row, solvedDimmed ? styles.rowSolved : undefined)}>
       <Link href={item.href} className={styles.link}>
         <div className={styles.head}>
           <div className={styles.headMain}>
