@@ -271,8 +271,12 @@ export function normalizeSubmissionRegionCountsToHeadTemplate(
 }
 
 /**
- * 구역을 시작 줄 기준으로 정렬한 뒤, submissionId 정렬상 첫 제출의 슬롯별 roleId·roleLabel로 나머지 제출을 맞춥니다.
- * (LLM이 이름만 다르게 준 경우 색·축을 맞추기 위한 정규화.)
+ * 구역을 시작 줄 기준으로 정렬한 뒤, 첫 제출(head)의 roleLabel(및 표시용 roleId)으로 통일합니다.
+ *
+ * **우선:** 제출 간 **roleId 집합이 동일**하면 슬롯 인덱스가 아니라 **roleId로 짝**을 짓습니다.
+ * (파일마다 비교 축이 나타나는 위·아래 순서가 달라도 같은 roleId는 같은 줄 논리 구역을 가리키게 하기 위함.)
+ *
+ * **예외:** 집합이 다르면(예: 자동 분할·병합으로 `_a` 접미사 등) 기존처럼 **줄 순 슬롯 인덱스**로만 라벨을 덮어씁니다(LLM이 축 이름만 다르게 준 경우 등).
  */
 export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArtifactDto[]): void {
   if (submissions.length === 0) return;
@@ -292,9 +296,32 @@ export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArt
   }
 
   const template = head.regions;
+  const headRoleSet = new Set(template.map((r) => r.roleId));
+
   for (let s = 1; s < submissions.length; s += 1) {
     const sub = submissions[s];
     if (sub === undefined) continue;
+
+    const subRoleSet = new Set(sub.regions.map((r) => r.roleId));
+    const alignByRoleId =
+      headRoleSet.size === subRoleSet.size && [...headRoleSet].every((id) => subRoleSet.has(id));
+
+    if (alignByRoleId) {
+      const byRole = new Map(sub.regions.map((r) => [r.roleId, r]));
+      sub.regions = template.map((t) => {
+        const r = byRole.get(t.roleId);
+        if (r === undefined) {
+          throw new Error("cohort_bundle_regions_role_mismatch");
+        }
+        return {
+          ...r,
+          roleId: t.roleId,
+          roleLabel: t.roleLabel,
+        };
+      });
+      continue;
+    }
+
     for (let i = 0; i < k; i += 1) {
       const t = template[i];
       const r = sub.regions[i];
@@ -527,7 +554,12 @@ export function parseAndValidateCohortBundle(
     throw new Error("cohort_bundle_missing_submission");
   }
 
-  submissions.sort((a, b) => a.submissionId.localeCompare(b.submissionId));
+  const orderIdx = new Map(expectedSubmissionIdsSorted.map((id, i) => [id.toLowerCase(), i]));
+  submissions.sort((a, b) => {
+    const ia = orderIdx.get(a.submissionId.toLowerCase()) ?? 0;
+    const ib = orderIdx.get(b.submissionId.toLowerCase()) ?? 0;
+    return ia - ib || a.submissionId.localeCompare(b.submissionId);
+  });
 
   normalizeSubmissionRegionCountsToHeadTemplate(submissions, codeBySubmissionId);
   canonicalizeCohortRegionsBySlot(submissions);

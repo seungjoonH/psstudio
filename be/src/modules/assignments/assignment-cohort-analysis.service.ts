@@ -488,7 +488,7 @@ export class AssignmentCohortAnalysisService {
         "3) **N < 12** 이면 regions는 1~5개(한 구역으로도 가능). **N ≥ 12** 이면 regions는 **반드시 2~5개**이고, **서로 다른** `roleId`(짧은 snake_case 권장, 예: `time_adjust`, `weekday_filter`, `main_loop`).",
         "4) **N ≥ 12** 일 때 **금지**: `roleId`가 `entire_code` 이거나 라벨이 「코드 전체」「Full program」; **구역이 1개뿐**이면서 `startLine=1`·`endLine=N`으로 전 파일을 덮는 것; `whole_file` 식별자.",
         "5) 각 region은 **연속 구간** `[startLine,endLine]`(포함) **정확히 하나**. 그 사이의 코드·빈 줄·주석·`}`·`break`/`continue`를 **빠짐없이** 포함한다(같은 블록 안 줄무늬 금지).",
-        "6) **모든 제출**에서 **동일한** roleId 집합과 **같은 개수** k의 regions를 둔다(제출마다 줄 범위는 달라도 된다).",
+        "6) **모든 제출**에서 **동일한** roleId 집합과 **같은 개수** k의 regions를 둔다(제출마다 줄 범위는 달라도 된다). **서버는 같은 문자열의 roleId끼리만 축을 묶는다.** 파일 안에서 구역이 위에서 아래 순으로 나열될 필요는 없지만, **평일 필터·메인 루프 등 같은 단계에는 모든 제출에서 같은 snake_case roleId**를 쓴다(한 파일에서 위쪽에 오는 축이 다른 파일에서는 아래에 와도 된다).",
         "",
         "[regions 올바른 형태 예 — 구조만 참고, 줄 번호는 해당 제출 `lines`에 맞출 것]",
         '예: 한 제출 `lines` 길이가 40일 때 `{"submissionId":"<uuid>","regions":[{"roleId":"time_normalize","roleLabel":"시간·한도 보정","startLine":5,"endLine":18},{"roleId":"main_check","roleLabel":"메인 지각 판정 루프","startLine":20,"endLine":38}]}` — 1~4줄·39~40줄은 비교 축 밖이면 regions에 넣지 않아도 된다(미색).',

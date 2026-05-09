@@ -113,6 +113,44 @@ describe("parseAndValidateCohortBundle", () => {
     expect(b?.regions[0]?.roleLabel).toBe("알파");
   });
 
+  it("파일에서 구역의 위·아래 순서가 달라도 roleId 집합이 같으면 줄 범위는 유지되고 라벨만 첫 제출과 통일된다", () => {
+    const codeA = Array.from({ length: 30 }, (_, i) => `a${i}`).join("\n");
+    const codeB = Array.from({ length: 30 }, (_, i) => `b${i}`).join("\n");
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", codeA],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", codeB],
+    ]);
+    const bundle = {
+      reportMarkdown: "x",
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [
+            { roleId: "weekday_filter", roleLabel: "평일 필터", startLine: 9, endLine: 10 },
+            { roleId: "main_loop", roleLabel: "주요 루프", startLine: 12, endLine: 18 },
+          ],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [
+            { roleId: "main_loop", roleLabel: "루프", startLine: 5, endLine: 15 },
+            { roleId: "weekday_filter", roleLabel: "필터", startLine: 17, endLine: 22 },
+          ],
+        },
+      ],
+    };
+    const out = parseAndValidateCohortBundle(JSON.stringify(bundle), ids, map, "ko");
+    const b = out.artifacts.submissions.find((x) => x.submissionId === ids[1]);
+    expect(b?.regions[0]?.roleId).toBe("weekday_filter");
+    expect(b?.regions[0]?.roleLabel).toBe("평일 필터");
+    expect(b?.regions[0]?.startLine).toBe(17);
+    expect(b?.regions[0]?.endLine).toBe(22);
+    expect(b?.regions[1]?.roleId).toBe("main_loop");
+    expect(b?.regions[1]?.roleLabel).toBe("주요 루프");
+    expect(b?.regions[1]?.startLine).toBe(5);
+    expect(b?.regions[1]?.endLine).toBe(15);
+  });
+
   it("제출 간 구역 개수가 다르면 서버에서 분할·병합해 첫 제출 개수에 맞춘다", () => {
     const bad = {
       ...validJson,
