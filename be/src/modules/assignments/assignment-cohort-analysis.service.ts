@@ -61,7 +61,8 @@ function cohortLocaleOverride(locale: CohortReportLocale): string[] {
       "- **Split recipe if stuck:** (A) top/helpers/signature through line before main loop, (B) main loop / core block, (C) return / tail. Never one anchor spanning line 1 through last line as your only region.",
       "- Before emitting JSON, **re-count** `regions.length` for every submission with `lineCount` ≥ 12; if any count is 1 or 0, fix regions first.",
       "- **Root JSON shape:** exactly `{ \"reportMarkdown\": string, \"submissions\": [ … ] }`. The character after `\"submissions\":` must be **`[`**. Never wrap the bundle in `response`/`data`. Never double-encode `submissions` as a string.",
-      "- **Style exemplar file:** follow **tone and evidence layout only** — **never copy its fixed TOC phrases/order** (e.g. preprocessing→loops→… as a template).",
+      "- **Style exemplar file:** follow **tone and evidence layout only**. **Never paste or lightly edit sentences from the injected example markdown.** Never reuse the same bullet labels for every submission block.",
+      "- **Do not copy** fixed bullet patterns from the exemplar (e.g. identical two-line templates per submission). Rewrite from INPUT `source` only.",
     ];
   }
   return [
@@ -72,6 +73,7 @@ function cohortLocaleOverride(locale: CohortReportLocale): string[] {
     "- 앵커는 해당 제출 입력 `lines` 원문에서만 복사한다. 리포트 본문·펜스는 앵커 소스로 쓰지 않는다.",
     "- 입력 `lineCount` 가 **12 이상**인 제출마다 JSON **`regions` 배열에 유효 객체가 최소 2개·최대 5개**여야 한다. **`regions: []` 금지.** **객체가 정확히 1개만 오는 것도 금지.** `roleId`에 문자열 `entire_code`·`whole_file` 금지. `roleId`/`roleLabel` 빈 문자열 금지(해당 행은 검증기에서 삭제되어 개수 부족으로 실패할 수 있음).",
     "- JSON 출력 직전, **lineCount≥12인 각 제출에 대해 `regions.length`(유효 객체 수)를 다시 세어라.** 2 미만이면 분할을 다시 설계하고 JSON을 내지 마라.",
+    "- 시스템에 붙는 예시 마크다운(`cohort-report-template.example.md`) **문장·불릿 패턴을 리포트에 복사하지 마라.** INPUT 코드만 근거로 새로 쓴다.",
   ];
 }
 
@@ -165,8 +167,13 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "- 코드 펜스 직전 문장을 콜론(:)으로 끝내지 않는다.",
     "- `problemContext` 기반으로 제출 간 유사점/차이를 비교한다.",
     "",
+    "[EXEMPLAR 복사 금지 — 최우선]",
+    "- 시스템 프롬프트에 이어 붙는 `design/cohort-report-template.example.md` 전문은 **문체·비교 밀도·`[[SUBMISSION:uuid]]` 인용 방식**만 보여 준다. **예시 문장·절 제목·번호 목차·고정 불릿 라벨(예: 「순회 방식.」「갱신 및 판정 요약.」 등)을 `reportMarkdown`에 한 줄이라도 그대로 또는 거의 그대로 재출력하지 마라.**",
+    "- 예시에 나온 **불릿 틀을 모든 제출 블록에 동일하게 채우는 행위**(복붙·템플릿 채우기)는 금지에 가깝다. 코드가 비슷해 보여도 **제출마다 비교 문장을 새로** 쓴다.",
+    "- 실제 근거는 **오직 INPUT JSON**의 `submissions[].source`·`problemContext`뿐이다. 예시 UUID·예시 본문 문장을 바탕으로 추론하지 않는다.",
+    "",
     "[STYLE EXEMPLAR — reportMarkdown 참고 본문]",
-    "- 저장소 `design/cohort-report-template.example.md` 전문은 **문체·비교 밀도·근거 펜스 배치·`[[SUBMISSION:uuid]]` 사용법 등 뉘앙스**만 참고한다. **예시와 같은 목차 문구·같은 순서·같은 절 이름을 따라 하라는 뜻이 절대 아니다.** (예: 「전처리→반복문→자료구조와 판정→정리」 고정 목차 복붙 금지.)",
+    "- 저장소 `design/cohort-report-template.example.md` 전문은 위 [EXEMPLAR 복사 금지]를 지키는 전제에서 **길이·전개 리듬만** 참고한다. **예시와 같은 목차 문구·같은 순서·같은 절 이름을 따라 하라는 뜻이 절대 아니다.** (예: 「전처리→반복문→…」 고정 목차 복붙 금지.)",
     "- 각 과제·각 제출 묶음마다 **도입부 로드맵과 `##` 축 제목을 코드에 맞게 새로** 짓는다. 반복문이 없으면 반복문 절을 약속하지 않는다.",
     "- 이어 붙는 예시 파일 본문은 길이·비교 서술·목록·단락 배치의 품질 참고용이다. 예시의 `### 개요`, 번호 단계(`### 1. …`), 개요 속 「차례대로 … 순으로」 한 줄은 샘플일 뿐이다. 실제 reportMarkdown의 각 `##`는 [REPORT CONTRACT]의 비교 주제·대표 `roleId` 규칙을 따른다. 예시와 같은 ### 번호 체계로 축을 대체하지 않는다.",
     "- 예시 UUID는 플레이스홀더다. 출력 reportMarkdown에는 INPUT JSON의 submissionId만 넣는다.",
@@ -201,6 +208,7 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "- [ ] 추상 라벨로 함수 대부분을 한 구역에 묶지 않았는가",
     "- [ ] 개요·`##` 축 이름과 JSON regions·각 절 펜스가 같은 기준으로 묶였는가(위에서는 전처리라며 아래에서 순회 본문을 전처리로 부르지 않았는가)",
     "- [ ] `cohort-report-template.example.md`와 **동일한 목차 문구·순서**를 베끼지 않았는가(뉘앙스만 참고)",
+    "- [ ] 예시 파일의 **문장·고정 불릿 패턴**을 복사하지 않았는가(제출마다 같은 두 줄 불릿 틀 반복 없음)",
     "- [ ] 한 제출 안에서 region 줄 구간이 불필요하게 거의 전체를 덮는 한 덩어리 + 그 안의 부분 축으로 중복 라벨하지 않았는가",
     "- [ ] `entire_code`/`whole_file`/전구간 단일 region 미사용",
     "- [ ] 동일 의미 문장을 제출별로 반복하지 않았는가",
@@ -534,6 +542,7 @@ export class AssignmentCohortAnalysisService {
         "- reportMarkdown: 각 `##` 축마다 ``` 펜스 코드 블록이 있어야 하며, 제출별 비교 문단 직후 근거 스니펫을 둔다.",
         "- reportMarkdown: 펜스는 **해당 제출·해당 region** 앵커 구간 안 원문만. `##` 제목의 백틱 `roleId`는 그 절에서 대표로 쓰는 것이며, 제출마다 같은 문자열일 필요 없음.",
         "- reportMarkdown: 개요에서 비교 순서를 적었으면 본문 `##`·각 절 스니펫이 그 축과 **같은 유사영역 판단**을 따른다. 위·아래 기준 불일치 금지.",
+        "- reportMarkdown: 시스템에 삽입된 예시 파일 문장·불릿 패턴을 **복사하지 마라.** INPUT 코드만 보고 새로 작성.",
         "- regions 앵커: 각 제출의 `startAnchorText`/`endAnchorText`는 **반드시 그 제출의 입력 `lines` 원문 일부**(연속 줄 전체). 리포트 본문·펜스에서 복사 금지. 구간 첫·마지막 **물리 줄 전체** 복사가 가장 안전.",
         "- 체크리스트를 통과하지 못하면 JSON을 출력하지 말고 regions를 다시 계산한다.",
       ].join("\n");
