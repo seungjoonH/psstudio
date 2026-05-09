@@ -10,12 +10,28 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
+  transition:
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    box-shadow var(--ui-duration) var(--ui-ease);
+}
+
+.row:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 7%, var(--color-surface));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-text) 9%, transparent);
 }
 
 /* 마감 후에만 음영(마감 전 해결은 일반 카드) */
 .rowPastDue {
   background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
   border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.rowPastDue:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 24%, var(--color-border));
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-text) 11%, transparent);
 }
 
 .rowPastDue .title {
@@ -32,6 +48,12 @@
   padding: 14px 16px;
   text-decoration: none;
   color: inherit;
+  border-radius: 11px;
+}
+
+/* 카드 전체가 링크라 클릭 시 전역 링크 opacity 깜빡임 방지 */
+.link:active {
+  opacity: 1;
 }
 
 .head {
