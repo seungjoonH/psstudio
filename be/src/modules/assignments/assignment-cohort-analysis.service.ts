@@ -68,6 +68,7 @@ function cohortLocaleInstruction(locale: CohortReportLocale): string {
       "Do not add a separate \"Submission summary\" section; identify each submission inline with [[SUBMISSION:id]] where the reader needs it, not only by language name (avoid \"In the JavaScript submission…\" as the primary signal).",
       "For cohort `regions`: if a submission's code has **12+ lines**, output **2–5** distinct snake_case roleIds per submission, never `entire_code` or one region covering the full file; same roleId set and count on every submission.",
       "Ground every comparison in the provided `problemContext` (and codes): restate what the task asks, then explain similarities and differences **between submissions** (pairs, contrasts, and when there are 3+ submissions a paragraph tying several [[SUBMISSION:id]] together). Do not only walk submissions one-by-one in order.",
+      "Structure reportMarkdown as a **real report**: use `#` once for the document title, `##` for major sections, `###` for subsections (e.g. per comparison axis / roleId). Use bullets, bold key phrases, and fenced code so a reader can skim headings and still follow.",
     ].join(" ");
   }
   return [
@@ -78,7 +79,58 @@ function cohortLocaleInstruction(locale: CohortReportLocale): string {
     "제출을 구별할 때 언어명만으로 서술하지 말고 문장 속에 [[SUBMISSION:id]]를 넣어 칩으로 보이게 한다.",
     "집단 `regions`: 제출 code가 **12줄 이상**이면 제출마다 **2~5개** 서로 다른 snake_case roleId, **`entire_code`/전 파일 한 구역 금지**; 모든 제출에 **동일한** roleId 집합·개수.",
     "반드시 입력에 포함된 `problemContext`(및 코드)를 근거로 서술한다. 문제가 요구하는 것을 짚은 뒤, 제출 **간** 유사점·차이를 서술한다. 한 제출씩 순서만 도는 나열로 끝내지 않고, 두 제출 쌍 비교·대조, 제출이 세 개 이상이면 여러 [[SUBMISSION:id]]를 묶은 한 문단 요약을 포함한다.",
+    "보고서 형식으로 작성한다. `#` 문서 제목 1개, `##` 대목차, `###` 소목차로 계층을 나누고 긴 문단만 연속으로 쓰지 않는다. 목록·굵게 표시·코드 펜스를 적극 쓴다.",
   ].join(" ");
+}
+
+/** 집단 리포트 마크다운의 목차·코드 인용 규칙(로케일별 문구). */
+function cohortMarkdownStructureAndCodeRules(locale: CohortReportLocale): string[] {
+  if (locale === "en") {
+    return [
+      "",
+      "[reportMarkdown — document structure (required)]",
+      "- Build a **readable report**: use `#` **once** for the document title, `##` for major sections, `###` for subsections. Do not chain long plain paragraphs without headings.",
+      "- Suggested outline (titles may vary with the task, keep this **depth**):",
+      "  - `#` One-line title for this cohort comparison (reflect the assignment).",
+      "  - `##` Problem summary & goals — what to solve, I/O, constraints from `problemContext` and the assignment title.",
+      "  - `##` Cross-submission overview — similarities and differences using [[SUBMISSION:id]] across pairs/groups before diving into code.",
+      "  - `##` Code comparison by role — for **each comparison axis**, add `###` with `roleLabel`/roleId in the heading; inside, **fenced excerpts + explanation** for that span.",
+      "  - `##` Closing (optional) — restate takeaways in one or two short paragraphs.",
+      "- With many submissions, repeat `###` per axis; do not cram all code discussion under one `##`.",
+      "- Use `-` or numbered lists for enumerations; avoid comma-only lists in a single sentence.",
+      "- **Bold** key differences: complexity, data structures, edge handling.",
+      "- Markdown **tables** are allowed when they clarify constraints or side-by-side facts (separate fact from speculation).",
+      "",
+      "[reportMarkdown — code excerpts & comparison (required)]",
+      "- Ground comparisons in **actual code**. Use fenced blocks with the correct language tag (python, javascript, java, …). No excerpt-only vague prose.",
+      "- Before each fence, say which **[[SUBMISSION:id]]**, **`roleId`**, and **line range** the snippet comes from. Snippets must **match** the input `code` exactly — no rewriting.",
+      "- When contrasting two submissions, place **two fences back-to-back** or one short fence with clear comments so the **diff** is visible. Prefer pairing the **same roleId** across submissions.",
+      "- Never paste a **full file**. Use several short contiguous excerpts if needed.",
+      "- Forbidden: long abstract comparison without fences, repeating the same point, listing identifiers without a fence.",
+    ];
+  }
+  return [
+    "",
+    "[reportMarkdown — 문서 구조·가독성(필수)]",
+    "- 독자가 **제목만 훑어도 흐름을 파악**할 수 있게 `#`(문서 제목·**문서당 1회**), `##`(큰 절), `###`(하위 절)로 **계층을 분명히** 나눈다. 평문만 길게 이어 붙이지 않는다.",
+    "- 권장 목차 뼈대(제목 문구는 과제에 맞게 바꿔도 되나 **이 정도의 나눔은 유지**):",
+    "  - `#` … 이번 집단 비교의 한 줄 제목(과제 맥락이 드러나게).",
+    "  - `##` 문제 요약과 목표 — `problemContext`·과제 제목을 바탕으로 무엇을 풀어야 하는지, 입력·출력·제약을 짧게 정리한다.",
+    "  - `##` 제출 간 비교 개요 — 페어·그룹별로 [[SUBMISSION:id]]를 써 **유사점·차이**를 먼저 짚는다(코드 인용 전 서두 역할).",
+    "  - `##` 역할(roleId)별 코드 비교 — **각 비교 축마다 `###` 소제목**을 두고, 그 축의 `roleLabel`·roleId를 제목에 넣는다. 절 안에서는 해당 구역의 **펜스 발췌 + 차이 설명**을 묶는다.",
+    "  - `##` 마무리(선택) — 한두 문단으로 요지를 다시 짚는다.",
+    "- 제출이 많으면 `###`을 역할 축마다 반복해도 된다. 한 `##` 안에 모든 코드 논의를 몰아넣지 않는다.",
+    "- 목록: 조건·차이점 나열은 `-` 또는 `1.` **목록**으로 쓴다. 한 문단에 쉼표만으로 여러 항목을 잇지 않는다.",
+    "- 강조: 핵심 차이·주의할 조건·복잡도·자료구조 선택은 **굵게** 표시한다.",
+    "- 표: 입력 크기·경계 조건 등을 나란히 보여 주면 이해에 도움이 될 때 **마크다운 표**를 써도 된다(사실과 추측을 구분한다).",
+    "",
+    "[reportMarkdown — 코드 인용·비교 서술(필수)]",
+    "- 실제 코드를 근거로 비교한다. 추상적인 말만 하지 않고, **마크다운 코드 펜스**로 발췌를 넣는다. 언어 태그는 해당 제출 `language`·발췌에 맞춘다(python, javascript, java 등).",
+    "- 각 펜스 **앞** 문장에서 \"[[SUBMISSION:id]]의 `roleId`(몇~몇 줄)\"처럼 출처를 밝힌다. 펜스 안 코드는 입력 `code`와 **동일**해야 하며 임의로 변형하지 않는다.",
+    "- 두 제출을 대조할 때는 펜스를 **연속 두 개** 두거나, 한 펜스 안에 짧은 주석으로 구분해 **차이가 보이게** 한다. 가능하면 같은 역할 축(roleId)끼리 짝을 지어 서술한다.",
+    "- 발췌는 **전체 파일을 붙이지 않는다.** 대신 핵심 루프·분기·자료구조 선언 등 **짧은 연속 줄**을 여러 번 인용해도 된다.",
+    "- 금지: 코드 없이 일반론만 장황하게 쓰기, 동일 내용 반복, 펜스 없이 식별자만 나열하기.",
+  ];
 }
 
 /** user 메시지 끝에 붙여 regions 계약을 한 번 더 각인합니다. */
@@ -433,6 +485,8 @@ export class AssignmentCohortAnalysisService {
         "",
         "[reportMarkdown]",
         "- 마크다운으로 작성한다.",
+        ...cohortMarkdownStructureAndCodeRules(reportLocale),
+        "",
         "- **「제출 요약」「Submission summary」 같은 제목의 절을 따로 두지 않는다.** 언어별·제출별 목록은 입력 JSON에 이미 있으므로 리포트 맨 앞에 반복하지 않는다.",
         "- 제출을 가리킬 때 **『JavaScript 제출에서는…』『Python 제출에서는…』처럼 언어 이름만으로 서술하지 않는다.** 그 자리에 **`[[SUBMISSION:<submissionId>]]`를 문장 안에 끼워 넣어** 제출 태그(칩)가 그려지게 한다.",
         "  좋은 예. `[[SUBMISSION:uuid]]에서는 maxTime에 10분을 더한 뒤 분이 60 이상이면 40을 가산합니다.` / `이 부분은 [[SUBMISSION:uuid]]의 convert 경로와 대조됩니다.`",
