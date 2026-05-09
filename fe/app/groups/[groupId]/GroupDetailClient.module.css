@@ -516,6 +516,11 @@
   cursor: pointer;
   flex-shrink: 0;
   align-self: center;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    color var(--ui-duration) var(--ui-ease);
 }
 
 .copyBtn:hover {

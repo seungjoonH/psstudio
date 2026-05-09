@@ -1,0 +1,47 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.tabList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-surface-muted);
+}
+
+.tab {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-muted);
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    color var(--ui-duration) var(--ui-ease);
+}
+
+.tab:hover:not(.tabActive) {
+  color: var(--color-text);
+  background: color-mix(in oklab, var(--color-muted) 10%, transparent);
+}
+
+.tabActive {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: var(--space-4);
+  background: var(--color-surface);
+}

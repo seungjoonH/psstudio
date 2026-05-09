@@ -1,0 +1,39 @@
+.root {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration-fast) ease,
+    border-color var(--ui-duration-fast) ease,
+    color var(--ui-duration-fast) ease;
+}
+
+.root:hover {
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+}
+
+.root:active {
+  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  transform: translateY(var(--ui-press-y)) scale(0.97);
+}
+
+.root:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-primary) 65%, var(--color-border));
+  outline-offset: 1px;
+}
+
+.icon {
+  color: inherit;
+}

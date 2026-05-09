@@ -1,0 +1,79 @@
+.root {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.wrap {
+  flex-wrap: wrap;
+}
+
+.noWrap {
+  flex-wrap: nowrap;
+  width: auto;
+  overflow: hidden;
+}
+
+.noWrap .segment {
+  flex: 0 0 auto;
+}
+
+.segment {
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.radio {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.face {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background 0.12s ease,
+    color 0.12s ease;
+  white-space: nowrap;
+}
+
+.segment:hover .face {
+  color: var(--color-text);
+}
+
+.segment:active .face {
+  transform: scale(0.96);
+}
+
+.radio:checked + .face {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.radio:focus-visible + .face {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
