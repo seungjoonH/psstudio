@@ -320,9 +320,15 @@
 
 /* 그룹 코드: 본문 블록과 복사 버튼을 나란히, 버튼은 카드 세로 중앙 */
 .codeCardWithSideCopy {
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  column-gap: 10px;
+  gap: 10px;
+}
+
+.codeCardWithSideCopy .codeCardMain {
+  flex: 1;
+  min-width: 0;
 }
 
 .codeCardMain {
@@ -484,10 +490,10 @@
 }
 
 .inlineLinkRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  column-gap: 10px;
+  gap: 10px;
   min-width: 0;
 }
 

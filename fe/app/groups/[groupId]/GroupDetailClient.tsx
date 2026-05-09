@@ -348,7 +348,7 @@ export function GroupDetailClient({ meId, group, members, links, joinRequests, a
 
                     <div className={styles.codeCardItem}>
                       <div className={styles.codeCardMain}>
-                        <h3 className={styles.settingsTitle}>{t("invite.tabs.links", { count: links.length })}</h3>
+                        <h3 className={styles.settingsTitle}>{t("invite.links.cardHeading")}</h3>
                         {links.length > 0 ? (
                           <ul className={styles.inlineLinkList}>
                             {links.map((l) => (
