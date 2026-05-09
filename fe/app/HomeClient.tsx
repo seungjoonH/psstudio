@@ -168,10 +168,7 @@ export function HomeClient({
                     />
                     <div className={styles.feedMain}>
                       <span className={styles.listTitle}>{s.title}</span>
-                      <span className={styles.listMeta}>
-                        <span className={styles.listLang}>{s.language}</span>
-                        <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
-                      </span>
+                      <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
                     </div>
                   </Link>
                 </li>
