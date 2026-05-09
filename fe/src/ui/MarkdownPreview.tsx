@@ -55,8 +55,10 @@ export function MarkdownPreview({ content, className, inline = false }: Props) {
   const components = inline
     ? { pre: PreRenderer, p: InlineParagraph }
     : { pre: PreRenderer };
+  /** 인라인 모드는 칩 옆 문장용이다. `<span>` 안에 `<div>`를 넣으면 HTML이 깨져 줄이 갈라진다. */
+  const Root = inline ? "span" : "div";
   const body = (
-    <div className={innerClass}>
+    <Root className={innerClass}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={inline ? undefined : REHYPE_PLUGINS_BLOCK}
@@ -64,7 +66,7 @@ export function MarkdownPreview({ content, className, inline = false }: Props) {
       >
         {content}
       </ReactMarkdown>
-    </div>
+    </Root>
   );
   if (inline) {
     return className !== undefined && className.length > 0 ? <span className={className}>{body}</span> : body;

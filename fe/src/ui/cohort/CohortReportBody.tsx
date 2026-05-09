@@ -106,9 +106,9 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
       if (p.kind === "md") {
         if (p.text.trim().length === 0) return;
         nodes.push(
-          <span className={styles.inlineMdWrap} key={`im-${j}`}>
+          <div className={styles.inlineMdWrap} key={`im-${j}`}>
             <MarkdownPreview content={p.text} inline />
-          </span>,
+          </div>,
         );
         return;
       }

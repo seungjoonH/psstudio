@@ -18,9 +18,11 @@
   min-width: 0;
 }
 
+/* div 안에 인라인 마크다운(span 루트)만 두어 칩과 같은 플렉스 행에서 줄바꿈 없이 이어지게 한다. */
 .inlineMdWrap {
   min-width: 0;
   flex: 1 1 auto;
+  align-self: baseline;
 }
 
 .mdBlock {
