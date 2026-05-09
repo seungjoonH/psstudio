@@ -1219,8 +1219,6 @@ export class SubmissionsService {
       const response = await requestLlmChat({
         model: ENV.llmModelSubmissionReview(),
         temperature: 0.2,
-        // OpenRouter 등은 max_tokens 미지정 시 모델 기본(큰 값)을 쓰며, 잔액이 작으면 402가 난다.
-        maxTokens: 4096,
         messages: [
           {
             role: "system",
@@ -1233,6 +1231,11 @@ export class SubmissionsService {
               "반드시 **유효한 JSON 객체 한 개만** 출력한다. 앞뒤에 설명문·마크다운 제목·코드펜스(```) 금지.",
               "{\"summary\":string,\"lineComments\":[{\"startLine\":number,\"endLine\":number,\"anchorText\":string,\"body\":string}]}",
               "summary 값에는 요약 문장만 넣는다. summary 안에 응답 JSON을 다시 넣지 않는다.",
+              "",
+              "── summary vs lineComments (UI 계약, 위반 금지) ──",
+              "앱은 summary를 **전역 댓글 한 줄**로만 보여 주고, **구체적 결함 설명은 lineComments만** 코드 옆에 붙인다.",
+              "따라서 **줄·분기·호출 단위로 설명 가능한 결함**(예: 특정 `if` 이후 `getBlock`이 호출되지 않음, 루프 한 바퀴에서 `push`가 두 번 됨)은 **반드시 lineComments에만** 쓴다. 그런 내용을 summary에 길게 쓰면 **잘못된 출력**이다.",
+              "lineComments가 1개 이상이면 summary는 **한 문장 이하**로만 쓴다. 허용 예: \"검증된 사항은 아래 라인 코멘트를 참고하면 됩니다.\" / \"아래에 검증된 피드백을 모았습니다.\" **금지:** summary에 함수명·줄 번호·원인·반례·수정안을 서술하는 것.",
               "",
               "── 리뷰 원칙 ──",
               "- 실제 결함이 검증된 경우에만 lineComments를 작성한다.",
@@ -1271,8 +1274,8 @@ export class SubmissionsService {
               "",
               "── summary 규칙 ──",
               "- lineComments가 비어 있으면: **긍정·관찰형 summary만** 작성한다. '문제'·'개선 필요'·'주의'·'여지' 같은 결함 시사 단어를 쓰지 않는다.",
-              "- lineComments가 있으면: summary는 실제 검증된 문제만 간단히 요약한다. summary가 시사하는 결함과 lineComments는 1:1로 대응해야 한다.",
-              "- 매 실행마다 summary는 1개. 1~2문장 또는 짧은 목록.",
+              "- lineComments가 비어 있지 않으면: summary는 위 \"UI 계약\"대로 **짧은 안내 한 문장만**. 구체적 결함·수정은 **전부 lineComments의 body**에만 둔다(중복 서술 금지).",
+              "- 매 실행마다 summary는 1개.",
               "",
               "── 균형 (중요) ──",
               "**'확신이 부족하다'는 이유만으로 즉시 빈 배열을 선택하지 않는다.** 대신 실제 입력을 실행 추적하고, 기대 출력과 실제 출력을 비교한 뒤, 차이가 검증되면 결함으로 판단한다. 리뷰의 핵심은 추측이 아니라 **실행 기반 검증**이다.",
@@ -1284,6 +1287,7 @@ export class SubmissionsService {
               "- 근거에 입력·중간값·기대값을 적을 때는 `- ` 목록이나 짧은 표를 써도 된다.",
               "",
               "── 앵커·범위 ──",
+              "- 검증된 결함이 **특정 줄·연속 몇 줄**과 연결되면 해당 범위를 startLine/endLine으로 잡고 lineComment를 작성한다. 한 줄짜리 분기 버그면 보통 startLine=endLine로 그 줄만 지정한다.",
               "- startLine/endLine은 1-based, 여러 줄 범위 가능. **공백만 있는 줄을 가리키면 안 된다.** 토큰·식이 있는 코드 줄을 지정한다.",
               "- anchorText는 지정한 라인 범위 안에 실제로 존재하는 부분 문자열이어야 한다.",
               "- 특정 식별자 변경 제안 시 그 식별자가 anchor 범위에 실제로 있어야 한다.",
@@ -1301,6 +1305,7 @@ export class SubmissionsService {
             content: [
               "다음 코드를 [문제 문맥]·[문제 본문 핵심] 기준으로 리뷰해줘.",
               "검증된 결함만 lineComments에 넣어줘. **결함 0개도 정상 결과**다.",
+              "구체적 버그 설명(원인·반례·수정)은 summary가 아니라 **해당 코드 줄 범위의 lineComments**에만 넣어줘. summary는 짧게.",
               "같은 결함을 여러 lineComments로 쪼개지 말고 한 곳에 단일 코멘트로 정리해줘. 필요하면 여러 줄 범위를 써줘.",
               "결함을 주장하기 전 반드시 실제 입력으로 코드를 끝까지 실행 추적하고, 기대 출력과 실제 출력을 비교해줘. 둘이 같으면 그 lineComment는 폐기.",
               "",
