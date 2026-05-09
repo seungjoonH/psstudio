@@ -9,7 +9,7 @@
 - 시간 포맷: ISO 8601 UTC 저장, 클라이언트 표시 시 KST 변환
 - 인증 방식: OAuth 로그인 세션 기반 인증(google, github)
 - 비인증 접근은 로그인/공개 페이지 외 `401 Unauthorized`
-- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_API_KEY`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`, `LLM_MODEL_SUBMISSION_REVIEW`, 집단 분석용 모델 키 등, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
+- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_PROVIDER`(`openrouter|requesty`), `OPEN_ROUTER_API_KEY`, `REQUESTY_API_KEY`, `REQUESTY_BASE_URL`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`, `LLM_MODEL_SUBMISSION_REVIEW`, 집단 분석용 모델 키 등, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
 - Docker Compose 로컬 기본 서비스: `fe`, `be`, `worker`, `supabase`, `redis`
 - API 문서: `GET /api-docs`
 - OpenAPI JSON: `GET /api-docs/json`
@@ -263,6 +263,7 @@
 - `POST /groups/:groupId/assignments/autofill`
   - body: `{ "problemUrl": "https://..." }`
   - 응답: `{ title, hint, algorithms, difficulty }`
+  - `title`은 `Programmers`·`BOJ`·`LeetCode`일 때 문제 페이지 HTML에서 추출한 공식 명칭을 우선하고, 추출 실패 시에만 AI가 제안한 문자열을 사용합니다. `Other`는 AI 제목만 사용합니다.
   - `hint`는 문제 원문 복사가 아닌 풀이 힌트 텍스트여야 합니다.
   - `algorithms`는 1개 이상이어야 하며, 비어 있으면 서버가 실패 처리합니다.
   - `algorithms`는 서버 허용 키워드 목록 중에서만 선택해 반환해야 합니다.
@@ -481,7 +482,7 @@
 
 ### 10.3 정책
 
-- AI 코드 리뷰 1회 실행이 성공해 댓글이 등록된 경우에만 토큰 차감. 차감량은 OpenRouter 응답 `usage.total_tokens`(입력+출력 합)을 그대로 사용합니다.
+- AI 코드 리뷰 1회 실행이 성공해 댓글이 등록된 경우에만 토큰 차감. 차감량은 선택한 provider 응답 `usage.total_tokens`(입력+출력 합)을 그대로 사용합니다.
 - 실패/타임아웃/취소는 0 차감.
 - 토큰 부족 시 `INSUFFICIENT_AI_TOKENS`.
 - LLM 호출 실패 시 worker가 자동 1회 재시도(짧은 backoff). 재시도까지 실패하면 `AI_REVIEW_RUNS.status='FAILED'`로 기록하고 제출 작성자에게만 실패 알림 발송.
@@ -522,8 +523,9 @@
 
 ### 11.2 정책
 
-- 역할 구역·리포트는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행·컴파일 검증은 하지 않음**. 구역 `regions`의 줄 번호는 **각 제출의 DB 스냅샷 원문 코드**를 `split('\n')`한 줄 수에 맞게 **클램프**한다(LLM 입력 `lines`와 동일한 기준. 파싱 시 원문을 **`trim()`하지 않음** — 끝 줄바꿈만 있어도 줄 개수가 달라지면 음영이 통째로 밀린다). 클램프 후 제출별 구역을 **시작 줄 기준으로 정렬**하고, **구역 개수가 제출마다 다르면 `FAILED`**이다. 개수가 같을 때 **모든 제출의 `roleId` 집합이 동일하면** 같은 문자열의 `roleId`끼리 짝을 지어 첫 제출(head)의 `roleLabel`(및 표시용 `roleId`)만 통일하고, **각 제출의 줄 범위는 그 제출이 준 값을 유지**한다(파일마다 비교 축이 위·아래로 다른 순서여도 라벨이 코드와 어긋나지 않게 함). 집합이 일치하지 않으면(예: 자동 분할·병합 후) **줄 순 슬롯 인덱스**로만 첫 제출 라벨을 덮어쓰는 예전 보정 경로에 폴백한다. **제출당 구역은 1~5개**, 예약 식별자 `whole_file` 및 제출 내 `roleId` 중복은 거절한다. 원문 코드 **전체 줄 수가 12줄 이상**이면 각 구역은 **최소 2줄** 범위를 가져야 하며, **`entire_code` 식별자·구역 1개만으로 전체를 덮는 출력**은 거절한다(의미 축 2개 이상 필요). 파이프라인은 동일 요청에 대해 모델 호출을 재시도할 수 있다. 단일 목표 언어·`normalizedCode` 일치 검사는 하지 않는다.
-- 리포트 `reportMarkdown`의 코드 펜스는 **설명과 연결된 발췌**만 두고, 제출 전체 코드를 그대로 붙이지 않는 것을 프롬프트로 요구한다. 본문에서 구역 `roleId`를 언급해 UI 색 대응과 맞추도록 요구한다. 원문이 **12줄 이상**이면 프롬프트에서 **각 region은 최소 2줄**( `endLine > startLine` )을 명시적으로 요구해 **한 줄짜리 구역(`cohort_bundle_regions_too_fine`)** 출력을 줄인다.
+- 역할 구역·리포트는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행·컴파일 검증은 하지 않음**. LLM은 구역별 줄번호를 직접 내지 않고 `startAnchorText`·`endAnchorText`를 제출하며, 서버가 각 제출의 **원문 `source`**에서 앵커를 찾아 줄번호를 계산한다. 프롬프트는 앵커를 입력 JSON의 **`lines` 연속 원소 그대로**(리포트 본문·펜스와 불일치해도 됨) 두도록 요구해 `cohort_bundle_anchor_not_found`를 줄인다. 입력 `lines`는 `source.split('\n')`(빈 줄 `""` 유지, `trim` 금지)와 동일하며 앵커 매핑 후 줄 범위를 클램프한다. **제출 간 구역 개수·`roleId` 집합을 일치시키지 않으며**, 서버는 제출별 regions만 검증·시작 줄 기준 정렬한다. **제출당 구역은 1~5개**, 예약 식별자 `whole_file` 및 제출 내 `roleId` 중복은 거절한다. 원문 코드 **전체 줄 수가 12줄 이상**인 제출은 구역 **2~5개**이며 각 구역은 **최소 2줄** 범위를 가져야 하고, **`entire_code` 식별자·구역 1개만으로 전체를 덮는 출력**은 거절한다. LLM이 **`regions: []`**를 내거나 12줄 이상 제출에서 유효 구역 객체가 한 건뿐이면 서버가 전체 한 구역으로 바뀐 뒤 동일하게 거절(`cohort_bundle_regions_semantic_required`)된다. 파이프라인은 동일 요청에 대해 모델 호출을 재시도할 수 있다.
+- 리포트 `reportMarkdown`의 코드 펜스는 **설명과 연결된 발췌**만 두고, 제출 전체 코드를 그대로 붙이지 않는 것을 프롬프트로 요구한다. 본문 각 절의 인용은 **해당 제출 `artifacts.regions`의 한 구역 앵커 범위 안 원문**만 근거로 삼도록 프롬프트로 요구한다. **표는 사용하지 않는다**(HTML `<table>`·Markdown 파이프 표 금지 — UI 렌더 불안정). 여러 제출을 한 축에서 비교할 때는 소제목·목록·단락으로만 나열하고, 축마다 **펜스 코드 스니펫**을 두도록 요구한다. 원문이 **12줄 이상**이면 프롬프트에서 **앵커 변환 후 각 region이 최소 2줄 이상**이 되도록 요구해 한 줄짜리 구역(`cohort_bundle_regions_too_fine`) 출력을 줄인다.
+- 집단 분석 LLM **시스템 프롬프트**에는 저장소 루트 `design/cohort-report-template.example.md` 전문을 **참고 본문**으로 삽입해 비교 서술·`[[SUBMISSION:uuid]]`·표 없는 나열 방식·펜스 배치 품질을 맞춘다. 해당 파일의 `###` 소제목 체계는 문체 샘플일 뿐이며, 실제 `reportMarkdown`의 비교 축 제목은 **`##` 비교 주제 + (선택) 백틱 대표 `roleId`** 규약이 우선한다(프롬프트에 명시).
 - 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다. 파싱 직후 서버가 알려진 `submissionId`에 한해 본문의 노출 UUID·`submission <uuid>` 형태를 동일 플레이스홀더로 치환해 저장한다. 저장 전 정규화 단계에서 구 스타일 절 `## 제출 요약`·`## Submission summary`(다음 `##` 직전까지)를 제거하고, 빈 꼭지용 단일 줄 제목(예: `## 제출 간 비교 개요`, `## 문제 요약과 목표`, 영문 `## Problem summary` 등)도 제거한다(제출 식별은 본문 삽입 태그에 맡김).
 - 데드 코드(미사용 선언) 강조는 **정적 분석** 기반이며 집단 비교 역할 구역 판단에는 사용하지 않음.
 - 결과 산출물·API 응답·DB·로그 어디에도 **모델명·프롬프트 버전·시드 등 LLM 구성 메타를 저장하지 않음**.

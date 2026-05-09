@@ -39,111 +39,9 @@ export type CohortLlmBundleParsed = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** 이미 삽입된 제출 칩·후속 치환 보호용 */
-const CHIP_WRAPPER_RE =
-  /\[\[SUBMISSION:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})\]\]/gi;
-
-function escapeRegexChars(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function maskSubmissionChips(markdown: string, chipsOut: string[]): string {
-  return markdown.replace(CHIP_WRAPPER_RE, (full) => {
-    chipsOut.push(full);
-    return `\u0000C${chipsOut.length - 1}\u0000`;
-  });
-}
-
-function unmaskSubmissionChips(markdown: string, chipsOut: string[]): string {
-  return markdown.replace(/\u0000C(\d+)\u0000/g, (_, indexStr: string) => {
-    const i = Number(indexStr);
-    return chipsOut[i] ?? "";
-  });
-}
-
-/** LLM이 자주 쓰는 빈 꼭지 `##` 한 줄만 제거합니다(본문은 유지). */
-function stripCohortBoilerplateHeadingLines(markdown: string): string {
-  return markdown
-    .replace(/^##\s+제출\s*간\s*비교\s*개요\s*$/gim, "")
-    .replace(/^##\s+문제\s*요약과\s*목표\s*$/gim, "")
-    .replace(/^##\s+문제\s*요약[^\n]*$/gim, "")
-    .replace(/^##\s+비교\s*개요\s*$/gim, "")
-    .replace(/^##\s*요약\s*$/gim, "")
-    .replace(/^##\s+Cross-submission\s+overview[^\n]*$/gim, "")
-    .replace(/^##\s+Problem\s+summary[^\n]*$/gim, "")
-    .replace(/^##\s+Submission\s+overview[^\n]*$/gim, "")
-    .replace(/^##\s+Summary\s*$/gim, "")
-    .replace(/^##\s+Overview\s*$/gim, "")
-    .replace(/^##\s+마무리\s*$/gim, "")
-    .replace(/^##\s+Closing\s*$/gim, "")
-    .replace(/^##\s+Conclusion\s*$/gim, "");
-}
-
-/** 한국어 가독성·태그 직후 조사 붙임 등 리포트 마크다운을 저장 전에 보정합니다(FE `normalizeCohortReportMarkdownTypography`와 동일). */
-function normalizeCohortReportMarkdownTypography(markdown: string): string {
-  let w = markdown.replace(/\r\n/g, "\n");
-  w = w.replace(
-    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])(?:<br\s*\/?\s*>[\s\n]*)+/gi,
-    "$1",
-  );
-  w = w.replace(
-    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
-    "$1",
-  );
-  w = w.replace(
-    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s+(?=[\uAC00-\uD7A3])/gi,
-    "$1",
-  );
-  return stripCohortReportAsFollowsFillerLines(w);
-}
-
-/** 펜스 앞 상투구 줄 제거(FE `stripCohortReportAsFollowsFillerLines`와 동일). */
-function stripCohortReportAsFollowsFillerLines(markdown: string): string {
-  let w = markdown;
-  w = w.replace(/^\s*그냥\s+이\s+부분은\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
-  w = w.replace(/^\s*(그냥\s+)?이\s+부분은\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
-  w = w.replace(/^\s*코드의\s*일부는\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
-  w = w.replace(
-    /^\s*(?:그냥\s+)?(?:해당\s+)?(?:코드\s+)?발췌(는|가|은|이)\s+다음과\s+같습니?다[\.:：]?\s*$/gim,
-    "",
-  );
-  w = w.replace(/^\s*(?:아래|위의?)\s+코드(는|가|은|이)\s+다음과\s+같습니?다[\.:：]?\s*$/gim, "");
-  w = w.replace(/^\s*다음과\s+같습니?다[\.:：]?\s*$/gim, "");
-  w = w.replace(/^\s*다음과\s+같다[\.:：]?\s*$/gim, "");
-  return w.replace(/\n{3,}/g, "\n\n");
-}
-
-/**
- * LLM이 구 스타일로 붙이는 "제출 요약" 절(화면에 별도 목록이 있을 때 쓰이던 형식)을 제거합니다.
- */
-function stripCohortSubmissionSummarySection(markdown: string): string {
-  let w = markdown.replace(/\r\n/g, "\n");
-  w = w
-    .replace(/(^|\n)##\s+제출\s*요약[^\n]*\n([\s\S]*?)(?=\n##\s|$)/g, "$1")
-    .replace(/(^|\n)##\s+Submission\s+summary[^\n]*\n([\s\S]*?)(?=\n##\s|$)/gi, "$1");
-  w = stripCohortBoilerplateHeadingLines(w);
-  return w.replace(/\n{3,}/g, "\n\n").trim();
-}
-
-/**
- * 리포트 본문에 노출된 제출 UUID를 FE 칩 플레이스홀더로 통일합니다.
- * 기존 [[SUBMISSION:…]] 토큰은 유지하고, 알려진 submissionId에 한해 치환합니다.
- */
 export function sanitizeCohortReportMarkdown(markdown: string, submissionIds: string[]): string {
-  const uniq = [...new Set(submissionIds.map((id) => id.trim().toLowerCase()))].filter((id) => UUID_RE.test(id));
-  let work = stripCohortSubmissionSummarySection(markdown);
-  work = normalizeCohortReportMarkdownTypography(work);
-  for (const id of uniq) {
-    const chips: string[] = [];
-    let masked = maskSubmissionChips(work, chips);
-    const esc = escapeRegexChars(id);
-    masked = masked.replace(new RegExp(`submission\\s+${esc}`, "gi"), `[[SUBMISSION:${id}]]`);
-    masked = masked.replace(new RegExp(`submission\\s*\\(\\s*${esc}\\s*\\)`, "gi"), `[[SUBMISSION:${id}]]`);
-    masked = maskSubmissionChips(masked, chips);
-    masked = masked.replace(new RegExp(esc, "gi"), `[[SUBMISSION:${id}]]`);
-    work = unmaskSubmissionChips(masked, chips);
-  }
-  return work;
+  void submissionIds;
+  return markdown;
 }
 
 export function normalizeCohortReportLocale(acceptLanguageHeader: string | undefined): CohortReportLocale {
@@ -177,174 +75,10 @@ function sortRegionsByLine(regions: CohortRegionDto[]): void {
   regions.sort((a, b) => a.startLine - b.startLine || a.endLine - b.endLine);
 }
 
-/** 문서 순서로 인접한 두 구역 중 병합 비용(줄 간격)이 가장 작은 쌍을 합칩니다. */
-function mergeClosestAdjacentPair(regions: CohortRegionDto[]): void {
-  sortRegionsByLine(regions);
-  if (regions.length < 2) {
-    throw new Error("cohort_bundle_regions_role_mismatch");
-  }
-  let bestI = 0;
-  let bestGap = Infinity;
-  for (let i = 0; i < regions.length - 1; i += 1) {
-    const a = regions[i];
-    const b = regions[i + 1];
-    if (a === undefined || b === undefined) continue;
-    const gap = b.startLine - a.endLine - 1;
-    const score = gap < 0 ? 0 : gap;
-    if (score < bestGap) {
-      bestGap = score;
-      bestI = i;
-    }
-  }
-  const a = regions[bestI];
-  const b = regions[bestI + 1];
-  if (a === undefined || b === undefined) {
-    throw new Error("cohort_bundle_regions_role_mismatch");
-  }
-  regions[bestI] = {
-    roleId: a.roleId,
-    roleLabel: `${a.roleLabel} · ${b.roleLabel}`,
-    startLine: Math.min(a.startLine, b.startLine),
-    endLine: Math.max(a.endLine, b.endLine),
-  };
-  regions.splice(bestI + 1, 1);
-}
-
-/**
- * 긴 코드에서는 구역당 최소 줄 수를 지키며 가장 긴 구역을 둘로 나눕니다.
- * @returns 분할 성공 여부
- */
-function splitLargestSplittableRegion(regions: CohortRegionDto[], totalLines: number): boolean {
-  const minPiece = totalLines >= REGIONS_MIN_LINES_FOR_SPAN_RULE ? 2 : 1;
-  sortRegionsByLine(regions);
-  let bestIdx = -1;
-  let bestSpan = -1;
-  for (let i = 0; i < regions.length; i += 1) {
-    const r = regions[i];
-    if (r === undefined) continue;
-    const span = r.endLine - r.startLine + 1;
-    if (span >= minPiece * 2 && span > bestSpan) {
-      bestSpan = span;
-      bestIdx = i;
-    }
-  }
-  if (bestIdx < 0) return false;
-  const r = regions[bestIdx];
-  if (r === undefined) return false;
-  const leftEnd = r.startLine + minPiece - 1;
-  const rightStart = leftEnd + 1;
-  if (rightStart > r.endLine) return false;
-  if (r.endLine - rightStart + 1 < minPiece) return false;
-  const left: CohortRegionDto = {
-    roleId: `${r.roleId}_a`,
-    roleLabel: `${r.roleLabel} (앞)`,
-    startLine: r.startLine,
-    endLine: leftEnd,
-  };
-  const right: CohortRegionDto = {
-    roleId: `${r.roleId}_b`,
-    roleLabel: `${r.roleLabel} (뒤)`,
-    startLine: rightStart,
-    endLine: r.endLine,
-  };
-  regions.splice(bestIdx, 1, left, right);
-  return true;
-}
-
-/**
- * LLM이 제출마다 구역 개수를 다르게 주는 경우, submissionId 정렬 **첫 제출**의 개수 k에 맞춰
- * 나머지 제출의 regions를 병합(많을 때)·분할(적을 때)해 맞춥니다.
- * 맞출 수 없으면 cohort_bundle_regions_role_mismatch.
- */
-export function normalizeSubmissionRegionCountsToHeadTemplate(
-  submissions: CohortSubmissionArtifactDto[],
-  codeBySubmissionId: ReadonlyMap<string, string>,
-): void {
-  if (submissions.length === 0) return;
-  const targetK = submissions[0].regions.length;
-
-  for (const sub of submissions) {
-    const raw = codeBySubmissionId.get(sub.submissionId) ?? "";
-    /** trim 금지 — parse 단계와 동일하게 원문 줄 수 기준 */
-    const totalLines = countLines(raw);
-
-    while (sub.regions.length > targetK) {
-      mergeClosestAdjacentPair(sub.regions);
-    }
-    while (sub.regions.length < targetK) {
-      const ok = splitLargestSplittableRegion(sub.regions, totalLines);
-      if (!ok) {
-        throw new Error("cohort_bundle_regions_role_mismatch");
-      }
-    }
-  }
-}
-
-/**
- * 구역을 시작 줄 기준으로 정렬한 뒤, 첫 제출(head)의 roleLabel(및 표시용 roleId)으로 통일합니다.
- *
- * **우선:** 제출 간 **roleId 집합이 동일**하면 슬롯 인덱스가 아니라 **roleId로 짝**을 짓습니다.
- * (파일마다 비교 축이 나타나는 위·아래 순서가 달라도 같은 roleId는 같은 줄 논리 구역을 가리키게 하기 위함.)
- *
- * **예외:** 집합이 다르면(예: 자동 분할·병합으로 `_a` 접미사 등) 기존처럼 **줄 순 슬롯 인덱스**로만 라벨을 덮어씁니다(LLM이 축 이름만 다르게 준 경우 등).
- */
-export function canonicalizeCohortRegionsBySlot(submissions: CohortSubmissionArtifactDto[]): void {
-  if (submissions.length === 0) return;
-
-  for (const sub of submissions) {
-    sortRegionsByLine(sub.regions);
-  }
-
-  const head = submissions[0];
-  if (head === undefined) return;
-
-  const k = head.regions.length;
-  for (const sub of submissions) {
-    if (sub.regions.length !== k) {
-      throw new Error("cohort_bundle_regions_role_mismatch");
-    }
-  }
-
-  const template = head.regions;
-  const headRoleSet = new Set(template.map((r) => r.roleId));
-
-  for (let s = 1; s < submissions.length; s += 1) {
-    const sub = submissions[s];
-    if (sub === undefined) continue;
-
-    const subRoleSet = new Set(sub.regions.map((r) => r.roleId));
-    const alignByRoleId =
-      headRoleSet.size === subRoleSet.size && [...headRoleSet].every((id) => subRoleSet.has(id));
-
-    if (alignByRoleId) {
-      const byRole = new Map(sub.regions.map((r) => [r.roleId, r]));
-      sub.regions = template.map((t) => {
-        const r = byRole.get(t.roleId);
-        if (r === undefined) {
-          throw new Error("cohort_bundle_regions_role_mismatch");
-        }
-        return {
-          ...r,
-          roleId: t.roleId,
-          roleLabel: t.roleLabel,
-        };
-      });
-      continue;
-    }
-
-    for (let i = 0; i < k; i += 1) {
-      const t = template[i];
-      const r = sub.regions[i];
-      if (t === undefined || r === undefined) continue;
-      r.roleId = t.roleId;
-      r.roleLabel = t.roleLabel;
-    }
-  }
-}
-
 /**
  * 모든 제출의 regions가 집단 비교 UI·정책과 맞는지 검증합니다.
- * - 제출당 1~5개, 제출 간 roleId 집합 동일, 예약 roleId 금지, 긴 코드는 구역당 최소 2줄.
+ * - 제출당 1~5개, 예약 roleId 금지, 긴 코드는 구역당 최소 2줄.
+ * - 제출마다 `roleId` 집합·구역 개수는 달라도 된다.
  * - 줄 번호는 각 제출의 DB 원문 코드(codeBySubmissionId) 기준입니다.
  */
 export function assertCohortRegionsAligned(
@@ -352,11 +86,6 @@ export function assertCohortRegionsAligned(
   codeBySubmissionId: ReadonlyMap<string, string>,
 ): void {
   if (submissions.length === 0) return;
-
-  const first = submissions[0];
-  if (first === undefined) return;
-
-  const canonical = new Set(first.regions.map((r) => r.roleId));
 
   for (const sub of submissions) {
     const { regions } = sub;
@@ -386,15 +115,6 @@ export function assertCohortRegionsAligned(
         }
       }
     }
-
-    if (unique.size !== canonical.size) {
-      throw new Error("cohort_bundle_regions_role_mismatch");
-    }
-    for (const id of canonical) {
-      if (!unique.has(id)) {
-        throw new Error("cohort_bundle_regions_role_mismatch");
-      }
-    }
   }
 }
 
@@ -416,6 +136,77 @@ function wholeFileRegion(lines: number, locale: CohortReportLocale): CohortRegio
     startLine: 1,
     endLine: lines,
   };
+}
+
+function normalizeAnchorText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  let text = value.replace(/\r\n/g, "\n").trim();
+  if (text.length === 0) return null;
+  const fenced = text.match(/^```[^\n]*\n([\s\S]*?)\n```$/);
+  if (fenced !== null) {
+    text = fenced[1].trim();
+  }
+  return text.length > 0 ? text : null;
+}
+
+function trimBlankEdgeLines(lines: string[]): string[] {
+  let s = 0;
+  let e = lines.length - 1;
+  while (s <= e && lines[s]?.trim().length === 0) s += 1;
+  while (e >= s && lines[e]?.trim().length === 0) e -= 1;
+  return s <= e ? lines.slice(s, e + 1) : [];
+}
+
+function findContiguousAnchorRange(sourceLines: string[], anchorText: string): { startLine: number; endLine: number } | null {
+  const anchorLines = trimBlankEdgeLines(anchorText.split("\n"));
+  if (anchorLines.length === 0) return null;
+  const n = sourceLines.length;
+  const m = anchorLines.length;
+  if (m > n) return null;
+
+  const eq = (a: string, b: string) => a === b;
+  const eqTrim = (a: string, b: string) => a.trim() === b.trim();
+
+  const tryMatch = (cmp: (a: string, b: string) => boolean): { startLine: number; endLine: number } | null => {
+    for (let i = 0; i <= n - m; i += 1) {
+      let ok = true;
+      for (let j = 0; j < m; j += 1) {
+        const src = sourceLines[i + j];
+        const anc = anchorLines[j];
+        if (src === undefined || anc === undefined || !cmp(src, anc)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) return { startLine: i + 1, endLine: i + m };
+    }
+    return null;
+  };
+
+  return tryMatch(eq) ?? tryMatch(eqTrim);
+}
+
+/** 긴 코드에서 구역당 최소 2줄 규칙을 맞추기 위해 한 줄짜리 범위를 안전하게 확장합니다. */
+function expandSingleLineRegionForMinSpan(
+  startLine: number,
+  endLine: number,
+  totalLines: number,
+): { startLine: number; endLine: number } {
+  if (totalLines < REGIONS_MIN_LINES_FOR_SPAN_RULE) {
+    return { startLine, endLine };
+  }
+  const span = endLine - startLine + 1;
+  if (span >= 2) {
+    return { startLine, endLine };
+  }
+  let s = startLine;
+  let e = endLine;
+  if (e < totalLines) {
+    e += 1;
+  } else if (s > 1) {
+    s -= 1;
+  }
+  return { startLine: s, endLine: e };
 }
 
 /**
@@ -449,21 +240,75 @@ export function parseRegionsLenient(
   }
 
   const regions: CohortRegionDto[] = [];
+  const sourceLines = cohortSubmissionLinesFromSource(sourceCode);
   for (const reg of regionsRaw) {
     if (reg === null || typeof reg !== "object" || Array.isArray(reg)) continue;
     const r = reg as Record<string, unknown>;
     const roleId = typeof r.roleId === "string" ? r.roleId.trim() : "";
     const roleLabel = typeof r.roleLabel === "string" ? r.roleLabel.trim() : "";
-    const sl = normalizeLineNumber(r.startLine);
-    const el = normalizeLineNumber(r.endLine);
-    if (roleId.length === 0 || roleLabel.length === 0 || sl === null || el === null) continue;
+    if (roleId.length === 0 || roleLabel.length === 0) continue;
 
-    let startLine = Math.min(Math.max(sl, 1), lines);
-    let endLine = Math.min(Math.max(el, 1), lines);
+    const startAnchor = normalizeAnchorText(r.startAnchorText ?? r.startAnchor);
+    const endAnchor = normalizeAnchorText(r.endAnchorText ?? r.endAnchor);
+
+    let startLine: number;
+    let endLine: number;
+    let resolvedByAnchor = false;
+
+    if (startAnchor !== null || endAnchor !== null) {
+      resolvedByAnchor = true;
+      if (startAnchor !== null && endAnchor !== null) {
+        const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
+        const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
+        if (startRange === null || endRange === null) {
+          throw new Error("cohort_bundle_anchor_not_found");
+        }
+        startLine = startRange.startLine;
+        endLine = endRange.endLine;
+      } else if (startAnchor !== null) {
+        const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
+        if (startRange === null) {
+          throw new Error("cohort_bundle_anchor_not_found");
+        }
+        startLine = startRange.startLine;
+        endLine = startRange.endLine;
+      } else {
+        if (endAnchor === null) {
+          throw new Error("cohort_bundle_anchor_not_found");
+        }
+        const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
+        if (endRange === null) {
+          throw new Error("cohort_bundle_anchor_not_found");
+        }
+        startLine = endRange.startLine;
+        endLine = endRange.endLine;
+      }
+    } else {
+      const sl = normalizeLineNumber(r.startLine);
+      const el = normalizeLineNumber(r.endLine);
+      if (sl === null || el === null) continue;
+      startLine = sl;
+      endLine = el;
+    }
+
+    startLine = Math.min(Math.max(startLine, 1), lines);
+    endLine = Math.min(Math.max(endLine, 1), lines);
     if (startLine > endLine) {
       const t = startLine;
       startLine = endLine;
       endLine = t;
+    }
+    if (resolvedByAnchor) {
+      const expanded = expandSingleLineRegionForMinSpan(startLine, endLine, lines);
+      startLine = expanded.startLine;
+      endLine = expanded.endLine;
+      startLine = Math.min(Math.max(startLine, 1), lines);
+      endLine = Math.min(Math.max(endLine, 1), lines);
+      if (startLine > endLine) {
+        const t = startLine;
+        startLine = endLine;
+        endLine = t;
+      }
     }
     regions.push({ roleId, roleLabel, startLine, endLine });
   }
@@ -472,6 +317,39 @@ export function parseRegionsLenient(
     return [wholeFileRegion(lines, locale)];
   }
   return regions;
+}
+
+/**
+ * 모델이 `submissions`를 배열 대신 `{ [submissionId]: { regions } }` 객체로 줄 때 배열로 정규화합니다.
+ * 키는 모두 UUID 형식이고 값은 regions를 가진 객체만 허용합니다.
+ */
+function coerceSubmissionsToArray(subsRaw: unknown): unknown[] | null {
+  if (Array.isArray(subsRaw)) {
+    return subsRaw;
+  }
+  if (subsRaw === null || typeof subsRaw !== "object") {
+    return null;
+  }
+  const o = subsRaw as Record<string, unknown>;
+  const entries = Object.entries(o);
+  if (entries.length === 0) {
+    return null;
+  }
+  const out: unknown[] = [];
+  for (const [k, v] of entries) {
+    if (!UUID_RE.test(k)) {
+      return null;
+    }
+    if (v === null || typeof v !== "object" || Array.isArray(v)) {
+      return null;
+    }
+    const row = v as Record<string, unknown>;
+    if (!Object.prototype.hasOwnProperty.call(row, "regions")) {
+      return null;
+    }
+    out.push({ submissionId: k, regions: row.regions });
+  }
+  return out;
 }
 
 function parseJsonObject(raw: string): Record<string, unknown> | null {
@@ -514,20 +392,20 @@ export function parseAndValidateCohortBundle(
   if (typeof reportMarkdown !== "string" || reportMarkdown.trim().length === 0) {
     throw new Error("cohort_bundle_report_missing");
   }
-  const subsRaw = obj.submissions;
-  if (!Array.isArray(subsRaw)) {
+  const subsArray = coerceSubmissionsToArray(obj.submissions);
+  if (subsArray === null) {
     throw new Error("cohort_bundle_submissions_not_array");
   }
 
   const expected = new Set(expectedSubmissionIdsSorted);
-  if (subsRaw.length !== expected.size) {
+  if (subsArray.length !== expected.size) {
     throw new Error("cohort_bundle_submission_count_mismatch");
   }
 
   const seenIds = new Set<string>();
   const submissions: CohortSubmissionArtifactDto[] = [];
 
-  for (const item of subsRaw) {
+  for (const item of subsArray) {
     if (item === null || typeof item !== "object" || Array.isArray(item)) {
       throw new Error("cohort_bundle_submission_invalid");
     }
@@ -571,17 +449,17 @@ export function parseAndValidateCohortBundle(
     return ia - ib || a.submissionId.localeCompare(b.submissionId);
   });
 
-  normalizeSubmissionRegionCountsToHeadTemplate(submissions, codeBySubmissionId);
-  canonicalizeCohortRegionsBySlot(submissions);
+  for (const sub of submissions) {
+    sortRegionsByLine(sub.regions);
+  }
   assertCohortRegionsAligned(submissions, codeBySubmissionId);
 
   const artifacts: CohortAnalysisArtifactsDto = {
     submissions,
   };
 
-  const trimmedMd = reportMarkdown.trim();
   return {
-    reportMarkdown: sanitizeCohortReportMarkdown(trimmedMd, expectedSubmissionIdsSorted),
+    reportMarkdown: sanitizeCohortReportMarkdown(reportMarkdown, expectedSubmissionIdsSorted),
     artifacts,
   };
 }
