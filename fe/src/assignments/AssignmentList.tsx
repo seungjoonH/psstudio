@@ -53,54 +53,63 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
     <li className={styles.row}>
       <Link href={item.href} className={styles.link}>
         <div className={styles.head}>
-          <span className={styles.title}>
-            <Icon name="book" size={16} className={styles.titleIcon} />
-            {item.title}
-          </span>
-          <div className={styles.topRight}>
-            <button
-              type="button"
-              className={styles.dueToggle}
-              onClick={(e) => {
-                e.preventDefault();
-                if (!item.isLate) setShowDueAt((v) => !v);
-              }}
-              aria-label={
-                showDueAt ? t("assignment.detail.dueToggleRemain") : t("assignment.detail.dueToggleDate")
-              }
-            >
-              <Badge tone={dueTone}>
-                {showDueAt && !item.isLate ? due.toLocaleString() : statusLabel}
-              </Badge>
-            </button>
-            {item.hasMySubmission !== undefined ? (
-              <Badge tone={item.hasMySubmission ? "success" : "danger"}>
-                {item.hasMySubmission ? t("assignment.list.solved") : t("assignment.list.unsolved")}
-              </Badge>
+          <div className={styles.headMain}>
+            <div className={styles.titleRow}>
+              <span className={styles.title}>
+                <Icon name="book" size={16} className={styles.titleIcon} />
+                {item.title}
+              </span>
+              <div className={styles.titleNear}>
+                <Badge tone="neutral" chipIndex={1}>
+                  {item.platform}
+                </Badge>
+                <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
+                {showGroupName && item.groupName ? (
+                  <Badge tone="neutral" chipIndex={0}>
+                    {item.groupName}
+                  </Badge>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className={styles.headRight}>
+            {item.analysisStatus !== undefined && item.analysisStatus !== "DONE" ? (
+              <Badge tone="warning">{t("assignment.list.analysis", { status: item.analysisStatus })}</Badge>
             ) : null}
+            <div className={styles.topRight}>
+              <button
+                type="button"
+                className={styles.dueToggle}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!item.isLate) setShowDueAt((v) => !v);
+                }}
+                aria-label={
+                  showDueAt ? t("assignment.detail.dueToggleRemain") : t("assignment.detail.dueToggleDate")
+                }
+              >
+                <Badge tone={dueTone}>
+                  {showDueAt && !item.isLate ? due.toLocaleString() : statusLabel}
+                </Badge>
+              </button>
+              {item.hasMySubmission !== undefined ? (
+                <Badge tone={item.hasMySubmission ? "success" : "danger"}>
+                  {item.hasMySubmission ? t("assignment.list.solved") : t("assignment.list.unsolved")}
+                </Badge>
+              ) : null}
+            </div>
           </div>
         </div>
-        <div className={styles.meta}>
-          {showGroupName && item.groupName ? (
-            <Badge tone="neutral" chipIndex={0}>
-              {item.groupName}
-            </Badge>
-          ) : null}
-          <Badge tone="neutral" chipIndex={1}>
-            {item.platform}
-          </Badge>
-          <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
-          {((item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true)
-            ? (item.algorithms ?? []).map((tag, index) => (
-                <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
-                  {formatAssignmentAlgorithmLabel(locale, tag)}
-                </Badge>
-              ))
-            : null}
-          {item.analysisStatus !== undefined && item.analysisStatus !== "DONE" ? (
-            <Badge tone="warning">{t("assignment.list.analysis", { status: item.analysisStatus })}</Badge>
-          ) : null}
-        </div>
+        {((item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true) &&
+        (item.algorithms?.length ?? 0) > 0 ? (
+          <div className={styles.meta}>
+            {(item.algorithms ?? []).map((tag, index) => (
+              <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
+                {formatAssignmentAlgorithmLabel(locale, tag)}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
       </Link>
     </li>
   );
