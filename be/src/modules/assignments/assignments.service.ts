@@ -443,6 +443,9 @@ export class AssignmentsService {
             title: `${creatorNickname}님이 새 과제「${assignment.title}」를 등록했습니다.`,
             groupId: assignment.groupId,
             assignmentId: assignment.id,
+            actorUserId: creatorId,
+            actorNickname: creatorNickname,
+            actorProfileImageUrl: creator?.profileImageUrl ?? "",
           },
         }),
       );

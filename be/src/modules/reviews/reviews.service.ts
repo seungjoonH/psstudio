@@ -14,6 +14,7 @@ import { canPerform } from "../groups/permissions.js";
 import { Notification } from "../notifications/notification.entity.js";
 import { ReactionsService } from "../reactions/reactions.service.js";
 import { Submission } from "../submissions/submission.entity.js";
+import { SubmissionVersion } from "../submissions/submission-version.entity.js";
 import { User } from "../users/user.entity.js";
 import { Review } from "./review.entity.js";
 import { ReviewReply } from "./review-reply.entity.js";
@@ -142,13 +143,24 @@ export class ReviewsService {
     const submission = await this.ds
       .getRepository(Submission)
       .findOne({ where: { id: review.submissionId } });
+    const versionRow = await this.ds
+      .getRepository(SubmissionVersion)
+      .findOne({ where: { id: review.submissionVersionId } });
+    const versionNo = versionRow?.versionNo ?? 1;
     const notifRepo = this.ds.getRepository(Notification);
+    const actor = {
+      actorUserId: authorUserId,
+      actorNickname: authorNickname,
+      actorProfileImageUrl: user?.profileImageUrl ?? "",
+    };
     const basePayload = {
       submissionId: review.submissionId,
       assignmentId: review.assignmentId,
       groupId: review.groupId,
       reviewId: review.id,
       replyId: reply.id,
+      versionNo,
+      ...actor,
     };
     if (!skipReviewAuthorNotif && review.authorUserId !== authorUserId) {
       await notifRepo.save(

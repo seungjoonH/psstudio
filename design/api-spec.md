@@ -522,7 +522,7 @@
 홈 화면(`/`)은 서버 컴포넌트에서 내 활동 데이터를 조합해 칸반형 보드로 주입합니다.
 
 - `GET /api/v1/users/me/notifications?limit=5`
-  - 응답: `[{ id, title, createdAt }]` 최신순.
+  - 응답: `[{ id, title, createdAt, href, actorNickname, actorProfileImageUrl }]` 최신순. `href`는 알림 종류·payload에 따라 과제·제출·diff 등으로의 경로 또는 `null`. `actor*`는 행위자 표시용(구 알림은 `null`일 수 있음). `REVIEW_ON_MY_SUBMISSION` 구 저장본의 제목에 `코드 리뷰를 남겼습니다`가 있으면 응답 시 `댓글을 남겼습니다`로 치환한다.
   - 권한: 본인.
 - `GET /api/v1/users/me/submissions?limit=5&sort=createdAtDesc`
   - 응답: `[{ id, title, language, createdAt, href }]` 최신 제출순.

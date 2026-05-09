@@ -141,12 +141,13 @@
 
 .cardEmpty {
   margin: 0;
-  padding: 28px 10px;
-  border: 1px dashed color-mix(in oklab, var(--color-muted) 35%, transparent);
-  border-radius: 14px;
+  padding: 24px 12px;
+  border: 1px dashed color-mix(in oklab, var(--color-border) 65%, transparent);
+  border-radius: 12px;
   font-size: 13px;
   color: var(--color-muted);
   text-align: center;
+  background: color-mix(in oklab, var(--color-surface-muted) 40%, transparent);
 }
 
 .list {
@@ -154,25 +155,74 @@
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 6px;
-}
-
-.taskCard,
-.noticeRow {
-  display: grid;
   gap: 8px;
-  padding: 12px;
-  border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
-  border-radius: 14px;
-  background: var(--color-surface);
-  box-shadow: 0 10px 26px color-mix(in oklab, var(--color-text) 5%, transparent);
-  text-decoration: none;
-  color: inherit;
 }
 
-.taskCard:hover {
-  border-color: color-mix(in oklab, var(--color-primary) 38%, var(--color-border));
-  transform: translateY(-1px);
+.feedRow,
+.feedRowStatic {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+  background: var(--color-surface-paper);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.feedRow:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
+  background: var(--color-surface);
+}
+
+.feedRowStatic {
+  cursor: default;
+}
+
+.feedAvatar {
+  flex-shrink: 0;
+}
+
+.feedGlyph {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-surface-muted) 90%, var(--color-surface));
+  color: var(--color-muted);
+}
+
+.todoGlyph {
+  background: color-mix(in oklab, var(--color-warning) 12%, var(--color-surface-muted));
+  color: color-mix(in oklab, var(--color-warning) 85%, var(--color-text));
+}
+
+.noticeGlyph {
+  background: color-mix(in oklab, var(--color-info) 12%, var(--color-surface-muted));
+  color: color-mix(in oklab, var(--color-info) 80%, var(--color-text));
+}
+
+.feedMain {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notifTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .listTitle {

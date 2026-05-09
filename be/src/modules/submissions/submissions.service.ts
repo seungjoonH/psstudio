@@ -1012,12 +1012,15 @@ export class SubmissionsService {
           recipientUserId: submission.authorUserId,
           type: NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION,
           payload: {
-            title: `${authorNickname}님이 내 제출에 코드 리뷰를 남겼습니다.`,
+            title: `${authorNickname}님이 내 제출에 댓글을 남겼습니다.`,
             submissionId,
             assignmentId: submission.assignmentId,
             groupId: assignment.groupId,
             reviewId: review.id,
             versionNo: payload.versionNo,
+            actorUserId: authorUserId,
+            actorNickname: authorNickname,
+            actorProfileImageUrl: user?.profileImageUrl ?? "",
           },
         }),
       );
@@ -1151,6 +1154,9 @@ export class SubmissionsService {
               assignmentId: submission.assignmentId,
               groupId: assignment.groupId,
               commentId: comment.id,
+              actorUserId: authorUserId,
+              actorNickname: authorNickname,
+              actorProfileImageUrl: user?.profileImageUrl ?? "",
             },
           }),
         );
@@ -1167,6 +1173,9 @@ export class SubmissionsService {
             groupId: assignment.groupId,
             commentId: comment.id,
             parentCommentId,
+            actorUserId: authorUserId,
+            actorNickname: authorNickname,
+            actorProfileImageUrl: user?.profileImageUrl ?? "",
           },
         }),
       );
