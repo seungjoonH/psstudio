@@ -393,6 +393,14 @@ describe("sanitizeCohortReportMarkdown", () => {
     expect(out).toContain("## 코드 비교");
   });
 
+  it("removes <br /> after [[SUBMISSION]] so text follows on the same flow", () => {
+    const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const md = `[[SUBMISSION:${id}]]<br /><br />의 설명`;
+    const out = sanitizeCohortReportMarkdown(md, [id]);
+    expect(out).toContain(`[[SUBMISSION:${id}]]의`);
+    expect(out).not.toMatch(/\]\][\s]*<br/i);
+  });
+
   it("joins [[SUBMISSION]] to following Hangul and strips 다음과 같습니다 filler lines", () => {
     const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     const md = `[[SUBMISSION:${id}]]\n\n의 설명\n\n다음과 같습니다:\n\n코드 발췌는 다음과 같습니다.\n\n그냥 이 부분은 다음과 같습니다.\n\n\`\`\`js\nx\n\`\`\``;

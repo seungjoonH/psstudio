@@ -3,6 +3,11 @@
 /** BE `normalizeCohortReportMarkdownTypography`와 동일. 표시·저장 전 가독성·태그 붙임 보정. */
 export function normalizeCohortReportMarkdownTypography(markdown: string): string {
   let w = markdown.replace(/\r\n/g, "\n");
+  // 칩 직후 모델이 넣은 HTML 줄바꿈(<br />) — 같은 줄에 한글·코드가 오도록 제거
+  w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])(?:<br\s*\/?\s*>[\s\n]*)+/gi,
+    "$1",
+  );
   w = w.replace(
     /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
     "$1",

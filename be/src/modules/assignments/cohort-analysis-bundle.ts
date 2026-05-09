@@ -83,6 +83,10 @@ function stripCohortBoilerplateHeadingLines(markdown: string): string {
 function normalizeCohortReportMarkdownTypography(markdown: string): string {
   let w = markdown.replace(/\r\n/g, "\n");
   w = w.replace(
+    /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])(?:<br\s*\/?\s*>[\s\n]*)+/gi,
+    "$1",
+  );
+  w = w.replace(
     /(\[\[SUBMISSION:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}\]\])\s*\n+/gi,
     "$1",
   );

@@ -34,15 +34,21 @@ function metaById(rows: CohortIncludedLite[]): Map<string, CohortIncludedLite> {
   return m;
 }
 
-/** 목록·제목·펜스·다중 줄 등 블록 전용 마크다운 — 칩과 한 줄에 섞지 않는다. */
+/** 목록·제목·펜스 등 블록 전용 마크다운 — 칩과 같은 플렉스 줄에 두지 않는다. */
 function isInlineOnlyMd(text: string): boolean {
   if (text.includes("```")) return false;
-  const nonemptyLines = text.split("\n").filter((l) => l.trim().length > 0);
-  if (nonemptyLines.length > 1) return false;
-  const t = text.trimStart();
-  if (/^#{1,6}\s/.test(t)) return false;
-  if (/^\s*[-*+]\s/.test(t)) return false;
-  if (/^\s*\d+\.\s/.test(t)) return false;
+  const normalized = text.replace(/\r\n/g, "\n");
+  const trimmed = normalized.trim();
+  if (trimmed.length === 0) return true;
+  // 앞뒤 공백만 다듬은 뒤에도 빈 줄이 있으면 문단 구분 → 블록(칩만 한 줄·본문 다음 줄로 갈라짐)
+  if (/\n\s*\n/.test(trimmed)) return false;
+  const nonemptyLines = normalized.split("\n").filter((l) => l.trim().length > 0);
+  for (const line of nonemptyLines) {
+    const s = line.trimStart();
+    if (/^#{1,6}\s/.test(s)) return false;
+    if (/^\s*[-*+]\s/.test(s)) return false;
+    if (/^\s*\d+\.\s/.test(s)) return false;
+  }
   return true;
 }
 
