@@ -1,23 +1,41 @@
 .wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: block;
   line-height: 1.65;
   font-size: 14px;
   color: var(--color-text);
 }
 
+/* 칩과 뒤따르는 문장은 같은 플렉스 줄에 고정하고, 긴 문장만 안쪽에서 줄바꿈(wrap으로 두 아이템이 줄 단위로 갈라지면 안 됨). */
+.inlineRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.35em;
+  margin-bottom: 0.65em;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.inlineMdWrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .mdBlock {
   min-width: 0;
+  margin-bottom: 10px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
-  gap: 4px;
-  max-width: 100%;
-  margin: 2px 0;
+  flex-shrink: 0;
+  gap: 6px;
+  max-width: min(100%, 280px);
+  margin: 0;
+  vertical-align: baseline;
   padding: 1px 6px 1px 4px;
   border-radius: 999px;
   border: 1px solid var(--color-border);
@@ -34,11 +52,27 @@
 }
 
 .chipLabel {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 220px;
+}
+
+.chipTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipVer {
+  flex-shrink: 0;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--color-muted);
 }
 
 .chipAvatar {
