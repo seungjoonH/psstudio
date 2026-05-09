@@ -116,9 +116,9 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
     inlineQueue = [];
     if (nodes.length === 0) return;
     blocks.push(
-      <p className={styles.inlineFlow} key={`row-${blockKey++}`}>
+      <span className={styles.inlineFlow} key={`row-${blockKey++}`}>
         {nodes}
-      </p>,
+      </span>,
     );
   }
 

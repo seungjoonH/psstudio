@@ -5,17 +5,16 @@
   color: var(--color-text);
 }
 
-/* HTML <p> 안에 볼드·span처럼 칩·마크다운 조각을 인라인으로 이어 붙인다(flex 행 금지 — 좁은 폭에서 글자 단위로 깨짐). */
+/* 칩·인라인 마크다운을 블록 div가 아니라 span 묶음으로 두어 문단 안에서 자연스럽게 흐르게 한다. */
 .inlineFlow {
-  margin: 0 0 0.65em;
-  display: block;
-  max-width: 100%;
-  box-sizing: border-box;
+  display: inline;
+  vertical-align: baseline;
   font-size: inherit;
   line-height: inherit;
+  box-sizing: border-box;
 }
 
-/* 마크다운 조각은 span으로 두어 <p> 안에 허용되는 인라인 자식만 둔다. */
+/* 마크다운 조각은 span으로 두어 형제 칩과 같은 줄에서 줄바꿈된다. */
 .inlineMdWrap {
   display: inline;
   vertical-align: baseline;
