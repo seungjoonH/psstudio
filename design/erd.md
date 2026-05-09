@@ -112,7 +112,7 @@ erDiagram
       uuid triggered_by_user_id FK
       int token_used
       text report_markdown "status=DONE일 때 과제 단위 Markdown"
-      jsonb artifacts "schemaVersion 2: 제출별 normalizedCode·regions(roleId, roleLabel, 줄 범위) 등 — 구버전은 pairwise diff 포함 가능"
+      jsonb artifacts "{ submissions: 제출별 normalizedCode·regions(roleId, roleLabel, 줄 범위)[] }"
       text failure_reason
       datetime started_at
       datetime finished_at

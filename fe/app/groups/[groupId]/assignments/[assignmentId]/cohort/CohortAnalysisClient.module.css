@@ -99,12 +99,6 @@
   color: var(--color-muted);
 }
 
-.legacy {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--color-warning, #b45309);
-}
-
 .token {
   margin: 0;
   font-size: 12px;

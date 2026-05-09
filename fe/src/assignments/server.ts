@@ -109,19 +109,6 @@ export function autofillAssignment(
   });
 }
 
-export type CohortPairwiseDiff = {
-  submissionIdA: string;
-  submissionIdB: string;
-  file: string;
-  diffText: string;
-};
-
-export type CohortAnalysisArtifacts = {
-  normalizedBySubmission: Record<string, { files: { main: string }; originalLanguage: string }>;
-  pairwiseDiffs: CohortPairwiseDiff[];
-  deadSpansBySubmission: Record<string, { line: number; endLine?: number }[]>;
-};
-
 export type CohortRegionArtifact = {
   roleId: string;
   roleLabel: string;
@@ -136,8 +123,7 @@ export type CohortSubmissionArtifact = {
   regions: CohortRegionArtifact[];
 };
 
-export type CohortArtifactsV2 = {
-  schemaVersion: 2;
+export type CohortAnalysisArtifacts = {
   submissions: CohortSubmissionArtifact[];
 };
 
@@ -147,7 +133,7 @@ export type CohortAnalysisDto = {
   reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
-  artifacts?: CohortArtifactsV2 | CohortAnalysisArtifacts | Record<string, unknown>;
+  artifacts?: CohortAnalysisArtifacts | Record<string, unknown>;
   tokenUsed?: number;
   includedSubmissions?: Array<{
     submissionId: string;

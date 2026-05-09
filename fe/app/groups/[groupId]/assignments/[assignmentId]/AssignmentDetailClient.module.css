@@ -454,12 +454,6 @@
   color: var(--color-danger, #b91c1c);
 }
 
-.cohortMuted {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-muted);
-}
-
 .cohortStatus {
   margin: 0;
   font-size: 14px;
@@ -529,58 +523,4 @@
 
 .cohortViewFull:hover {
   filter: brightness(0.95);
-}
-
-.cohortSubheading {
-  margin: 8px 0 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.cohortMd {
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  background: color-mix(in oklab, var(--color-surface) 96%, var(--color-text));
-  max-height: 480px;
-  overflow: auto;
-}
-
-.cohortDiffControls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.cohortSelectLabel {
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-muted);
-}
-
-.cohortSelect {
-  min-width: 200px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.cohortDiffPre {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: color-mix(in oklab, var(--color-text) 6%, var(--color-surface));
-  font-size: 12px;
-  line-height: 1.45;
-  overflow: auto;
-  max-height: 360px;
-  white-space: pre;
 }

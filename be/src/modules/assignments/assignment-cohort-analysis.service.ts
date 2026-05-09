@@ -11,7 +11,7 @@ import { AssignmentCohortAnalysisMember } from "./assignment-cohort-analysis-mem
 import { AssignmentCohortAnalysis } from "./assignment-cohort-analysis.entity.js";
 import { assertCohortAnalysisTriggerAllowed } from "./assignment-cohort-analysis.policy.js";
 import {
-  type CohortArtifactsV2,
+  type CohortAnalysisArtifactsDto,
   type CohortReportLocale,
   parseAndValidateCohortBundle,
 } from "./cohort-analysis-bundle.js";
@@ -19,12 +19,6 @@ import { Group } from "../groups/group.entity.js";
 
 /** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
-
-export type CohortArtifactsLegacy = {
-  normalizedBySubmission: Record<string, { files: { main: string }; originalLanguage: string }>;
-  pairwiseDiffs: Array<{ submissionIdA: string; submissionIdB: string; file: string; diffText: string }>;
-  deadSpansBySubmission: Record<string, { line: number; endLine?: number }[]>;
-};
 
 function targetLanguageInstruction(targetLanguage: string): string {
   switch (targetLanguage) {
@@ -95,7 +89,7 @@ export type CohortAnalysisPublicDto = {
   reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
-  artifacts?: CohortArtifactsV2 | CohortArtifactsLegacy | Record<string, unknown>;
+  artifacts?: CohortAnalysisArtifactsDto | Record<string, unknown>;
   tokenUsed?: number;
   includedSubmissions?: Array<{
     submissionId: string;
@@ -137,7 +131,7 @@ export class AssignmentCohortAnalysisService {
       finishedAt: row.finishedAt?.toISOString() ?? null,
     };
     if (row.status === "DONE") {
-      base.artifacts = row.artifacts as unknown as CohortArtifactsV2 | CohortArtifactsLegacy | Record<string, unknown>;
+      base.artifacts = row.artifacts as unknown as CohortAnalysisArtifactsDto | Record<string, unknown>;
       const members = await this.ds.getRepository(AssignmentCohortAnalysisMember).find({
         where: { cohortAnalysisId: row.id },
       });

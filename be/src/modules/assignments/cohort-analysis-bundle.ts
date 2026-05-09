@@ -17,15 +17,14 @@ export type CohortSubmissionArtifactDto = {
   regions: CohortRegionDto[];
 };
 
-/** FE·저장소 공통 아티팩트 v2 */
-export type CohortArtifactsV2 = {
-  schemaVersion: 2;
+/** FE·저장소 공통 아티팩트(JSON에 그대로 저장) */
+export type CohortAnalysisArtifactsDto = {
   submissions: CohortSubmissionArtifactDto[];
 };
 
 export type CohortLlmBundleParsed = {
   reportMarkdown: string;
-  artifacts: CohortArtifactsV2;
+  artifacts: CohortAnalysisArtifactsDto;
 };
 
 const UUID_RE =
@@ -178,8 +177,7 @@ export function parseAndValidateCohortBundle(
 
   submissions.sort((a, b) => a.submissionId.localeCompare(b.submissionId));
 
-  const artifacts: CohortArtifactsV2 = {
-    schemaVersion: 2,
+  const artifacts: CohortAnalysisArtifactsDto = {
     submissions,
   };
 

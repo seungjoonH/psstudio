@@ -474,11 +474,7 @@ export const messages = {
           done: "완료",
           none: "아직 실행된 집단 분석이 없습니다.",
           reportHeading: "Markdown 리포트",
-          diffHeading: "정규화 코드 diff (파일 main)",
-          pickA: "제출 A",
-          pickB: "제출 B",
           tokenUsed: "토큰 사용(합계) {count}",
-          authorLabel: "{nickname} · v{version}",
           viewFull: "전체 분석 보기",
         },
       },
@@ -489,7 +485,6 @@ export const messages = {
         cannotStartHere:
           "이 페이지에서 바로 실행할 수 없습니다. 과제 상세에서 마감·제출 수·공통 언어 조건을 확인한 뒤 실행해 주세요.",
         codeHeading: "정규화 코드 (역할별 색)",
-        legacyMarkdown: "이전 형식으로 저장된 결과입니다. 아래는 Markdown만 표시됩니다.",
       },
       new: {
         fallbackTitle: "과제 만들기",
@@ -1124,11 +1119,7 @@ export const messages = {
           done: "Complete",
           none: "No cohort analysis has been run yet.",
           reportHeading: "Markdown report",
-          diffHeading: "Normalized code diff (file main)",
-          pickA: "Submission A",
-          pickB: "Submission B",
           tokenUsed: "Tokens used (total) {count}",
-          authorLabel: "{nickname} · v{version}",
           viewFull: "Open full analysis",
         },
       },
@@ -1139,7 +1130,6 @@ export const messages = {
         cannotStartHere:
           "You cannot start analysis from this page alone. Open the assignment page and meet due date, submission count, and shared language requirements.",
         codeHeading: "Normalized code (by role color)",
-        legacyMarkdown: "This result was saved in an older format. Only Markdown is shown below.",
       },
       new: {
         fallbackTitle: "Create assignment",

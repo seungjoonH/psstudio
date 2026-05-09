@@ -38,7 +38,6 @@ describe("parseAndValidateCohortBundle", () => {
     const raw = "```json\n" + JSON.stringify(validJson) + "\n```";
     const out = parseAndValidateCohortBundle(raw, ids, "javascript");
     expect(out.reportMarkdown).toContain("Hello");
-    expect(out.artifacts.schemaVersion).toBe(2);
     expect(out.artifacts.submissions).toHaveLength(2);
   });
 

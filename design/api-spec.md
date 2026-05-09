@@ -542,7 +542,7 @@
   - 동작: 비동기 파이프라인 실행. 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
   - 실패한 이전 시도가 있으면 재시도 허용. 성공(`DONE`) 확정 전까지는 새 제출·새 버전이 다음 시도의 입력 집합에 포함될 수 있음.
 - `GET /assignments/:assignmentId/cohort-analysis`
-  - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(권장 스키마 `schemaVersion: 2` — 제출별 `normalizedCode`, `regions[]`의 `roleId`·`roleLabel`·줄 범위), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`submissionId`, `versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등).
+  - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(`submissions[]`: 제출별 `normalizedCode`, `regions[]`의 `roleId`·`roleLabel`·줄 범위), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`submissionId`, `versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등).
 
 #### 정책
 

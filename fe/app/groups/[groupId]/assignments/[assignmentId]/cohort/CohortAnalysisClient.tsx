@@ -3,21 +3,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { CohortAnalysisDto, CohortArtifactsV2 } from "../../../../../../src/assignments/server";
+import type { CohortAnalysisDto, CohortSubmissionArtifact } from "../../../../../../src/assignments/server";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
-import { MarkdownPreview } from "../../../../../../src/ui/MarkdownPreview";
 import { CohortCodeColumns } from "../../../../../../src/ui/cohort/CohortCodeColumns";
 import { CohortReportBody } from "../../../../../../src/ui/cohort/CohortReportBody";
 import { getCohortAnalysisStateAction, startCohortAnalysisAction } from "../../actions";
 import styles from "./CohortAnalysisClient.module.css";
 
-function isArtifactsV2(a: unknown): a is CohortArtifactsV2 {
-  return (
-    typeof a === "object" &&
-    a !== null &&
-    (a as CohortArtifactsV2).schemaVersion === 2 &&
-    Array.isArray((a as CohortArtifactsV2).submissions)
-  );
+function cohortSubmissions(a: unknown): CohortSubmissionArtifact[] | null {
+  if (typeof a !== "object" || a === null) return null;
+  const subs = (a as { submissions?: unknown }).submissions;
+  if (!Array.isArray(subs) || subs.length === 0) return null;
+  return subs as CohortSubmissionArtifact[];
 }
 
 type Props = {
@@ -69,6 +66,7 @@ export function CohortAnalysisClient({
 
   const included = cohort.includedSubmissions ?? [];
   const titlesMap = new Map(included.map((r) => [r.submissionId, { title: r.title, versionNo: r.versionNo }]));
+  const submissions = cohortSubmissions(cohort.artifacts);
 
   return (
     <div className={styles.root}>
@@ -123,31 +121,26 @@ export function CohortAnalysisClient({
             <h2 id="cohort-report" className={styles.sectionTitle}>
               {t("assignment.detail.cohort.reportHeading")}
             </h2>
-            {isArtifactsV2(cohort.artifacts) && included.length > 0 ? (
+            {included.length > 0 ? (
               <CohortReportBody
                 reportMarkdown={cohort.reportMarkdown}
                 groupId={groupId}
                 assignmentId={assignmentId}
                 included={included}
               />
-            ) : (
-              <>
-                <p className={styles.legacy}>{t("assignment.cohortPage.legacyMarkdown")}</p>
-                <MarkdownPreview content={cohort.reportMarkdown} />
-              </>
-            )}
+            ) : null}
           </section>
 
           {typeof cohort.tokenUsed === "number" ? (
             <p className={styles.token}>{t("assignment.detail.cohort.tokenUsed", { count: cohort.tokenUsed })}</p>
           ) : null}
 
-          {isArtifactsV2(cohort.artifacts) && cohort.artifacts.submissions.length > 0 ? (
+          {submissions !== null && submissions.length > 0 ? (
             <section className={styles.section} aria-labelledby="cohort-code">
               <h2 id="cohort-code" className={styles.sectionTitle}>
                 {t("assignment.cohortPage.codeHeading")}
               </h2>
-              <CohortCodeColumns submissions={cohort.artifacts.submissions} titlesBySubmissionId={titlesMap} />
+              <CohortCodeColumns submissions={submissions} titlesBySubmissionId={titlesMap} />
             </section>
           ) : null}
         </>
