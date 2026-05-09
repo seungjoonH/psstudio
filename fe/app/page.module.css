@@ -1,0 +1,223 @@
+/* 홈 화면 레이아웃 스타일입니다. */
+.dashboard {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  padding: 22px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 24%, var(--color-border));
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 24%, transparent), transparent 34%),
+    linear-gradient(135deg, var(--color-surface), color-mix(in oklab, var(--color-primary) 7%, var(--color-surface)));
+  box-shadow: 0 18px 45px color-mix(in oklab, var(--color-primary) 10%, transparent);
+}
+
+.heroEyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
+}
+
+.heroLead {
+  max-width: 620px;
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.statCard {
+  display: grid;
+  gap: 4px;
+  min-width: 120px;
+  padding: 14px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 12%, var(--color-border));
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--color-surface) 94%, var(--color-primary));
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.column {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--color-surface) 94%, var(--color-primary));
+  min-height: 280px;
+}
+
+.columnHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
+  color: var(--color-primary);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+}
+
+.todoIcon {
+  background: color-mix(in oklab, var(--color-warning) 18%, var(--color-surface));
+  color: var(--color-warning);
+  border-color: color-mix(in oklab, var(--color-warning) 36%, var(--color-border));
+}
+
+.doneIcon {
+  background: color-mix(in oklab, var(--color-success) 18%, var(--color-surface));
+  color: var(--color-success);
+  border-color: color-mix(in oklab, var(--color-success) 36%, var(--color-border));
+}
+
+.noticeIcon {
+  background: color-mix(in oklab, var(--color-info) 18%, var(--color-surface));
+  color: var(--color-info);
+  border-color: color-mix(in oklab, var(--color-info) 36%, var(--color-border));
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--color-text);
+}
+
+.cardDesc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.cardEmpty {
+  margin: 0;
+  padding: 28px 10px;
+  border: 1px dashed color-mix(in oklab, var(--color-muted) 35%, transparent);
+  border-radius: 14px;
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.taskCard,
+.noticeRow {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 26px color-mix(in oklab, var(--color-text) 5%, transparent);
+  text-decoration: none;
+  color: inherit;
+}
+
+.taskCard:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 38%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.listTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.listLang {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--color-text) 8%, transparent);
+  color: var(--color-text);
+}
+
+.listTime {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.duePill {
+  justify-self: start;
+}
+
+@media (min-width: 860px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    align-items: center;
+  }
+}
+
+@media (max-width: 1100px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}
