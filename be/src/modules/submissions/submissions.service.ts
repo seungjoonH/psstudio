@@ -1278,7 +1278,6 @@ export class SubmissionsService {
         model: ENV.llmModelSubmissionReview(),
         temperature: 0.2,
         maxTokens: 16384,
-        reasoning: { effort: "none" },
         messages: [
           {
             role: "system",
