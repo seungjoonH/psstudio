@@ -12,6 +12,13 @@ type LlmChatOptions = {
   messages: LlmMessage[];
   temperature?: number;
   maxTokens?: number;
+  /** OpenRouter 등에서 추론 토큰 비중을 제한할 때 사용합니다. */
+  reasoning?: {
+    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    exclude?: boolean;
+    max_tokens?: number;
+    enabled?: boolean;
+  };
 };
 
 type LlmChatResult = {
@@ -89,18 +96,25 @@ export async function requestLlmChat(options: LlmChatOptions): Promise<LlmChatRe
   const provider = resolveLlmProvider();
   const config = providerConfig(provider);
 
+  const bodyPayload: Record<string, unknown> = {
+    model: options.model,
+    messages: options.messages,
+    temperature: options.temperature ?? 0.2,
+  };
+  if (options.maxTokens !== undefined) {
+    bodyPayload.max_tokens = options.maxTokens;
+  }
+  if (provider === "openrouter" && options.reasoning !== undefined) {
+    bodyPayload.reasoning = options.reasoning;
+  }
+
   const response = await fetch(config.baseUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${config.apiKey}`,
     },
-    body: JSON.stringify({
-      model: options.model,
-      messages: options.messages,
-      temperature: options.temperature ?? 0.2,
-      ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
-    }),
+    body: JSON.stringify(bodyPayload),
   });
 
   if (!response.ok) {
@@ -135,7 +149,11 @@ export async function requestLlmChat(options: LlmChatOptions): Promise<LlmChatRe
       typeof finish === "string" && finish.length > 0
         ? ` (finish_reason=${finish})`
         : "";
-    throw new BadRequestException(`AI 응답이 비어 있습니다.${hint}`);
+    const lengthHint =
+      finish === "length"
+        ? " 출력 한도(max_tokens)에서 끊겼고 본문이 없습니다. 추론 비중을 낮추거나 max_tokens를 늘리세요."
+        : "";
+    throw new BadRequestException(`AI 응답이 비어 있습니다.${hint}${lengthHint}`);
   }
   return { content, totalTokens };
 }
