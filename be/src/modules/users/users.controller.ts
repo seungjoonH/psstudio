@@ -240,9 +240,9 @@ export class UsersController {
             if (actorNickname === null && u.nickname.trim().length > 0) {
               actorNickname = u.nickname.trim();
             }
-            if (actorProfileImageUrl === null && u.profileImageUrl.trim().length > 0) {
-              actorProfileImageUrl = u.profileImageUrl.trim();
-            }
+            // 행위자를 User로 식별할 수 있으면 프로필 URL은 항상 DB 최신값을 쓴다(스냅샷 payload보다 신뢰).
+            actorProfileImageUrl =
+              u.profileImageUrl.trim().length > 0 ? u.profileImageUrl.trim() : null;
           }
         }
         const title = resolveNotificationTitle(row.type, payload);
