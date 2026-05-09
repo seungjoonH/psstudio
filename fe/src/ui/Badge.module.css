@@ -117,9 +117,10 @@
   border-color: color-mix(in oklab, #ef4444 38%, var(--color-border));
 }
 
-/* 마감 후(D+): 강한 블랙 대신 낮은 우선순위가 읽히도록 회색 톤 */
+/* 마감 후(D+): 회색 필 유지, 라벨은 본문색에 가깝게 진하게 */
 .duePast {
-  background: color-mix(in oklab, var(--color-muted) 14%, var(--color-surface));
-  color: var(--color-muted);
-  border-color: color-mix(in oklab, var(--color-muted) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-text) 58%, var(--color-muted));
+  border-color: color-mix(in oklab, var(--color-muted) 48%, var(--color-border));
+  font-weight: 800;
 }

@@ -50,10 +50,8 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
   const statusLabel = item.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
   const dueTone = dueBadgeTone(item.isLate, daysLeft);
 
-  const solvedDimmed = item.hasMySubmission === true;
-
   return (
-    <li className={buildCls(styles.row, solvedDimmed ? styles.rowSolved : undefined)}>
+    <li className={buildCls(styles.row, item.isLate ? styles.rowPastDue : undefined)}>
       <Link href={item.href} className={styles.link}>
         <div className={styles.head}>
           <div className={styles.headMain}>
