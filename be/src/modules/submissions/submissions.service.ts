@@ -1219,6 +1219,8 @@ export class SubmissionsService {
       const response = await requestLlmChat({
         model: ENV.llmModelSubmissionReview(),
         temperature: 0.2,
+        // OpenRouter 등은 max_tokens 미지정 시 모델 기본(큰 값)을 쓰며, 잔액이 작으면 402가 난다.
+        maxTokens: 4096,
         messages: [
           {
             role: "system",
