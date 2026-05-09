@@ -188,20 +188,6 @@ function collapseWs(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }
 
-function validateAiLineCommentAgainstCode(
-  lineComment: AiReviewLineComment,
-  codeLines: string[],
-): boolean {
-  if (lineComment.startLine < 1 || lineComment.endLine < lineComment.startLine) return false;
-  if (lineComment.endLine > codeLines.length) return false;
-  const anchorText = lineComment.anchorText;
-  if (typeof anchorText !== "string" || anchorText.length === 0) return true;
-  const needle = collapseWs(anchorText);
-  if (needle.length === 0) return true;
-  const lineSlice = codeLines.slice(lineComment.startLine - 1, lineComment.endLine);
-  return lineSlice.some((line) => collapseWs(line).includes(needle));
-}
-
 /** 범위 전체가 공백 줄이면 아래쪽 코드 줄을 우선해 한 줄로 스냅한다(LLM이 빈 줄에 달 때 UI 앵커가 어긋나는 문제 완화). */
 export function snapLineCommentOffWhitespaceOnlyRange(
   lineComment: AiReviewLineComment,
@@ -258,41 +244,6 @@ export function snapLineCommentRangeToAnchorMatch(
     }
   }
   return lineComment;
-}
-
-function isLowValueReviewSuggestion(body: string): boolean {
-  const normalized = body.toLowerCase();
-  const bannedHints = [
-    "docstring",
-    "jsdoc",
-    "javadoc",
-    "주석",
-    "코멘트",
-    "매개변수 설명",
-    "파라미터 설명",
-    "함수 설명",
-    "설명이 있으면 좋",
-    "설명을 추가",
-    "주석을 추가",
-  ];
-  return bannedHints.some((hint) => normalized.includes(hint));
-}
-
-function isTooAbstractFeedback(body: string): boolean {
-  const normalized = body.toLowerCase();
-  const abstractHints = [
-    "조금 더",
-    "여지가 있",
-    "명확하게 개선",
-    "전반적으로",
-    "좋지만",
-  ];
-  return abstractHints.some((hint) => normalized.includes(hint));
-}
-
-function hasStructuredImprovementFormat(body: string): boolean {
-  const n = body.replace(/：/g, ":");
-  return n.includes("문제:") && n.includes("근거:") && n.includes("개선:");
 }
 
 /** endLine이 코드 길이를 넘으면 잘라서 검증·앵커 매칭이 가능하게 한다. */
@@ -1127,11 +1078,7 @@ export class SubmissionsService {
         .map((lineComment) => clampLineCommentToCode(lineComment, codeLines))
         .filter((lineComment): lineComment is AiReviewLineComment => lineComment !== null)
         .map((lineComment) => snapLineCommentOffWhitespaceOnlyRange(lineComment, codeLines))
-        .map((lineComment) => snapLineCommentRangeToAnchorMatch(lineComment, codeLines))
-        .filter((lineComment) => validateAiLineCommentAgainstCode(lineComment, codeLines))
-        .filter((lineComment) => !isLowValueReviewSuggestion(lineComment.body))
-        .filter((lineComment) => !isTooAbstractFeedback(lineComment.body))
-        .filter((lineComment) => hasStructuredImprovementFormat(lineComment.body));
+        .map((lineComment) => snapLineCommentRangeToAnchorMatch(lineComment, codeLines));
 
     const validLineComments = pickValidLineComments(aiPayload.lineComments);
 
@@ -1219,6 +1166,7 @@ export class SubmissionsService {
       const response = await requestLlmChat({
         model: ENV.llmModelSubmissionReview(),
         temperature: 0.2,
+        maxTokens: 4096,
         messages: [
           {
             role: "system",
@@ -1258,10 +1206,9 @@ export class SubmissionsService {
               "제출 코드 내부의 보조 함수·헬퍼는 정의를 따라가 반환값을 단계 시뮬레이션으로 확정한 뒤 결함 주장에 사용한다. 동작을 추측만 한 채 호출부만 보고 출력 오류를 단정하지 않는다.",
               "",
               "── lineComment 작성 조건 ──",
-              "각 lineComment의 body는 **세 섹션**을 반드시 포함한다. 라벨은 `**문제:**` / `**근거:**` / `**개선:**`이며, 섹션 사이는 빈 줄(\\n\\n)로 구분한다.",
-              "- **문제:** 무엇이 잘못되었는지.",
-              "- **근거:** 다음 중 **최소 하나**를 반드시 포함. (i) 실제 입력 예시, (ii) 실행 단계 추적(변수값 변화), (iii) 기대 출력 vs 실제 출력 직접 비교, (iv) 시간·공간복잡도 정량 비교(예: `O(n²) → O(n log n)`).",
-              "- **개선:** 어떻게 수정하면 되는지.",
+              "lineComment의 body는 **무엇이 잘못됐는지·왜 그런지·어떻게 고칠지**가 한국어로 읽히게 쓴다.",
+              "가독을 위해 `**문제:**` / `**근거:**` / `**개선:**` 같은 섹션(빈 줄로 구분)을 쓰는 것을 **권장**한다. 라벨 표기가 조금 달라도 된다.",
+              "근거에는 가능하면 (i) 실제 입력 예시, (ii) 실행 단계 추적, (iii) 기대 vs 실제 출력, (iv) 복잡도 정량 비교 중 하나 이상을 넣는다.",
               "모호한 표현('i가 증가하면서…', '경우에 따라…', '위험해 보인다', '문제가 될 수 있는…')만으로는 결함을 주장할 수 없다.",
               "",
               "── 실행 추적 체크리스트 (출력 직전 필수) ──",
