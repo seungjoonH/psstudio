@@ -14,6 +14,7 @@ import { In } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { Assignment } from "../assignments/assignment.entity.js";
+import { fetchProblemPromptFromUrl, type ProblemPromptContext } from "../assignments/problem-prompt-from-url.js";
 import { Comment } from "../comments/comment.entity.js";
 import { ReactionsService, type ReactionSummaryItem } from "../reactions/reactions.service.js";
 import { Review } from "../reviews/review.entity.js";
@@ -110,19 +111,6 @@ type AssignmentReviewContext = {
   difficulty: string | null;
   hintPlain: string;
 };
-
-type ProblemPromptContext = {
-  summary: string;
-  input: string;
-  output: string;
-};
-
-const REVIEW_FETCH_USER_AGENTS = [
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/125.0",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:125.0) Gecko/20100101 Firefox/125.0",
-];
 
 function byteLength(text: string): number {
   return Buffer.byteLength(text, "utf8");
@@ -309,47 +297,6 @@ function buildAssignmentContextText(context: AssignmentReviewContext): string {
     `[난이도] ${context.difficulty ?? "미기재"}`,
     `[힌트] ${context.hintPlain.trim().length > 0 ? clip(context.hintPlain, 300) : "없음"}`,
   ].join("\n");
-}
-
-function decodeHtmlEntities(input: string): string {
-  return input
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, "\"")
-    .replace(/&#39;/gi, "'");
-}
-
-function htmlToPlainText(html: string): string {
-  return decodeHtmlEntities(
-    html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " "),
-  ).trim();
-}
-
-function pickRandomUserAgent(): string {
-  const idx = Math.floor(Math.random() * REVIEW_FETCH_USER_AGENTS.length);
-  return REVIEW_FETCH_USER_AGENTS[idx] ?? REVIEW_FETCH_USER_AGENTS[0];
-}
-
-function sliceSectionByMarkers(source: string, startMarkers: string[], endMarkers: string[]): string {
-  const foundStart = startMarkers
-    .map((marker) => ({ marker, idx: source.indexOf(marker) }))
-    .filter((item) => item.idx >= 0)
-    .sort((a, b) => a.idx - b.idx)[0];
-  if (foundStart === undefined) return "";
-  const from = source.slice(foundStart.idx + foundStart.marker.length).trim();
-  if (from.length === 0) return "";
-  let endIdx = from.length;
-  for (const marker of endMarkers) {
-    const idx = from.indexOf(marker);
-    if (idx >= 0) endIdx = Math.min(endIdx, idx);
-  }
-  return clip(from.slice(0, endIdx).trim(), 1800);
 }
 
 const AI_REVIEW_JSON_PARSE_FAILURE_SUMMARY =
@@ -1082,7 +1029,7 @@ export class SubmissionsService {
       throw new NotFoundException("과제를 찾을 수 없습니다.");
     }
     const botUser = await this.ensureAiTutorUser();
-    const problemPromptContext = await this.fetchProblemPromptContext(assignment.problemUrl);
+    const problemPromptContext = await fetchProblemPromptFromUrl(assignment.problemUrl);
     const assignmentContext: AssignmentReviewContext = {
       title: assignment.title,
       problemUrl: assignment.problemUrl,
@@ -1196,48 +1143,6 @@ export class SubmissionsService {
       profileImageUrl: "/icons/ai-tutor.svg",
     });
     return repo.save(created);
-  }
-
-  private async fetchProblemPromptContext(problemUrl: string): Promise<ProblemPromptContext | null> {
-    try {
-      const response = await fetch(problemUrl, {
-        headers: {
-          "User-Agent": pickRandomUserAgent(),
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-      });
-      if (!response.ok) return null;
-      const html = await response.text();
-      const plain = htmlToPlainText(html);
-      if (plain.length === 0) return null;
-      return this.extractProblemPromptContext(plain);
-    } catch {
-      return null;
-    }
-  }
-
-  private extractProblemPromptContext(plainText: string): ProblemPromptContext | null {
-    const normalized = plainText.replace(/\s+/g, " ").trim();
-    if (normalized.length === 0) return null;
-    const summaryCandidate = sliceSectionByMarkers(
-      normalized,
-      ["문제 설명", "문제", "Description", "Problem"],
-      ["입력", "Input", "출력", "Output", "제한", "Constraints", "예제", "Examples"],
-    );
-    const inputCandidate = sliceSectionByMarkers(
-      normalized,
-      ["입력", "Input"],
-      ["출력", "Output", "제한", "Constraints", "예제", "Examples"],
-    );
-    const outputCandidate = sliceSectionByMarkers(
-      normalized,
-      ["출력", "Output"],
-      ["제한", "Constraints", "예제", "Examples"],
-    );
-    const summary = summaryCandidate.length > 0 ? summaryCandidate : clip(normalized, 1000);
-    const input = inputCandidate.length > 0 ? inputCandidate : "추출 실패";
-    const output = outputCandidate.length > 0 ? outputCandidate : "추출 실패";
-    return { summary, input, output };
   }
 
   /** 요약에는 개선이 있는데 라인 코멘트가 비었을 때만 호출. 내용은 전부 LLM이 코드·문맥에서 생성한다. */

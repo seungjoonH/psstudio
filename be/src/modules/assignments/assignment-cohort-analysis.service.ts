@@ -15,34 +15,19 @@ import {
 } from "./assignment-cohort-analysis.policy.js";
 import {
   type CohortAnalysisArtifactsDto,
+  type CohortAnalysisArtifactsPublicDto,
+  type CohortLlmBundleParsed,
   type CohortReportLocale,
   parseAndValidateCohortBundle,
 } from "./cohort-analysis-bundle.js";
-import { Group } from "../groups/group.entity.js";
+import { fetchProblemPromptFromUrl } from "./problem-prompt-from-url.js";
 
 /** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
 
-function targetLanguageInstruction(targetLanguage: string): string {
-  switch (targetLanguage) {
-    case "pseudo":
-      return "의사코드(pseudo). 컴파일은 하지 않으며, 제어 구조·자료 접근·연산이 한눈에 드러나게 쓴다.";
-    case "python":
-      return "Python 3 문법으로, 실행 가능한 코드.";
-    case "java":
-      return "Java 문법으로, 실행 가능한 코드.";
-    case "cpp":
-      return "C++ 문법으로, 실행 가능한 코드.";
-    case "javascript":
-      return "JavaScript 문법으로, 실행 가능한 코드.";
-    case "typescript":
-      return "TypeScript 문법으로, 실행 가능한 코드.";
-    case "c":
-      return "C 문법으로, 실행 가능한 코드.";
-    default:
-      return `${targetLanguage} 문법에 맞는 실행 가능한 코드.`;
-  }
-}
+/** 재시도 시 이전 응답이 형식에 맞지 않았음을 알리고, regions만 다시 맞추라고 지시합니다(소비자·서버 언급 없음). */
+const COHORT_SEMANTIC_RETRY_HINT =
+  "\n\n[재시도 — 이전 JSON은 regions 규칙을 어겼다] 각 제출 `code` 줄 수를 다시 세어라. **12줄 이상**이면 제출마다 `regions`를 **2~5개**(서로 다른 snake_case `roleId`)로만 출력하라. **`entire_code`·`whole_file`·「코드 전체」 라벨 금지.** **startLine=1 & endLine=마지막줄 인 구역이 유일**한 형태(한 덩어리로 전 파일) 금지. 헬퍼 함수 블록 / 메인 시뮬레이션 루프 / 입출력·파싱 등 **실제 논점**으로 나눠라. 각 region은 **연속 구간** 하나이고 그 안의 빈 줄·`}`·`break`까지 포함. 모든 제출에 **동일한 roleId 집합·같은 개수 k**.";
 
 async function openRouterCompletion(
   messages: { role: "system" | "user"; content: string }[],
@@ -80,6 +65,9 @@ function cohortLocaleInstruction(locale: CohortReportLocale): string {
       "Write reportMarkdown and every roleLabel in natural English.",
       "Use a friendly explanatory tone suitable for young learners.",
       "Do not write Korean prose headings or body paragraphs in reportMarkdown when this locale is English.",
+      "Do not add a separate \"Submission summary\" section; identify each submission inline with [[SUBMISSION:id]] where the reader needs it, not only by language name (avoid \"In the JavaScript submission…\" as the primary signal).",
+      "For cohort `regions`: if a submission's code has **12+ lines**, output **2–5** distinct snake_case roleIds per submission, never `entire_code` or one region covering the full file; same roleId set and count on every submission.",
+      "Ground every comparison in the provided `problemContext` (and codes): restate what the task asks, then explain similarities and differences **between submissions** (pairs, contrasts, and when there are 3+ submissions a paragraph tying several [[SUBMISSION:id]] together). Do not only walk submissions one-by-one in order.",
     ].join(" ");
   }
   return [
@@ -87,16 +75,42 @@ function cohortLocaleInstruction(locale: CohortReportLocale): string {
     "함수명·API 이름 등 코드 식별자는 원문을 남겨도 되지만, 그 전후 서술은 한국어이다.",
     "각 regions의 roleLabel도 한국어 짧은 이름으로 작성한다.",
     "문체는 합니다·입니다체를 쓰고, 중학생도 이해할 수 있게 짧은 문장으로 설명한다.",
+    "제출을 구별할 때 언어명만으로 서술하지 말고 문장 속에 [[SUBMISSION:id]]를 넣어 칩으로 보이게 한다.",
+    "집단 `regions`: 제출 code가 **12줄 이상**이면 제출마다 **2~5개** 서로 다른 snake_case roleId, **`entire_code`/전 파일 한 구역 금지**; 모든 제출에 **동일한** roleId 집합·개수.",
+    "반드시 입력에 포함된 `problemContext`(및 코드)를 근거로 서술한다. 문제가 요구하는 것을 짚은 뒤, 제출 **간** 유사점·차이를 서술한다. 한 제출씩 순서만 도는 나열로 끝내지 않고, 두 제출 쌍 비교·대조, 제출이 세 개 이상이면 여러 [[SUBMISSION:id]]를 묶은 한 문단 요약을 포함한다.",
   ].join(" ");
+}
+
+/** user 메시지 끝에 붙여 regions 계약을 한 번 더 각인합니다. */
+function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
+  if (locale === "en") {
+    return [
+      "",
+      "---",
+      "Before you output JSON: count lines in each submission's `code` (split by `\\n`).",
+      "- **Under 12 lines**: 1–5 regions OK.",
+      "- **12+ lines**: **2–5** regions per submission, **distinct** snake_case `roleId`. Never `entire_code` / `whole_file` / a **single** region from line 1 through the last line. Split by real comparison themes (time normalization, weekday filter, main simulation loop, parse/I/O, etc.).",
+      "- Each region = **one** inclusive contiguous [startLine,endLine]; include **every** blank line and brace inside that span (no striping).",
+      "- **Identical** roleId set and **same** region count k on **every** submission.",
+    ].join("\n");
+  }
+  return [
+    "",
+    "---",
+    "JSON을 출력하기 **직전**에 각 제출 `code` 줄 수를 센다(`\\n` 기준).",
+    "- **12줄 미만**: regions 1~5개.",
+    "- **12줄 이상**: 제출마다 regions **2~5개**, 서로 다른 **snake_case** roleId. **`entire_code`/`whole_file`/1행~마지막행을 한 구역으로만 덮기 금지.** 시간 보정·평일 필터·메인 루프·입출력 등 **실제 비교 축**으로 나눈다.",
+    "- region은 연속 [startLine,endLine] **한 덩어리**; 그 안의 **빈 줄·주석·`}`·`break`**까지 포함(줄무늬 금지).",
+    "- 모든 제출에 **동일한** roleId 집합·**같은** k.",
+  ].join("\n");
 }
 
 export type CohortAnalysisPublicDto = {
   status: "NONE" | "RUNNING" | "DONE" | "FAILED";
-  targetLanguage?: string;
   reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
-  artifacts?: CohortAnalysisArtifactsDto | Record<string, unknown>;
+  artifacts?: CohortAnalysisArtifactsPublicDto | Record<string, unknown>;
   tokenUsed?: number;
   includedSubmissions?: Array<{
     submissionId: string;
@@ -132,20 +146,14 @@ function cohortPipelineFailureReason(err: unknown): string {
   if (code === "assignment_missing" || code === "submissions_too_few" || code === "version_missing") {
     return "과제 또는 제출 데이터를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.";
   }
-  if (code === "cohort_bundle_normalized_language_mismatch") {
-    return "모델이 그룹 공통 언어로 코드를 통일하지 못했습니다. 다시 시도해 주세요.";
-  }
-  if (code === "cohort_bundle_report_fence_mismatch") {
-    return "리포트 코드 블록이 그룹 공통 언어 태그와 맞지 않습니다. 다시 시도해 주세요.";
-  }
-  if (code === "cohort_bundle_report_original_language_mentioned") {
-    return "리포트에 원문 언어 설명이 섞였습니다. 다시 시도해 주세요.";
+  if (code === "cohort_bundle_code_empty") {
+    return "제출 코드가 비어 있어 비교할 수 없습니다.";
   }
   if (code === "cohort_bundle_regions_count") {
     return "모델이 구역(regions) 개수 규칙(제출당 1~5개)을 지키지 못했습니다. 다시 시도해 주세요.";
   }
   if (code === "cohort_bundle_regions_role_mismatch") {
-    return "모델이 제출 간 동일한 roleId 집합으로 구역을 맞추지 못했습니다. 다시 시도해 주세요.";
+    return "제출 간 구역 수·범위를 자동으로 맞출 수 없었습니다(모델이 제출마다 roleId·개수를 크게 다르게 주었을 수 있음). 다시 시도해 주세요.";
   }
   if (code === "cohort_bundle_regions_too_fine") {
     return "모델이 코드를 너무 잘게 나눈 구역을 반환했습니다. 다시 시도해 주세요.";
@@ -156,7 +164,31 @@ function cohortPipelineFailureReason(err: unknown): string {
   if (code === "cohort_bundle_regions_duplicate_role") {
     return "모델이 한 제출 안에서 roleId를 중복했습니다. 다시 시도해 주세요.";
   }
+  if (code === "cohort_bundle_regions_semantic_required") {
+    return "모델이 코드 전체 한 덩어리(entire_code)로만 칠하거나, 긴 코드에서 비교 축을 한 개만 두었습니다. 함수·루프·핵심 로직 등 2~5개 축으로 나눠 다시 생성해야 합니다. 분석을 다시 실행해 주세요.";
+  }
   return "집단 코드 비교 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+function mergeArtifactsWithVersions(
+  artifacts: CohortAnalysisArtifactsDto,
+  members: AssignmentCohortAnalysisMember[],
+  versions: SubmissionVersion[],
+): CohortAnalysisArtifactsPublicDto {
+  const verById = new Map(versions.map((v) => [v.id, v]));
+  const memberBySubmissionId = new Map(members.map((m) => [m.submissionId, m]));
+  return {
+    submissions: artifacts.submissions.map((s) => {
+      const m = memberBySubmissionId.get(s.submissionId);
+      const v = m !== undefined ? verById.get(m.submissionVersionId) : undefined;
+      return {
+        submissionId: s.submissionId,
+        regions: s.regions,
+        code: v?.code ?? "",
+        language: v?.language ?? "",
+      };
+    }),
+  };
 }
 
 @Injectable()
@@ -180,7 +212,6 @@ export class AssignmentCohortAnalysisService {
   private async serializeRow(row: AssignmentCohortAnalysis): Promise<CohortAnalysisPublicDto> {
     const base: CohortAnalysisPublicDto = {
       status: row.status,
-      targetLanguage: row.targetLanguage,
       reportLocale: row.reportLocale,
       failureReason: row.failureReason,
       reportMarkdown: row.reportMarkdown,
@@ -189,11 +220,12 @@ export class AssignmentCohortAnalysisService {
       finishedAt: row.finishedAt?.toISOString() ?? null,
     };
     if (row.status === "DONE") {
-      base.artifacts = row.artifacts as unknown as CohortAnalysisArtifactsDto | Record<string, unknown>;
+      const stored = row.artifacts as unknown as CohortAnalysisArtifactsDto;
       const members = await this.ds.getRepository(AssignmentCohortAnalysisMember).find({
         where: { cohortAnalysisId: row.id },
       });
       if (members.length === 0) {
+        base.artifacts = { submissions: [] };
         base.includedSubmissions = [];
       } else {
         const submissionIds = members.map((m) => m.submissionId);
@@ -218,6 +250,7 @@ export class AssignmentCohortAnalysisService {
             authorProfileImageUrl: profile.get(author) ?? "",
           };
         });
+        base.artifacts = mergeArtifactsWithVersions(stored, members, vers);
       }
     }
     return base;
@@ -233,10 +266,6 @@ export class AssignmentCohortAnalysisService {
     if (assignment === null || assignment.deletedAt !== null) {
       throw new NotFoundException("과제를 찾을 수 없습니다.");
     }
-    const group = await this.ds.getRepository(Group).findOne({ where: { id: assignment.groupId } });
-    if (group === null || group.deletedAt !== null) {
-      throw new NotFoundException("그룹을 찾을 수 없습니다.");
-    }
     const submissionCount = await this.ds.getRepository(Submission).count({
       where: { assignmentId, deletedAt: IsNull() },
     });
@@ -247,7 +276,6 @@ export class AssignmentCohortAnalysisService {
 
     if (options?.rerun === true) {
       assertCohortAnalysisRerunAllowed({
-        translationLanguage: group.ruleTranslationLanguage,
         dueAt: assignment.dueAt,
         now: new Date(),
         submissionCount,
@@ -259,7 +287,6 @@ export class AssignmentCohortAnalysisService {
       const row = this.ds.getRepository(AssignmentCohortAnalysis).create({
         assignmentId,
         status: "RUNNING",
-        targetLanguage: group.ruleTranslationLanguage,
         reportLocale,
         triggeredByUserId: userId,
         tokenUsed: 0,
@@ -280,7 +307,6 @@ export class AssignmentCohortAnalysisService {
     }
 
     assertCohortAnalysisTriggerAllowed({
-      translationLanguage: group.ruleTranslationLanguage,
       dueAt: assignment.dueAt,
       now: new Date(),
       submissionCount,
@@ -292,7 +318,6 @@ export class AssignmentCohortAnalysisService {
       row = this.ds.getRepository(AssignmentCohortAnalysis).create({
         assignmentId,
         status: "RUNNING",
-        targetLanguage: group.ruleTranslationLanguage,
         reportLocale,
         triggeredByUserId: userId,
         tokenUsed: 0,
@@ -305,7 +330,6 @@ export class AssignmentCohortAnalysisService {
       await this.ds.getRepository(AssignmentCohortAnalysis).save(row);
     } else {
       existing.status = "RUNNING";
-      existing.targetLanguage = group.ruleTranslationLanguage;
       existing.reportLocale = reportLocale;
       existing.triggeredByUserId = userId;
       existing.tokenUsed = 0;
@@ -362,95 +386,194 @@ export class AssignmentCohortAnalysisService {
         authorIds.length > 0 ? await this.ds.getRepository(User).find({ where: { id: In(authorIds) } }) : [];
       const nickByUserId = new Map(authors.map((u) => [u.id, u.nickname]));
 
-      const target = analysis.targetLanguage;
-      const langHint = targetLanguageInstruction(target);
       const reportLocale: CohortReportLocale =
         analysis.reportLocale === "en" || analysis.reportLocale === "ko" ? analysis.reportLocale : "ko";
 
+      const codeBySubmissionId = new Map(versionRows.map(({ submission, version }) => [submission.id, version.code]));
+
+      const problemContext = await fetchProblemPromptFromUrl(assignment.problemUrl.trim());
+
       const bundleInput = {
         assignmentTitle: assignment.title,
-        targetLanguageKey: target,
-        targetLanguageHint: langHint,
-        mandatoryRule:
-          "모든 submissions[].normalizedCode는 원본 언어와 무관하게 **오직 targetLanguageKey 한 가지 문법**으로만 작성한다. " +
-          "Java·C++·Python 등으로 제출되었더라도 전부 같은 문법으로 변환한다. 한 제출만 다른 문법 흔적(예: target이 Java인데 let/화살표 함수, target이 JS인데 public class 등)을 남기면 **실패한 응답**이다. " +
-          "이름·공백·괄호 스타일만 다른 **무의미한 차이**는 줄이고, **알고리즘·자료구조·반복·분기·데이터 흐름** 등 의미 있는 차이만 드러나게 정규화한다. " +
-          "reportMarkdown에서는 원본 언어 이름(Java·C++ 등)을 **한 번도 쓰지 말고**, 통일된 코드 기준으로만 비교한다.",
+        problemUrl: assignment.problemUrl,
+        problemContext,
         reportLocale,
         submissions: versionRows.map(({ submission, version }) => ({
           submissionId: submission.id,
           title: submission.title,
           authorNickname: nickByUserId.get(submission.authorUserId) ?? "",
           versionNo: submission.currentVersionNo,
-          originalLanguage: version.language,
+          language: version.language,
           code: version.code,
         })),
       };
 
       const systemPrompt = [
-        "너는 스터디 그룹 과제 제출 코드를 한 번에 정규화·구역 분할·비교 설명까지 수행한다.",
+        "너는 스터디 그룹 과제에서 여러 멤버가 제출한 **원문 코드**를 같은 과제 안에서 나란히 비교한다.",
         "출력은 반드시 유효한 JSON 객체 한 개만이다. 앞뒤 설명·마크다운 코드펜스로 감싸지 않는 것이 좋다(순수 JSON).",
         '키: "reportMarkdown"(string), "submissions"(배열).',
         "",
-        "[정규화 언어 — 최우선]",
-        `- 사용자 JSON의 targetLanguageKey는 "${target}" 이다. 모든 제출의 normalizedCode는 이 키에 대응하는 **단일 문법**으로만 쓴다(의사코드면 모두 pseudo 스타일).`,
-        `- ${langHint}`,
-        "- 원본이 서로 다른 언어여도 **절대** 원문 문법을 유지하지 않는다. (예: target이 python이면 전부 Python 3, 일부만 Java로 두지 않는다.)",
-        "- 실제 언어 target이면 **그 언어에 맞는 문법만** 쓴다. 다른 언어 관용(예: Java 클래스 뼈대 + JavaScript 키워드 혼합)은 금지이다.",
-        "- reportMarkdown 안의 코드 펜스 언어 태그도 동일한 목표 언어에 맞춘다.",
+        "[★ 최우선 — regions 출력 계약. 이걸 먼저 맞춘 뒤 reportMarkdown을 쓴다]",
+        "1) `submissions[]`에 입력의 **모든** submissionId를 빠짐없이 넣는다. 각 원소는 `submissionId`, `regions`만.",
+        "2) 각 제출의 `code` 문자열로 **줄 수 N**을 센다(마지막 줄 포함, `\\n`으로 나눈 개수).",
+        "3) **N < 12** 이면 regions는 1~5개(한 구역으로도 가능). **N ≥ 12** 이면 regions는 **반드시 2~5개**이고, **서로 다른** `roleId`(짧은 snake_case 권장, 예: `time_adjust`, `weekday_filter`, `main_loop`).",
+        "4) **N ≥ 12** 일 때 **금지**: `roleId`가 `entire_code` 이거나 라벨이 「코드 전체」「Full program」; **구역이 1개뿐**이면서 `startLine=1`·`endLine=N`으로 전 파일을 덮는 것; `whole_file` 식별자.",
+        "5) 각 region은 **연속 구간** `[startLine,endLine]`(포함) **정확히 하나**. 그 사이의 코드·빈 줄·주석·`}`·`break`/`continue`를 **빠짐없이** 포함한다(같은 블록 안 줄무늬 금지).",
+        "6) **모든 제출**에서 **동일한** roleId 집합과 **같은 개수** k의 regions를 둔다(제출마다 줄 범위는 달라도 된다).",
+        "",
+        "[regions 올바른 형태 예 — 구조만 참고, 줄 번호는 실제 code에 맞출 것]",
+        '예: 한 제출 code가 40줄일 때 `{"submissionId":"<uuid>","regions":[{"roleId":"time_normalize","roleLabel":"시간·한도 보정","startLine":5,"endLine":18},{"roleId":"main_check","roleLabel":"메인 지각 판정 루프","startLine":20,"endLine":38}]}` — 1~4줄·39~40줄은 비교 축 밖이면 regions에 넣지 않아도 된다(미색).',
+        "",
+        "[중요 — 코드 출력 금지]",
+        "- 각 제출의 전체 코드 문자열을 출력에 **다시 쓰지 않는다**. 입력 JSON에 이미 있다.",
+        "- submissions[] 각 원소는 **submissionId**와 **regions**만 포함한다. (다른 키 불필요)",
+        "",
+        "[줄 번호]",
+        "- regions의 startLine·endLine은 **해당 제출의 입력 code 문자열** 기준 1-based 줄 번호이다. 줄바꿈은 입력과 동일해야 한다.",
         "",
         "[reportMarkdown]",
         "- 마크다운으로 작성한다.",
-        "- 피드백은 **목표 언어로 정규화된 코드 기준**으로만 한다. **알고리즘·시간 복잡도·분기·반복·데이터 흐름·역할 구역(roleId) 대응**처럼 로직 차이만 설명한다.",
-        "- 제출이 원래 어떤 프로그래밍 언어(Java·C++·Python·JavaScript 등)·문법으로 작성되었는지 **절대 언급하지 않는다.** \"OO 언어로 작성\", \"XX 문법에 맞게\" 같은 문장도 금지이다.",
-        "- 제출을 언급할 때는 반드시 플레이스홀더만 쓴다: [[SUBMISSION:<submissionId>]] 형식(UUID는 입력에 나온 submissionId 그대로).",
-        "- 본문 일반 텍스트에 UUID를 노출하지 않는다. submission <uuid>, 괄호만 감싼 UUID 등 다른 형태도 쓰지 않는다.",
-        "- 각 제출을 논할 때 해당 제출을 가리키는 [[SUBMISSION:<submissionId>]]를 그 논점 근처(문단 앞이나 요약 문장 안)에 반드시 한 번 이상 넣어 어떤 코드인지 드러낸다.",
-        `- 코드 펜스는 **반드시 targetLanguageKey("${target}")에 맞는 언어 태그 한 종류만** 쓴다. 원문 언어 태그(예: target이 python일 때 \`\`\`java) 금지.`,
-        "- **어느 제출의 normalizedCode 전체도 리포트에 붙이지 않는다.** 가로 비교 영역이 전체 코드를 담당한다. 펜스에는 **설명과 직접 연결되는 발췌**만 넣는다(줄 수 제한은 없으나 전체 파일 복사 금지).",
-        "- 각 발췌는 직전·직후 문장과 논리적으로 이어져야 하며, [[SUBMISSION:id]]와 함께 **해당 구역의 roleId(백틱으로 감싼 짧은 식별자)**를 본문에서 한 번 이상 언급해, 리포트와 구역 색 대응이 드러나게 한다.",
-        "- 발췌 내용·의미는 submissions.normalizedCode와 같아야 하며 과장·변형 금지.",
-        "- 코드 펜스 바로 위 문장에서 어떤 제출인지 [[SUBMISSION:id]]로 연결하거나, 직전 문단에서 해당 플레이스홀더를 넣는다.",
+        "- **「제출 요약」「Submission summary」 같은 제목의 절을 따로 두지 않는다.** 언어별·제출별 목록은 입력 JSON에 이미 있으므로 리포트 맨 앞에 반복하지 않는다.",
+        "- 제출을 가리킬 때 **『JavaScript 제출에서는…』『Python 제출에서는…』처럼 언어 이름만으로 서술하지 않는다.** 그 자리에 **`[[SUBMISSION:<submissionId>]]`를 문장 안에 끼워 넣어** 제출 태그(칩)가 그려지게 한다.",
+        "  좋은 예. `[[SUBMISSION:uuid]]에서는 maxTime에 10분을 더한 뒤 분이 60 이상이면 40을 가산합니다.` / `이 부분은 [[SUBMISSION:uuid]]의 convert 경로와 대조됩니다.`",
+        "  나쁜 예. `JavaScript 제출에서는…`, `파이썬 쪽은…`(칩 없음).",
+        "- 서로 다른 언어로 제출되었을 수 있다. 언어는 코드 펜스 언어 태그·발췌 맥락으로 드러나면 되고, **본문에서 제출 식별의 첫 수단은 항상 [[SUBMISSION:…]]** 이다.",
+        "- 제출을 가리킬 때는 [[SUBMISSION:<submissionId>]] 플레이스홀더만 쓴다(UUID는 입력과 동일).",
+        "- 본문 일반 텍스트에 UUID를 그대로 노출하지 않는다.",
+        "- 코드 펜스는 **발췌한 원문**에 맞는 언어 태그(예: python, java, cpp, javascript, typescript, c)를 쓴다.",
+        "- **어느 제출의 전체 코드도** 리포트에 붙이지 않는다. 펜스에는 짧은 발췌만 넣는다.",
+        "- 각 발췌는 직전·직후 문장과 이어지게 하고, [[SUBMISSION:id]]와 해당 구역의 `roleId`를 본문에서 한 번 이상 언급해 리포트와 열 색이 대응되게 한다.",
+        "- 발췌는 해당 제출의 원문 code와 의미가 같아야 하며 과장·변형하지 않는다.",
         cohortLocaleInstruction(reportLocale),
         "- 모델명·프롬프트·시스템·버전·시드 등 구성 메타는 절대 언급하지 않는다.",
         "- 표절 단정·실력 평가·정답 판정은 하지 않는다.",
         "- 알고리즘·자료구조·구현 방식 차이를 중심으로 서술한다.",
         "",
-        "[submissions 배열]",
-        "각 원소: submissionId, normalizedCode, originalLanguage, regions.",
-        "- submissionId는 입력과 동일해야 한다. 모든 제출을 빠짐없이 포함한다.",
-        `- normalizedCode: **반드시 targetLanguageKey("${target}") 문법만** 사용한 전체 코드 문자열이다. ${langHint}`,
-        "- originalLanguage는 입력과 동일한 **원본 제출 언어 키**만 적는다(감사·추적용). normalizedCode의 문법과 혼동하지 않는다.",
-        "- 의미(로직)는 바꾸지 않는다. 주석·문서 문자열은 넣지 않는다.",
-        "- 원본 언어와 목표가 같아도 가독성 있게 줄바꿈·들여쓰기를 넣고, 한 줄로 압축하지 않는다.",
+        "[문제 본문 — 분석의 전제]",
+        "- 사용자 입력 JSON에는 `assignmentTitle`, `problemUrl`, `problemContext`, `submissions` 등이 있다.",
+        "- `problemContext`는 `problemUrl` 페이지를 GET해 HTML→평문으로 바꾼 뒤, 제출 AI 리뷰와 **동일한 규칙**으로 뽑은 `{ summary, input, output }` 이다. 페이지를 불러오지 못하면 **null**일 수 있다.",
+        "- **regions 선택·reportMarkdown 서술은 모두 문제 요구사항·입출력·제약과 연결한다.** 코드만 보고 일반론을 늘어놓지 않는다.",
+        "- `problemContext`가 null이면 `assignmentTitle`과 코드에서 드러나는 범위만 언급하고, 문제 전문을 단정하지 않는다.",
         "",
-        "[regions]",
-        "- 각 구역: roleId(영문 스네이크 케이스 등 짧은 식별자, **네가 비교 축을 정해 새로 짓는다**. 고정 목록을 따르지 않는다), roleLabel(그 구역을 한 줄로 설명하는 이름), startLine, endLine.",
-        "- **제출마다 구역 개수는 1개 이상 5개 이하**이다. 함수 시그니처·전처리·핵심 알고리즘·주 반복/분기 덩어리 등 **의미 단위**로만 나눈다.",
-        "- **한 줄마다 구역을 나누지 않는다.** 문법 토큰 단위로 쪼개면 실패한 응답이다.",
-        "- 1-based 줄 번호. normalizedCode 줄 범위 안에 완전히 들어가야 한다.",
-        "- **비교하려는 같은 논점**은 모든 제출에서 **동일한 roleId**를 쓴다. 제출 A의 구역 집합(roleId 목록)이 제출 B와 **완전히 같아야** 한다(개수·이름 모두).",
-        "- roleId `whole_file` 및 이와 같은 ‘전체 한 덩어리’ 예약어는 쓰지 않는다.",
+        "[reportMarkdown — 교차 비교 서술(필수)]",
+        "- 서두에서 문제가 요구하는 핵심(목표·입력·출력·주의할 제약)을 **짧게** 짚는다(`problemContext.summary`·input·output을 활용).",
+        "- **두 제출 쌍**에 대해 `[[SUBMISSION:a]]`와 `[[SUBMISSION:b]]`가 어떤 관점(시간 처리·자료구조·경계 조건·루프 구조 등)에서 **유사한지**, 어디서 **갈라지는지** 구체적으로 쓴다(여러 쌍 가능).",
+        "- **다른 두 제출**은 같은 문제 요구를 **어떻게 다르게 구현했는지** 대조한다.",
+        "- 제출이 **세 개 이상**이면 `[[SUBMISSION:…]]`를 여럿 묶어 공통점·분기점을 한 문단으로 요약한다.",
+        "- 위 교차 비교 문단들이 본문에서 **상당한 비중**을 차지해야 한다. 제출을 파일 순서대로 **한 줄씩만** 요약하는 구성은 실패다.",
+        "- regions로 **색을 칠하지 않은 줄**이 있을 수 있다. 리포트 서두 또는 한 번은 **『색이 없는 부분은 이번 집단 비교에서 선택한 축(역할) 밖의 코드(예: 단순 입출력, 문제와 무관한 보조 정의)』** 라는 뜻임을 사용자에게 짧게 알려라.",
+        "",
+        "[submissions 배열 — 출력]",
+        "각 원소: submissionId, regions 만.",
+        "- submissionId는 입력과 동일. 모든 제출을 빠짐없이 포함한다.",
+        "",
+        "[regions — 색으로 보이는 것이 전부이다. 품질 목표]",
+        "## 성공한 출력이란(12줄 이상 제출)",
+        "- **2~5개**의 **서로 다른** 비교 축으로 나뉘어 있고, 각 축은 **연속 줄 범위** 하나로만 표현된다.",
+        "- `entire_code`·전 파일 한 덩어리·루프 **헤더만** 칠하고 본문은 비우는 패턴이 **아니다**.",
+        "- **12줄 미만** 짧은 코드는 1~5개 구역이면 되고, 한 구역만 써도 된다.",
+        "## 줄무늬가 나오면 실패인 이유",
+        "- 한 논리 블록 안에서 **줄을 골라** 여러 조각으로 나누거나, **빈 줄을 구간 밖**에 두면 화면에서 색이 끊긴다. 각 축은 **연속한 start~end 한 구간**이고 그 안의 빈 줄·`}`·`break`까지 전부 포함해야 한다.",
+        "## 화면과 사용자의 질문",
+        "- 패널에는 **코드 원문 + 네가 준 regions만** 반영된다. 사용자는 **같은 roleId = 같은 슬롯 색**으로만 『어느 제출의 어느 줄이 같은 논점인지』를 본다.",
+        "- **미색(칠해지지 않은 줄)** 은 『이번에 비교할 k개 축에 넣지 않은 코드』다. **전 파일을 덮을 필요는 전혀 없다.** 오히려 핵심만 고르는 편이 좋다.",
+        "- 사용자는 스스로 묻는다. **『같은 색 띠들이 정말 같은 역할의 로직이 맞아?』** **『칠해지지 않은 줄은 왜 빠진 거야?』** 너의 regions와 리포트는 이 두 질문에 답할 수 있어야 한다.",
+        "",
+        "## 같은 roleId의 의미(제출 간 정렬의 기준)",
+        "- **같은 roleId**는 『같은 알고리즘·문제 풀이 축』을 뜻한다. 문법·줄 수·지역 변수 이름이 달라도, **문제에서 맡기는 역할이 같을 때만** 같은 roleId를 쓴다.",
+        "  예: ‘시간 정규화(분 carry)’, ‘출근 한도 계산’, ‘요일·평일만 필터’, ‘사람·날짜 이중 루프로 지각 판정’, ‘우선순위 큐로 다익스트라’, ‘그래프 인접 리스트 구축’ 등.",
+        "- **역할이 다르면** 다른 roleId다. 비슷해 보여도(둘 다 for문) 한쪽은 ‘입력 검증’이고 한쪽은 ‘핵심 시뮬레이션’이면 분리한다.",
+        "- 제출 A는 해당 축이 10줄, 제출 B는 80줄일 수 있다. **줄 수 차이는 자연스럽다.** 대신 **각 제출에서 그 축은 반드시 하나의 연속 구간**으로 잡는다.",
+        "",
+        "## 어떤 덩어리를 하나의 region으로 묶는가(자르는 단위)",
+        "- **함수·메서드 전체**가 그 축이면 시그니처부터 닫는 `}` 까지 **한 구간**으로 묶는다. 함수 안에서 빈 줄이 있어도 **전부 포함**한다.",
+        "- **특정 반복문 하나**(외곽 for, 안쪽 while 등)가 축이면 **루프 헤더부터 해당 닫는 중괄호까지** 한 구간. 루프 **안의 빈 줄·주석·`break`/`continue`/내장 if 전부** 포함한다. **헤더 줄만 칠하고 본문은 미색으로 두는 것은 금지**다.",
+        "- **자료구조·상태 선언**(예: `vector<vector<int>>`, `priority_queue`, 누적 배열, 방문 배열)이 비교 포인트면 **그 선언과 바로 이어지는 초기화**까지 한 덩어리로 묶을 수 있다.",
+        "- **이름 붙일 수 있는 알고리즘 덩어리**(다익스트라, 누적 합, 슬라이딩 윈도우 등)는 해당 코드가 이어지는 **연속 물리 줄 전체**를 한 region으로 한다.",
+        "- **한 region 안에서는 줄을 골라 칠하지 않는다.** ‘의미 있는 줄만’ 골라 연속이 아닌 집합을 만들면 UI가 줄무늬가 된다.",
+        "",
+        "## 빈 줄·주석·제어문(스크린샷으로 확인된 전형적 오류)",
+        "- **빈 줄은 절대 혼자 미색으로 남기지 마라.** 어떤 논점에 속한 빈 줄이면 **그 논점 region의 start~end 안에 반드시 포함**한다. 빈 줄만 띄엄띄엄 미색이면 실패다.",
+        "- **주석 한 줄만** 따로 region으로 두거나, 주석만 칠하고 바로 아래 `if`/`for`는 미색으로 두지 마라. 주석이 그 블록 설명이면 **블록 전체 구간**에 넣는다.",
+        "- **`break`, `continue`, 닫는 `}`, `return`** 은 그 논리 블록의 일부다. 블록을 칠할 거면 **같은 구간에 포함**한다.",
+        "",
+        "## 필수 형태: 한 roleId = 한 연속 구간",
+        "- 각 region은 `[startLine, endLine]` **포함 구간 하나**뿐이다. 위에서 아래로 읽을 때 **해당 구간 안의 모든 줄 번호에 같은 색**이어야 한다.",
+        "- 서로 다른 region은 줄 구간이 **겹치지 않게** 잡는다(한 줄에 두 역할을 동시에 표현하지 않는다).",
+        "",
+        "## 이번 실행에서 다룰 축 개수 k",
+        "- **제출마다 구역 개수는 1개 이상 5개 이하**. 과제에서 비교 가치가 큰 축만 고른다.",
+        "- **모든 제출에 동일한 roleId 집합·개수 k**를 맞춘다(같은 역할 이름을 모든 제출에 쓴다).",
+        "- **처음부터** 모든 제출에 **같은 k·같은 roleId 집합**을 맞추고, 각 구간을 **넓고 연속**으로 잡는 편이 좋다.",
+        "- **한 줄마다 새 구역을 만들지 않는다.**",
+        "- roleId `whole_file` 는 쓰지 않는다.",
+        "",
+        "## 금지(데이터로 재현된 패턴 — 이렇게 내면 안 된다)",
+        "- 논리 블록 **안쪽에서** 칠한 줄 → 미색 빈 줄 → 칠한 줄 … **줄무늬·양자화**.",
+        "- `for`/`if`/`while` **선언 줄만** 칠하고, 변수 초기화·본문·`break` 는 미색.",
+        "- **연속이 아닌** 여러 작은 조각으로 같은 축을 표현하기(한 축은 **반드시 한 번의 start~end**).",
+        "",
+        "## JSON 내기 전 자기 점검(아래가 모두 참일 때만 출력)",
+        "- **N≥12** 제출마다 regions 개수가 **2 이상 5 이하**인가. **N<12** 는 1개도 가능한가.",
+        "- **N≥12** 에 `entire_code`·1~N 한 구역만 있는 제출이 **없는가**.",
+        "- 모든 제출의 roleId 집합·개수 k가 **동일한가**.",
+        "- 각 region에 대해 **start~end 사이**에 빈 줄을 **일부러 빼지 않았는가**(줄무늬 방지).",
+        "- 각 roleId에 대해 **한 문장으로 역할**을 말할 수 있는가. 제출 간 같은 roleId는 **같은 문제 풀이 단계**인가.",
+        "",
+        "## English (must follow even when report locale is Korean)",
+        "- If a submission has **12+ lines**, **never** use `entire_code` or a **single** region from line 1 through last line; output **2–5** semantic roles with distinct snake_case ids.",
+        "- Each region is **one** inclusive contiguous range; include **every** line in that span, especially blank lines, braces, `break`/`continue`, and comments inside that logical unit.",
+        "- Same roleId across submissions means **the same solution-stage responsibility** (e.g. normalize time, weekday filter, main double loop), not merely similar syntax.",
+        "- Uncolored lines are intentionally **out of scope** for the chosen k themes; do not stripe inside a theme block.",
+        "- Never highlight only loop/function headers; always span the **full** logical block.",
       ].join("\n");
 
-      const userPrompt = JSON.stringify(bundleInput);
-
-      const { text: rawBundle, tokens } = await openRouterCompletion(
-        [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        COHORT_REPORT_MODEL(),
-        0.2,
-      );
+      const userPrompt = JSON.stringify(bundleInput) + cohortUserRegionsContractReminder(reportLocale);
 
       const idsSorted = versionRows.map((v) => v.submission.id).sort();
-      const { reportMarkdown, artifacts } = parseAndValidateCohortBundle(
-        rawBundle,
-        idsSorted,
-        target,
-        reportLocale,
-      );
+
+      let parseResult: CohortLlmBundleParsed | undefined;
+      let totalTokens = 0;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const sysPrompt = attempt === 0 ? systemPrompt : systemPrompt + COHORT_SEMANTIC_RETRY_HINT;
+        const temperature = attempt === 0 ? 0.2 : 0.42;
+        const { text: rawBundle, tokens } = await openRouterCompletion(
+          [
+            { role: "system", content: sysPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          COHORT_REPORT_MODEL(),
+          temperature,
+        );
+        totalTokens += tokens;
+
+        try {
+          parseResult = parseAndValidateCohortBundle(
+            rawBundle,
+            idsSorted,
+            codeBySubmissionId,
+            reportLocale,
+          );
+          break;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "";
+          if (msg !== "cohort_bundle_regions_semantic_required") {
+            throw err;
+          }
+          if (attempt < 2) {
+            continue;
+          }
+          throw err;
+        }
+      }
+
+      if (parseResult === undefined) {
+        throw new Error("cohort_bundle_parse_failed");
+      }
+
+      const reportMarkdown = parseResult.reportMarkdown;
+      const { artifacts } = parseResult;
 
       await this.ds.transaction(async (tx) => {
         await tx.getRepository(AssignmentCohortAnalysisMember).delete({ cohortAnalysisId: analysisId });
@@ -465,7 +588,7 @@ export class AssignmentCohortAnalysisService {
         }
         const rowDone = await tx.getRepository(AssignmentCohortAnalysis).findOneOrFail({ where: { id: analysisId } });
         rowDone.status = "DONE";
-        rowDone.tokenUsed = tokens;
+        rowDone.tokenUsed = totalTokens;
         rowDone.reportMarkdown = reportMarkdown.length > 0 ? reportMarkdown : "(리포트가 비었습니다.)";
         rowDone.artifacts = artifacts as unknown as Record<string, unknown>;
         rowDone.failureReason = null;

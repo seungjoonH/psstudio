@@ -9,7 +9,7 @@
 - 시간 포맷: ISO 8601 UTC 저장, 클라이언트 표시 시 KST 변환
 - 인증 방식: OAuth 로그인 세션 기반 인증(google, github)
 - 비인증 접근은 로그인/공개 페이지 외 `401 Unauthorized`
-- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_API_KEY`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`, `LLM_MODEL_SUBMISSION_REVIEW`, `LLM_MODEL_TRANSLATION`, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
+- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_API_KEY`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`, `LLM_MODEL_SUBMISSION_REVIEW`, 집단 분석용 모델 키 등, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
 - Docker Compose 로컬 기본 서비스: `fe`, `be`, `worker`, `supabase`, `redis`
 - API 문서: `GET /api-docs`
 - OpenAPI JSON: `GET /api-docs/json`
@@ -133,7 +133,6 @@
       "ruleDefaultDeadlineTime": "23:59",
       "ruleAllowLateSubmission": true,
       "ruleUseAiFeedback": true,
-      "ruleTranslationLanguage": "none",
       "ruleAllowEditAfterSubmit": true,
       "ruleAssignmentCreatorRoles": "OWNER_AND_MANAGER"
     }
@@ -165,7 +164,7 @@
 
 - 그룹은 공개/비공개 구분이 없습니다. 외부 검색이나 비밀번호 보호도 두지 않습니다.
 - 그룹장 탈퇴 불가, 그룹 삭제만 가능.
-- 그룹 삭제 시 과제/제출/댓글/리뷰/AI 분석 결과/번역 캐시/공지/커뮤니티/캘린더 함께 삭제.
+- 그룹 삭제 시 과제/제출/댓글/리뷰/AI 분석 결과/공지/커뮤니티/캘린더 함께 삭제.
 - 알림 데이터는 그룹 삭제와 무관하게 삭제하지 않음.
 
 ### 3.2 그룹 역할/멤버 관리
@@ -457,7 +456,6 @@
 
 - 그룹원은 같은 그룹의 모든 제출/댓글/코드 리뷰를 조회할 수 있습니다.
 - AI 코드 리뷰 활성 여부는 `rules.useAiFeedback`만으로 결정됩니다.
-- 코드 번역 대상 언어는 `rules.translationLanguage`만으로 결정됩니다.
 - `rules.allowEditAfterSubmit`이 `false`이면 제출 코드 수정 API는 `FORBIDDEN`을 반환합니다.
 - 그룹 규칙 변경은 기존 과제에 소급되지 않고 새 과제부터 적용됩니다.
 - 그룹 규칙 변경 시 그룹원에게 알림을 보내지 않습니다.
@@ -503,57 +501,38 @@
   - 4xx/5xx, 타임아웃, 봇 차단 페이지를 받으면 자동 재시도 없이 `PROBLEM_ANALYSES.status='FAILED'`로 기록하고 사용자에게 "수동으로 메타데이터를 입력해 주세요" 알림.
   - 결과는 `assignments` 메타에 머지되고, 사용자가 다시 수동 수정할 수 있습니다.
 
-## 11. 코드 번역
+## 11. 과제 집단 코드 비교 분석
 
-### 11.1 번역 요청
-
-- `POST /submissions/:submissionId/translations`
-  - 권한: 같은 그룹의 모든 멤버(제출 작성자가 아니어도 가능).
-  - body: `{ "versionNo": 1 }` (생략 시 latest)
-  - 응답: `{ targetLanguage, translatedCode, isCopy, tokenUsed, fromCache, requestedByUserId }`.
-  - 동작
-    - 그룹 규칙 `translationLanguage`가 `none`이면 `FORBIDDEN`.
-    - `(submissionVersionId, targetLanguage)` 캐시 hit이면 즉시 반환, 토큰 미차감, `fromCache=true`.
-    - 캐시 miss이고 원본 언어 == 대상 언어이면 원본 코드 복사본을 저장하고 `isCopy=true`, 토큰 미차감.
-    - 캐시 miss이고 원본 언어 != 대상 언어이면 LLM 호출 후 캐시 저장, **요청자(누른 사람) 토큰 차감**. 차감량은 OpenRouter 응답 `usage.total_tokens`(입력+출력 합) 그대로. 실패/타임아웃은 0 차감.
-
-### 11.2 번역 조회
-
-- `GET /submissions/:submissionId/translations`
-  - 응답: 모든 버전의 번역 캐시 목록.
-- `GET /submissions/:submissionId/versions/:versionNo/translation`
-  - 캐시 hit이면 본문, 캐시 miss이면 `404 NOT_FOUND`.
-
-정책
-
-- 같은 그룹원이면 누구나 캐시된 번역을 조회할 수 있습니다.
-- 번역 결과는 보조 정보이며 표절·정답 평가에 사용하지 않습니다.
-
-### 11.3 과제 집단 코드 비교 분석
+제출 코드 기계 번역 API·`SUBMISSION_TRANSLATIONS` 테이블은 **현재 제공하지 않습니다**(`design/design.md` 5.4.4).
 
 정책 요약은 `design/design.md` 5.4.5를 따릅니다.
 
-#### 트리거·조회
+### 11.1 트리거·조회
+
+- `GET /assignments/:assignmentId/problem-prompt`
+  - 권한: 과제 단건 조회와 동일(그룹 멤버).
+  - 동작: 과제 `problem_url`에 서버가 HTTP GET 후 HTML→평문→마커 기준으로 `요약`·`입력`·`출력` 추출. **제출 AI 코드 리뷰 프롬프트 구성 시 사용하는 로직과 동일**(`problem-prompt-from-url`). 성공 시 `{ summary, input, output }`, 페이지를 불러오지 못하거나 추출 실패 시 **`null` 데이터**.
+  - 용도: 집단 코드 비교 UI 등에서 문제 본문을 코드와 함께 표시.
 
 - `POST /assignments/:assignmentId/cohort-analysis`
   - 권한: 같은 그룹의 모든 멤버(세부는 구현 시 `design.md`와 동일한 그룹원 공개 모델을 따름).
   - 헤더: `Accept-Language`로 리포트·역할 라벨 로케일(`ko`/`en` 등)을 결정한다. 웹 클라이언트는 브라우저 기본 헤더 대신 **앱에서 선택한 UI 언어**를 우선 반영해 요청한다.
   - 본문(선택): JSON `{ "rerun": true }` — 완료(`DONE`) 또는 실패(`FAILED`) 집단 분석 행을 **DB에서 삭제**(멤버 행 포함)한 뒤 새 분석 행을 만들고 파이프라인을 다시 시작한다. `RUNNING`이면 `409 Conflict`. 기본(본문 없음 또는 `rerun` 미설정)은 기존과 같다(`DONE`이면 `409`, `FAILED`면 동일 행을 초기화해 재시도).
-  - 전제: 과제 마감 경과, `rules.translationLanguage !== 'none'`, 유효 제출 2건 이상.
-  - 동작: 비동기 파이프라인 실행. `rerun` 없이 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
+  - 전제: 과제 마감 경과, 유효 제출 2건 이상.
+  - 동작: 비동기 파이프라인 실행. 파이프라인 시작 시 과제 `problem_url`에서 위와 동일한 규칙으로 문제 본문을 추출해 LLM 입력 JSON에 `problemContext`(실패 시 `null`)·`problemUrl`을 포함한다. 리포트는 문제 요구와 제출 간 교차 비교를 서술하도록 프롬프트한다.
+  - `rerun` 없이 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
   - 실패한 이전 시도가 있으면 재시도 허용. 성공(`DONE`) 확정 전까지는 새 제출·새 버전이 다음 시도의 입력 집합에 포함될 수 있음.
 - `GET /assignments/:assignmentId/cohort-analysis`
-  - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(`submissions[]`: 제출별 `normalizedCode`, `regions[]`의 `roleId`·`roleLabel`·줄 범위), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`submissionId`, `versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등).
+  - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(`submissions[]`: 제출별 `submissionId`, `regions[]`의 `roleId`·`roleLabel`·줄 범위, 조회 시 병합된 `code`·`language`), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등). DB `artifacts` JSON에는 `regions`만 저장하고 코드 본문은 저장하지 않는다.
 
-#### 정책
+### 11.2 정책
 
-- 정규화·역할 구역·리포트 문체는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행·컴파일 검증은 하지 않음**(요구 수준은 프롬프트로만 통일). `submissions[].normalizedCode`는 그룹 `ruleTranslationLanguage`(과제 집단 분석의 `targetLanguage`) **한 종류 문법으로만** 채워져야 하며, 서버는 휴리스틱으로 **서로 다른 언어 문법이 섞인 응답**을 거절할 수 있다(`pseudo`는 예외). 구역 `regions`의 줄 번호는 모델이 자주 어길 수 있어 **허용 범위로 클램프**한다. 클램프 후 제출별 구역을 **시작 줄 기준으로 정렬**하고, **구역 개수가 제출마다 다르면 `FAILED`**이다. 개수가 같으면 `submissionId` 오름차순에서 **첫 제출의 슬롯 순** `roleId`·`roleLabel`로 나머지 제출의 동일 슬롯을 덮어써 UI 색·축을 맞춘다(LLM이 이름만 다르게 준 경우 보정). 이어 **제출당 구역은 1~5개**, 예약 식별자 `whole_file` 및 제출 내 `roleId` 중복은 거절한다. 정규화 코드 **전체 줄 수가 12줄 이상**이면 각 구역은 **최소 2줄** 범위를 가져야 한다(과도한 한 줄 단위 분할 방지). 위 규칙을 만족하지 않으면 `FAILED`이다.
-- 리포트 `reportMarkdown`의 코드 펜스는 **설명과 연결된 발췌**만 두고, `normalizedCode` 전체를 그대로 붙이지 않는 것을 프롬프트로 요구한다. 본문에서 구역 `roleId`를 언급해 UI 색 대응과 맞추도록 요구한다.
-- 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다. 파싱 직후 서버가 알려진 `submissionId`에 한해 본문의 노출 UUID·`submission <uuid>` 형태를 동일 플레이스홀더로 치환해 저장한다.
-- 리포트 서술은 **통일된 목표 언어 관점의 로직 비교**만 하도록 하며, 원본 프로그래밍 언어 이름을 드러내거나 목표와 다른 코드 펜스 태그를 쓴 응답은 서버 검증에서 거절할 수 있다(`pseudo` 등 예외는 파서와 동일).
+- 역할 구역·리포트는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행·컴파일 검증은 하지 않음**. 구역 `regions`의 줄 번호는 **각 제출의 DB 스냅샷 원문 코드** 줄 수에 맞게 **클램프**한다. 클램프 후 제출별 구역을 **시작 줄 기준으로 정렬**하고, **구역 개수가 제출마다 다르면 `FAILED`**이다. 개수가 같으면 `submissionId` 오름차순에서 **첫 제출의 슬롯 순** `roleId`·`roleLabel`로 나머지 제출의 동일 슬롯을 덮어써 UI 색·축을 맞춘다(LLM이 이름만 다르게 준 경우 보정). **제출당 구역은 1~5개**, 예약 식별자 `whole_file` 및 제출 내 `roleId` 중복은 거절한다. 원문 코드 **전체 줄 수가 12줄 이상**이면 각 구역은 **최소 2줄** 범위를 가져야 하며, **`entire_code` 식별자·구역 1개만으로 전체를 덮는 출력**은 거절한다(의미 축 2개 이상 필요). 파이프라인은 동일 요청에 대해 모델 호출을 재시도할 수 있다. 단일 목표 언어·`normalizedCode` 일치 검사는 하지 않는다.
+- 리포트 `reportMarkdown`의 코드 펜스는 **설명과 연결된 발췌**만 두고, 제출 전체 코드를 그대로 붙이지 않는 것을 프롬프트로 요구한다. 본문에서 구역 `roleId`를 언급해 UI 색 대응과 맞추도록 요구한다.
+- 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다. 파싱 직후 서버가 알려진 `submissionId`에 한해 본문의 노출 UUID·`submission <uuid>` 형태를 동일 플레이스홀더로 치환해 저장한다. 저장 전 정규화 단계에서 구 스타일 절 `## 제출 요약`·`## Submission summary`(다음 `##` 직전까지)는 제거한다(제출 식별은 본문 삽입 태그에 맡김).
 - 데드 코드(미사용 선언) 강조는 **정적 분석** 기반이며 집단 비교 역할 구역 판단에는 사용하지 않음.
 - 결과 산출물·API 응답·DB·로그 어디에도 **모델명·프롬프트 버전·시드 등 LLM 구성 메타를 저장하지 않음**.
-- 과제 삭제 시 집단 분석 결과는 제출·번역 캐시 등과 함께 삭제.
+- 과제 삭제 시 집단 분석 결과는 제출 등과 함께 삭제.
 
 ## 12. 알림
 

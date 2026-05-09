@@ -118,8 +118,8 @@ export type CohortRegionArtifact = {
 
 export type CohortSubmissionArtifact = {
   submissionId: string;
-  normalizedCode: string;
-  originalLanguage: string;
+  code: string;
+  language: string;
   regions: CohortRegionArtifact[];
 };
 
@@ -129,7 +129,6 @@ export type CohortAnalysisArtifacts = {
 
 export type CohortAnalysisDto = {
   status: "NONE" | "RUNNING" | "DONE" | "FAILED";
-  targetLanguage?: string;
   reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
@@ -147,20 +146,33 @@ export type CohortAnalysisDto = {
   finishedAt?: string | null;
 };
 
+/** 제출 AI 리뷰와 동일한 방식으로 problem URL HTML에서 정제한 본문(집단 비교·리뷰용). */
+export type ProblemPromptDto = {
+  summary: string;
+  input: string;
+  output: string;
+};
+
+export function getProblemPromptForAssignment(assignmentId: string): Promise<ProblemPromptDto | null> {
+  return apiFetch(`/api/v1/assignments/${assignmentId}/problem-prompt`);
+}
+
 export function getCohortAnalysis(assignmentId: string): Promise<CohortAnalysisDto> {
   return apiFetch(`/api/v1/assignments/${assignmentId}/cohort-analysis`);
 }
 
 export function startCohortAnalysis(
   assignmentId: string,
-  options?: { acceptLanguage?: string },
+  options?: { acceptLanguage?: string; rerun?: boolean },
 ): Promise<CohortAnalysisDto> {
   const extraHeaders: Record<string, string> = {};
   if (options?.acceptLanguage !== undefined && options.acceptLanguage.length > 0) {
     extraHeaders["Accept-Language"] = options.acceptLanguage;
   }
+  const rerun = options?.rerun === true;
   return apiFetch(`/api/v1/assignments/${assignmentId}/cohort-analysis`, {
     method: "POST",
     headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
+    ...(rerun ? { json: { rerun: true } } : {}),
   });
 }

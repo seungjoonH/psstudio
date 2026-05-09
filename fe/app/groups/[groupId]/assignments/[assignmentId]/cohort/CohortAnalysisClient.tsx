@@ -3,8 +3,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { CohortAnalysisDto, CohortSubmissionArtifact } from "../../../../../../src/assignments/server";
+import type {
+  CohortAnalysisDto,
+  CohortSubmissionArtifact,
+  ProblemPromptDto,
+} from "../../../../../../src/assignments/server";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
+import { sanitizeCohortReportMarkdown } from "../../../../../../src/lib/cohortReportMarkdown";
 import { CohortCodeColumns } from "../../../../../../src/ui/cohort/CohortCodeColumns";
 import { CohortReportBody } from "../../../../../../src/ui/cohort/CohortReportBody";
 import { getCohortAnalysisStateAction, startCohortAnalysisAction } from "../../actions";
@@ -23,6 +28,8 @@ type Props = {
   assignmentTitle: string;
   cohortInitial: CohortAnalysisDto;
   canStartCohort: boolean;
+  /** 과제 problem URL에서 정제한 본문(제출 AI 리뷰와 동일 파이프라인). */
+  problemPrompt: ProblemPromptDto | null;
 };
 
 export function CohortAnalysisClient({
@@ -31,8 +38,9 @@ export function CohortAnalysisClient({
   assignmentTitle,
   cohortInitial,
   canStartCohort,
+  problemPrompt,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale: uiLocale } = useI18n();
   const [cohort, setCohort] = useState<CohortAnalysisDto>(cohortInitial);
   const [err, setErr] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -55,7 +63,20 @@ export function CohortAnalysisClient({
     setErr(null);
     setStarting(true);
     try {
-      const next = await startCohortAnalysisAction(groupId, assignmentId);
+      const next = await startCohortAnalysisAction(groupId, assignmentId, uiLocale);
+      setCohort(next);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function handleRerun() {
+    setErr(null);
+    setStarting(true);
+    try {
+      const next = await startCohortAnalysisAction(groupId, assignmentId, uiLocale, { rerun: true });
       setCohort(next);
     } catch (e) {
       setErr((e as Error).message);
@@ -67,6 +88,13 @@ export function CohortAnalysisClient({
   const included = cohort.includedSubmissions ?? [];
   const titlesMap = new Map(included.map((r) => [r.submissionId, { title: r.title, versionNo: r.versionNo }]));
   const submissions = cohortSubmissions(cohort.artifacts);
+  const reportMarkdownSanitized =
+    cohort.reportMarkdown !== null && cohort.reportMarkdown !== undefined
+      ? sanitizeCohortReportMarkdown(
+          cohort.reportMarkdown,
+          included.map((r) => r.submissionId),
+        )
+      : "";
 
   return (
     <div className={styles.root}>
@@ -75,8 +103,51 @@ export function CohortAnalysisClient({
           ← {t("assignment.cohortPage.back")}
         </Link>
       </div>
-      <h1 className={styles.title}>{t("assignment.cohortPage.heading")}</h1>
+      <div className={styles.titleRow}>
+        <h1 className={styles.title}>{t("assignment.cohortPage.heading")}</h1>
+        {canStartCohort && (cohort.status === "DONE" || cohort.status === "FAILED") ? (
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={starting}
+            aria-busy={starting || undefined}
+            onClick={() => void handleRerun()}
+          >
+            {starting ? (
+              <>
+                <span className={styles.spinner} aria-hidden />
+                <span className={styles.srOnly}>{t("assignment.detail.cohort.running")}</span>
+              </>
+            ) : null}
+            {t("assignment.cohortPage.rerun")}
+          </button>
+        ) : null}
+      </div>
       <p className={styles.sub}>{assignmentTitle}</p>
+
+      <section className={styles.problemCard} aria-labelledby="cohort-problem">
+        <h2 id="cohort-problem" className={styles.problemHeading}>
+          {t("assignment.cohortPage.problemHeading")}
+        </h2>
+        {problemPrompt !== null ? (
+          <div className={styles.problemBody}>
+            <div className={styles.problemBlock}>
+              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemSummary")}</h3>
+              <p className={styles.problemText}>{problemPrompt.summary}</p>
+            </div>
+            <div className={styles.problemBlock}>
+              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemInput")}</h3>
+              <p className={styles.problemText}>{problemPrompt.input}</p>
+            </div>
+            <div className={styles.problemBlock}>
+              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemOutput")}</h3>
+              <p className={styles.problemText}>{problemPrompt.output}</p>
+            </div>
+          </div>
+        ) : (
+          <p className={styles.problemUnavailable}>{t("assignment.cohortPage.problemUnavailable")}</p>
+        )}
+      </section>
 
       {err !== null ? <p className={styles.error}>{err}</p> : null}
 
@@ -86,11 +157,17 @@ export function CohortAnalysisClient({
             type="button"
             className={styles.primary}
             disabled={starting}
+            aria-busy={starting || undefined}
             onClick={() => void handleStart()}
           >
+            {starting ? (
+              <>
+                <span className={styles.spinner} aria-hidden />
+                <span className={styles.srOnly}>{t("assignment.detail.cohort.running")}</span>
+              </>
+            ) : null}
             {t("assignment.detail.cohort.start")}
           </button>
-          {starting ? <span className={styles.spinner} aria-hidden /> : null}
         </div>
       ) : null}
 
@@ -101,10 +178,10 @@ export function CohortAnalysisClient({
       {cohort.status === "RUNNING" ? (
         <div className={styles.actionRow}>
           <button type="button" className={styles.primary} disabled aria-busy>
+            <span className={styles.spinner} aria-hidden />
+            <span className={styles.srOnly}>{t("assignment.detail.cohort.running")}</span>
             {t("assignment.detail.cohort.start")}
           </button>
-          <span className={styles.spinner} aria-hidden />
-          <span className={styles.srOnly}>{t("assignment.detail.cohort.running")}</span>
         </div>
       ) : null}
 
@@ -123,7 +200,7 @@ export function CohortAnalysisClient({
             </h2>
             {included.length > 0 ? (
               <CohortReportBody
-                reportMarkdown={cohort.reportMarkdown}
+                reportMarkdown={reportMarkdownSanitized}
                 groupId={groupId}
                 assignmentId={assignmentId}
                 included={included}
@@ -131,18 +208,16 @@ export function CohortAnalysisClient({
             ) : null}
           </section>
 
-          {typeof cohort.tokenUsed === "number" ? (
-            <p className={styles.token}>{t("assignment.detail.cohort.tokenUsed", { count: cohort.tokenUsed })}</p>
-          ) : null}
-
           {submissions !== null && submissions.length > 0 ? (
-            <section className={styles.section} aria-labelledby="cohort-code">
-              <h2 id="cohort-code" className={styles.sectionTitle}>
+            <section className={styles.codeSection} aria-labelledby="cohort-code">
+              <h2 id="cohort-code" className={styles.codeSectionTitle}>
                 {t("assignment.cohortPage.codeHeading")}
               </h2>
               <CohortCodeColumns submissions={submissions} titlesBySubmissionId={titlesMap} />
             </section>
-          ) : null}
+          ) : (
+            <p className={styles.muted}>{t("assignment.cohortPage.missingCodeArtifacts")}</p>
+          )}
         </>
       ) : null}
     </div>

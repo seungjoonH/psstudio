@@ -1,7 +1,13 @@
 // 그룹 과제 집단 코드 비교 전용 페이지입니다.
 import { redirect } from "next/navigation";
 import { fetchMeServer } from "../../../../../../src/auth/api.server";
-import { getAssignment, getCohortAnalysis, type CohortAnalysisDto } from "../../../../../../src/assignments/server";
+import {
+  getAssignment,
+  getCohortAnalysis,
+  getProblemPromptForAssignment,
+  type CohortAnalysisDto,
+  type ProblemPromptDto,
+} from "../../../../../../src/assignments/server";
 import { getGroup } from "../../../../../../src/groups/server";
 import { listSubmissions } from "../../../../../../src/submissions/server";
 import { AppShell } from "../../../../../../src/shell/AppShell";
@@ -39,10 +45,16 @@ export default async function CohortAnalysisPage({ params }: Props) {
       cohortInitial = { status: "NONE" };
     }
 
+    let problemPrompt: ProblemPromptDto | null = null;
+    try {
+      problemPrompt = await getProblemPromptForAssignment(assignmentId);
+    } catch {
+      problemPrompt = null;
+    }
+
     const due = new Date(a.dueAt);
     const duePassed = Date.now() >= due.getTime();
-    const langOk = group.rules.translationLanguage !== "none";
-    const canStartCohort = langOk && duePassed && submissions.length >= 2;
+    const canStartCohort = duePassed && submissions.length >= 2;
 
     return (
       <AppShell titleKey="assignment.cohortPage.shellTitle" titleVars={{ name: group.name }}>
@@ -55,6 +67,7 @@ export default async function CohortAnalysisPage({ params }: Props) {
           assignmentTitle={a.title}
           cohortInitial={cohortInitial}
           canStartCohort={canStartCohort}
+          problemPrompt={problemPrompt}
         />
       </AppShell>
     );

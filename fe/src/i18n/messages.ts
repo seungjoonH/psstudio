@@ -287,21 +287,6 @@ export const messages = {
           captionOwnerOnly: "그룹장만 과제를 생성할 수 있습니다.",
           captionBoth: "그룹관리자도 과제를 생성할 수 있습니다.",
         },
-        commonLang: "그룹 공통 언어",
-        commonLangCaption: {
-          none: "AI 자동 번역 기능을 사용하지 않습니다.",
-          pseudo: "모든 그룹원의 코드가 의사 코드로 번역할 수 있습니다.",
-          python: "모든 그룹원의 코드를 Python 으로 번역할 수 있습니다.",
-          java: "모든 그룹원의 코드를 Java 로 번역할 수 있습니다.",
-          cpp: "모든 그룹원의 코드를 C++ 으로 번역할 수 있습니다.",
-          javascript: "모든 그룹원의 코드를 JavaScript 로 번역할 수 있습니다.",
-          typescript: "모든 그룹원의 코드를 TypeScript 로 번역할 수 있습니다.",
-          c: "모든 그룹원의 코드를 C 로 번역할 수 있습니다.",
-        },
-        langOption: {
-          none: "없음",
-          pseudo: "의사코드",
-        },
       },
       actions: {
         cancel: "취소",
@@ -465,7 +450,6 @@ export const messages = {
         cohort: {
           title: "집단 코드 비교",
           lead: "모든 그룹원들의 제출 코드를 비교 분석해보세요.",
-          blockedNoLang: "그룹에 공통 언어가 없어 이 기능을 쓸 수 없습니다.",
           blockedDue: "마감 후에 실행할 수 있습니다.",
           blockedCount: "제출이 2건 이상일 때 실행할 수 있습니다.",
           start: "분석 실행",
@@ -474,7 +458,6 @@ export const messages = {
           done: "완료",
           none: "아직 실행된 집단 분석이 없습니다.",
           reportHeading: "Markdown 리포트",
-          tokenUsed: "토큰 사용(합계) {count}",
           viewFull: "전체 분석 보기",
         },
       },
@@ -483,8 +466,17 @@ export const messages = {
         back: "과제로 돌아가기",
         heading: "집단 코드 비교",
         cannotStartHere:
-          "이 페이지에서 바로 실행할 수 없습니다. 과제 상세에서 마감·제출 수·공통 언어 조건을 확인한 뒤 실행해 주세요.",
-        codeHeading: "정규화 코드 (역할별 색)",
+          "이 페이지에서 바로 실행할 수 없습니다. 과제 상세에서 마감과 제출 수 조건을 확인한 뒤 실행해 주세요.",
+        problemHeading: "문제 본문",
+        problemSummary: "요약",
+        problemInput: "입력",
+        problemOutput: "출력",
+        problemUnavailable:
+          "문제 URL에서 본문을 불러오거나 정제하지 못했습니다. 원문은 과제에 연결된 문제 페이지에서 확인할 수 있습니다.",
+        codeHeading: "제출 코드",
+        missingCodeArtifacts:
+          "저장된 분석에 코드 열이 없습니다. 과제 상세에서 집단 분석을 다시 실행해 주세요.",
+        rerun: "분석 다시 실행",
       },
       new: {
         fallbackTitle: "과제 만들기",
@@ -932,21 +924,6 @@ export const messages = {
           captionOwnerOnly: "Only the owner can create assignments.",
           captionBoth: "Managers can create assignments too.",
         },
-        commonLang: "Group default language",
-        commonLangCaption: {
-          none: "AI translation is disabled.",
-          pseudo: "Members' code can be translated to pseudocode.",
-          python: "Members' code can be translated to Python.",
-          java: "Members' code can be translated to Java.",
-          cpp: "Members' code can be translated to C++.",
-          javascript: "Members' code can be translated to JavaScript.",
-          typescript: "Members' code can be translated to TypeScript.",
-          c: "Members' code can be translated to C.",
-        },
-        langOption: {
-          none: "None",
-          pseudo: "Pseudocode",
-        },
       },
       actions: {
         cancel: "Cancel",
@@ -1110,7 +1087,6 @@ export const messages = {
         cohort: {
           title: "Cohort code comparison",
           lead: "Compare and analyze submissions from everyone in the group.",
-          blockedNoLang: "Set a group common language to use this feature.",
           blockedDue: "Available after the due date.",
           blockedCount: "Requires at least two submissions.",
           start: "Run analysis",
@@ -1119,7 +1095,6 @@ export const messages = {
           done: "Complete",
           none: "No cohort analysis has been run yet.",
           reportHeading: "Markdown report",
-          tokenUsed: "Tokens used (total) {count}",
           viewFull: "Open full analysis",
         },
       },
@@ -1128,8 +1103,17 @@ export const messages = {
         back: "Back to assignment",
         heading: "Cohort code comparison",
         cannotStartHere:
-          "You cannot start analysis from this page alone. Open the assignment page and meet due date, submission count, and shared language requirements.",
-        codeHeading: "Normalized code (by role color)",
+          "You cannot start analysis from this page alone. Open the assignment page and check due date and submission count.",
+        problemHeading: "Problem statement",
+        problemSummary: "Summary",
+        problemInput: "Input",
+        problemOutput: "Output",
+        problemUnavailable:
+          "Could not fetch or extract the problem text from the URL. Open the linked problem page from the assignment for the original statement.",
+        codeHeading: "Submitted code",
+        missingCodeArtifacts:
+          "This saved analysis has no code columns. Please rerun cohort analysis from the assignment page.",
+        rerun: "Run analysis again",
       },
       new: {
         fallbackTitle: "Create assignment",
