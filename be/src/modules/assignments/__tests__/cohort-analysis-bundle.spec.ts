@@ -50,6 +50,22 @@ describe("parseAndValidateCohortBundle", () => {
     expect(out.artifacts.submissions[0].regions).toHaveLength(1);
   });
 
+  it("submissions가 배열을 JSON 문자열로 이중 인코딩해도 처리한다", () => {
+    const json = {
+      reportMarkdown: validJson.reportMarkdown,
+      submissions: JSON.stringify(validJson.submissions),
+    };
+    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, codeById, "ko");
+    expect(out.artifacts.submissions).toHaveLength(2);
+  });
+
+  it("response 래퍼 안에 번들이 있으면 처리한다", () => {
+    const json = { response: validJson };
+    const out = parseAndValidateCohortBundle(JSON.stringify(json), ids, codeById, "ko");
+    expect(out.reportMarkdown).toContain("Hello");
+    expect(out.artifacts.submissions).toHaveLength(2);
+  });
+
   it("submissions를 UUID 키 객체로 줘도 배열과 동일하게 처리한다", () => {
     const json = {
       reportMarkdown: validJson.reportMarkdown,

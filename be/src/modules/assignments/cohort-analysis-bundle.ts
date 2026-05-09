@@ -322,15 +322,38 @@ export function parseRegionsLenient(
 /**
  * 모델이 `submissions`를 배열 대신 `{ [submissionId]: { regions } }` 객체로 줄 때 배열로 정규화합니다.
  * 키는 모두 UUID 형식이고 값은 regions를 가진 객체만 허용합니다.
+ * 또한 이중 JSON 문자열·단일 `{ submissionId, regions }` 오타를 복구합니다.
  */
 function coerceSubmissionsToArray(subsRaw: unknown): unknown[] | null {
-  if (Array.isArray(subsRaw)) {
-    return subsRaw;
+  let normalized = subsRaw;
+  if (typeof normalized === "string") {
+    const t = normalized.trim();
+    if (t.length === 0) return null;
+    try {
+      normalized = JSON.parse(jsonrepair(t)) as unknown;
+    } catch {
+      return null;
+    }
   }
-  if (subsRaw === null || typeof subsRaw !== "object") {
+
+  if (Array.isArray(normalized)) {
+    return normalized;
+  }
+
+  if (normalized === null || typeof normalized !== "object" || Array.isArray(normalized)) {
     return null;
   }
-  const o = subsRaw as Record<string, unknown>;
+
+  const single = normalized as Record<string, unknown>;
+  if (
+    typeof single.submissionId === "string" &&
+    UUID_RE.test(single.submissionId) &&
+    Object.prototype.hasOwnProperty.call(single, "regions")
+  ) {
+    return [normalized];
+  }
+
+  const o = normalized as Record<string, unknown>;
   const entries = Object.entries(o);
   if (entries.length === 0) {
     return null;
@@ -350,6 +373,30 @@ function coerceSubmissionsToArray(subsRaw: unknown): unknown[] | null {
     out.push({ submissionId: k, regions: row.regions });
   }
   return out;
+}
+
+/** 모델이 루트를 `response`·`data` 등으로 한 겹 더 싼 경우 한 단계 벗겨냅니다. */
+function unwrapCohortBundleRoot(obj: Record<string, unknown>): Record<string, unknown> {
+  if (
+    typeof obj.reportMarkdown === "string" &&
+    Object.prototype.hasOwnProperty.call(obj, "submissions")
+  ) {
+    return obj;
+  }
+  const nestKeys = ["result", "data", "bundle", "output", "response", "cohort", "artifacts", "body", "json"];
+  for (const k of nestKeys) {
+    const inner = obj[k];
+    if (inner !== null && typeof inner === "object" && !Array.isArray(inner)) {
+      const innerObj = inner as Record<string, unknown>;
+      if (
+        typeof innerObj.reportMarkdown === "string" &&
+        Object.prototype.hasOwnProperty.call(innerObj, "submissions")
+      ) {
+        return innerObj;
+      }
+    }
+  }
+  return obj;
 }
 
 function parseJsonObject(raw: string): Record<string, unknown> | null {
@@ -384,10 +431,11 @@ export function parseAndValidateCohortBundle(
   codeBySubmissionId: ReadonlyMap<string, string>,
   reportLocale: CohortReportLocale,
 ): CohortLlmBundleParsed {
-  const obj = parseJsonObject(rawLlmText);
-  if (obj === null) {
+  const rawObj = parseJsonObject(rawLlmText);
+  if (rawObj === null) {
     throw new Error("cohort_bundle_parse_failed");
   }
+  const obj = unwrapCohortBundleRoot(rawObj);
   const reportMarkdown = obj.reportMarkdown;
   if (typeof reportMarkdown !== "string" || reportMarkdown.trim().length === 0) {
     throw new Error("cohort_bundle_report_missing");
