@@ -161,6 +161,12 @@ function countLines(code: string): number {
   return code.split("\n").length;
 }
 
+/** DB 스냅샷 원문 → 줄 배열. 집단 LLM 입력·클램프 검증과 동일 규칙이며 빈 줄은 `""`로 유지합니다(JavaScript `String.prototype.split`). */
+export function cohortSubmissionLinesFromSource(code: string): string[] {
+  if (code.length === 0) return [""];
+  return code.split("\n");
+}
+
 /** 긴 코드에서 한 줄짜리 구역 남용 방지 기준(이 줄 수 이상이면 구역당 최소 2줄). */
 const REGIONS_MIN_LINES_FOR_SPAN_RULE = 12;
 const REGIONS_MAX_PER_SUBMISSION = 5;
@@ -544,7 +550,7 @@ export function parseAndValidateCohortBundle(
     if (code === undefined || code.trim().length === 0) {
       throw new Error("cohort_bundle_code_empty");
     }
-    /** 줄 번호는 LLM 입력 `lines`(submissionCodeToLines·split 원문)와 동일해야 한다. `trim()`하면 마지막 줄바꿈 등으로 N이 줄어들어 구역이 전부 어긋난다. */
+    /** 줄 번호는 LLM 입력 `lines`(cohortSubmissionLinesFromSource·원문 split)와 동일해야 한다. `trim()`하면 마지막 줄바꿈 등으로 N이 줄어들어 구역이 전부 어긋난다. */
     const regions = parseRegionsLenient(regionsRaw, code, reportLocale);
     assertSemanticRegionsRequiredForLongFiles(regions, code);
 

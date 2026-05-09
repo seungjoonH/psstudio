@@ -18,18 +18,13 @@ import {
   type CohortAnalysisArtifactsPublicDto,
   type CohortLlmBundleParsed,
   type CohortReportLocale,
+  cohortSubmissionLinesFromSource,
   parseAndValidateCohortBundle,
 } from "./cohort-analysis-bundle.js";
 import { fetchProblemPromptFromUrl } from "./problem-prompt-from-url.js";
 
 /** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
-
-/** DB 원문과 동일한 규칙으로 줄 배열을 만듭니다(regions 줄 번호·검증과 일치). */
-function submissionCodeToLines(code: string): string[] {
-  if (code.length === 0) return [""];
-  return code.split("\n");
-}
 
 async function openRouterCompletion(
   messages: { role: "system" | "user"; content: string }[],
@@ -150,7 +145,7 @@ function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
     return [
       "",
       "---",
-      "Before you output JSON: each submission has a **`lines` array**. **Line numbers are 1-based indices into `lines`** (line k is `lines[k-1]`). N = `lines.length`.",
+      "Before you output JSON: each submission includes **`source`** (verbatim DB snapshot, incl. trailing newline, tabs, consecutive blanks) and **`lines`** where **`lines.join(\"\\n\") === source`** and **`lines` matches `source.split(\"\\n\")`** in JS (**do not trim `source` before splitting). **`\"\"` entries are blank physical lines — never skip or merge them when numbering.** N = `lines.length`. Line k is `lines[k-1]` (1-based k).",
       "- **Under 12 lines**: 1–5 regions OK.",
       "- **12+ lines**: **2–5** regions per submission, **distinct** snake_case `roleId`. Never `entire_code` / `whole_file` / a **single** region from line 1 through the last line. Split by real comparison themes (time normalization, weekday filter, main simulation loop, parse/I/O, etc.).",
       "- **Hard server rule when 12+ lines:** each region must satisfy **`endLine > startLine`** (at least **2 lines** inclusive). Never output `startLine === endLine` for any region — that response is **rejected**.",
@@ -162,7 +157,7 @@ function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
   return [
     "",
     "---",
-    "JSON을 출력하기 **직전**에 각 제출 **`lines` 배열 길이**를 센다(줄 번호는 **`lines` 기준 1-based**, k번째 줄=`lines[k-1]`).",
+    "JSON을 출력하기 **직전**에 각 제출 **`lines.length`(N)** 를 센다. **`lines.join('\\n')` 과 같은 객체의 `source`가 문자 단위로 같은지** 한 번 확인하는 편이 안전하다. **`lines` 안 `\"\"` 는 빈 줄 한 줄** — 두 줄 공백이면 두 요소가 \"\" \"\" 여야 한다(빈 줄 건너뜀 금지). 줄 번호는 **`lines` 1-based**, k번째 줄=`lines[k-1]`.",
     "- **12줄 미만**: regions 1~5개.",
     "- **12줄 이상**: 제출마다 regions **2~5개**, 서로 다른 **snake_case** roleId. **`entire_code`/`whole_file`/1행~마지막행을 한 구역으로만 덮기 금지.** 시간 보정·평일 필터·메인 루프·입출력 등 **실제 비교 축**으로 나눈다.",
     "- **서버가 즉시 거절하는 출력(N≥12):** 어떤 region이든 **`startLine`과 `endLine`이 같아 한 줄만 덮는 경우**(예: 5~5줄). **반드시 `endLine > startLine`으로 최소 2줄 이상** 잡는다. 변수 선언 한 줄만 따로 구역으로 두지 마라 — 위·아래 줄과 붙여 넓힌다.",
@@ -233,6 +228,9 @@ function cohortPipelineFailureReason(err: unknown): string {
   }
   if (code === "cohort_bundle_regions_semantic_required") {
     return "모델이 코드 전체 한 덩어리(entire_code)로만 칠하거나, 긴 코드에서 비교 축을 한 개만 두었습니다. 함수·루프·핵심 로직 등 2~5개 축으로 나눠 다시 생성해야 합니다. 분석을 다시 실행해 주세요.";
+  }
+  if (code === "cohort_bundle_lines_source_invariant") {
+    return "제출 코드 줄 분할 데이터가 일관되지 않습니다. 관리자에게 문의해 주세요.";
   }
   return "집단 코드 비교 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
 }
@@ -466,9 +464,14 @@ export class AssignmentCohortAnalysisService {
         problemContext,
         reportLocale,
         submissions: versionRows.map(({ submission, version }) => {
-          const lines = submissionCodeToLines(version.code);
+          const source = version.code;
+          const lines = cohortSubmissionLinesFromSource(source);
+          if (lines.join("\n") !== source) {
+            throw new Error("cohort_bundle_lines_source_invariant");
+          }
           return {
             submissionId: submission.id,
+            source,
             lineCount: lines.length,
             lines,
             title: submission.title,
@@ -486,7 +489,7 @@ export class AssignmentCohortAnalysisService {
         "",
         "[★ 최우선 — regions 출력 계약. 이걸 먼저 맞춘 뒤 reportMarkdown을 쓴다]",
         "1) `submissions[]`에 입력의 **모든** submissionId를 빠짐없이 넣는다. 각 원소는 `submissionId`, `regions`만.",
-        "2) 각 제출의 **`lines` 배열 길이가 N**이다(= 원문을 `\\n`으로 나눈 줄 수와 동일). **regions의 startLine/endLine은 항상 이 `lines` 기준 1-based이다.** k번째 줄의 텍스트는 **`lines[k-1]`** 이다. 입력에 단일 `code` 문자열은 없다 — 줄 위치 판단은 **`lines`만** 따른다.",
+        "2) 각 제출 입력은 **`source`**(DB 저장 원문 그대로·공백·탭·연속 줄바꿈·파일 끝 줄바꿈 포함)와 **`lines`**가 함께 있다. **`lines`는 오직 JavaScript에서 `source.split(\"\\n\")` 과 같은 배열**이며(**`trim()`·정규화 없음**), **`lines.join(\"\\n\")` 과 `source`는 문자 단위 동일**해야 한다. **`lines` 안의 빈 문자열 `\"\"` 는 빈 물리 줄 한 줄**이다 — 연속 빈 줄이면 `\"\",\"\"` 처럼 요소가 각각 \"\" 여야 한다. **줄 번호를 세거나 regions를 잡을 때 빈 줄을 건너뛰거나 합치면 안 된다.** **N = lines.length.** regions의 startLine/endLine은 항상 **`lines` 1-based 인덱스**이다. 줄 k의 텍스트는 **`lines[k-1]`** 이다.",
         "3) **N < 12** 이면 regions는 1~5개(한 구역으로도 가능). **N ≥ 12** 이면 regions는 **반드시 2~5개**이고, **서로 다른** `roleId`(짧은 snake_case 권장, 예: `time_adjust`, `weekday_filter`, `main_loop`).",
         "3b) **N ≥ 12** 일 때 **각 region마다** `endLine - startLine + 1 ≥ 2`(즉 **`endLine > startLine`**)이어야 한다. **한 줄짜리 구간**(예: `\"startLine\":7,\"endLine\":7`)은 파싱 후 **전체 분석이 실패**한다. 한 줄짜리 논점은 **인접 줄과 합쳐** 최소 2줄로 만든다.",
         "4) **N ≥ 12** 일 때 **금지**: `roleId`가 `entire_code` 이거나 라벨이 「코드 전체」「Full program」; **구역이 1개뿐**이면서 `startLine=1`·`endLine=N`으로 전 파일을 덮는 것; `whole_file` 식별자.",
@@ -498,11 +501,11 @@ export class AssignmentCohortAnalysisService {
         "**N≥12일 때 잘못된 예(거절):** 한 구역이 10~10줄처럼 startLine과 endLine이 같음. **올바른 예:** 10~14줄처럼 **endLine > startLine**으로 최소 둘째 줄까지 포함.",
         "",
         "[중요 — 코드 출력 금지]",
-        "- 각 제출의 전체 원문을 출력에 **다시 쓰지 않는다**. 입력 `submissions[].lines`에 이미 줄 단위로 있다.",
-        "- submissions[] 각 원소는 **submissionId**와 **regions**만 포함한다. (다른 키 불필요)",
+        "- 각 제출의 전체 원문을 출력에 **다시 붙여 넣지 않는다**. 입력에 **`source`/`lines`**로 이미 있다.",
+        "- **네 출력 JSON**의 submissions[] 각 원소는 **submissionId**와 **regions**만 포함한다. (입력 메타·`source`/`lines` 재출력 금지)",
         "",
         "[줄 번호]",
-        "- regions의 startLine·endLine은 **해당 제출 입력 객체의 `lines` 배열** 기준 1-based이다. **줄 k의 내용은 `lines[k-1]`** 이다. 서버 검증은 DB 원문 코드와 대조하지만, 너에게 주는 인덱스는 **`lines`와 1:1**이다.",
+        "- regions의 startLine·endLine은 **해당 제출 입력의 `lines`(그리고 필요하면 같은 줄 번위가 **`source`에 나타나는 위치와 동일**해야 한다)** 기준 1-based이다. **`lines[k-1]`이 `\"\"`이면 실제 화면의 해당 줄은 빈 줄**이다.",
         "",
         "[reportMarkdown]",
         "- 마크다운으로 작성한다.",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cohortSubmissionLinesFromSource,
   normalizeCohortReportLocale,
   parseAndValidateCohortBundle,
   parseRegionsLenient,
@@ -369,6 +370,19 @@ describe("parseAndValidateCohortBundle", () => {
     );
   });
 
+});
+
+describe("cohortSubmissionLinesFromSource", () => {
+  it("빈 줄은 \"\" 요소로 유지하고 join으로 원문이 복원된다", () => {
+    const s = "a\n\nb\n";
+    const lines = cohortSubmissionLinesFromSource(s);
+    expect(lines).toEqual(["a", "", "b", ""]);
+    expect(lines.join("\n")).toBe(s);
+  });
+
+  it("연속 빈 줄마다 별도 \"\" 요소가 된다", () => {
+    expect(cohortSubmissionLinesFromSource("a\n\n\nb")).toEqual(["a", "", "", "b"]);
+  });
 });
 
 describe("parseRegionsLenient", () => {
