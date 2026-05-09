@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -32,8 +33,8 @@ function randomTokenUrl(): string {
 @Injectable()
 export class InvitesService {
   constructor(
-    private readonly groups: GroupsService,
-    private readonly mail: ResendMailService,
+    @Inject(GroupsService) private readonly groups: GroupsService,
+    @Inject(ResendMailService) private readonly mail: ResendMailService,
   ) {}
 
   private get ds() {
