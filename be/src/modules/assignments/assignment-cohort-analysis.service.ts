@@ -25,6 +25,12 @@ import { fetchProblemPromptFromUrl } from "./problem-prompt-from-url.js";
 /** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
 
+/** DB 원문과 동일한 규칙으로 줄 배열을 만듭니다(regions 줄 번호·검증과 일치). */
+function submissionCodeToLines(code: string): string[] {
+  if (code.length === 0) return [""];
+  return code.split("\n");
+}
+
 async function openRouterCompletion(
   messages: { role: "system" | "user"; content: string }[],
   model: string,
@@ -100,7 +106,7 @@ function cohortMarkdownStructureAndCodeRules(locale: CohortReportLocale): string
       "",
       "[reportMarkdown — code excerpts & comparison (required)]",
       "- Ground comparisons in **actual code**. Use fenced blocks with the correct language tag (python, javascript, java, …). No excerpt-only vague prose.",
-      "- Before each fence, say which **[[SUBMISSION:id]]**, **`roleId`**, and **line range** the snippet comes from. Snippets must **match** the input `code` exactly — no rewriting.",
+      "- Before each fence, say which **[[SUBMISSION:id]]**, **`roleId`**, and **line range** the snippet comes from. Snippets must **match** the submission source lines exactly — no rewriting.",
       "- When contrasting two submissions, place **two fences back-to-back** or one short fence with clear comments so the **diff** is visible. Prefer pairing the **same roleId** across submissions.",
       "- Never paste a **full file**. Use several short contiguous excerpts if needed.",
       "- Forbidden: long abstract comparison without fences, repeating the same point, listing identifiers without a fence.",
@@ -125,7 +131,7 @@ function cohortMarkdownStructureAndCodeRules(locale: CohortReportLocale): string
     "",
     "[reportMarkdown — 코드 인용·비교 서술(필수)]",
     "- 실제 코드를 근거로 비교한다. 추상적인 말만 하지 않고, **마크다운 코드 펜스**로 발췌를 넣는다. 언어 태그는 해당 제출 `language`·발췌에 맞춘다(python, javascript, java 등).",
-    "- 각 펜스 **앞** 문장에서 \"[[SUBMISSION:id]]의 `roleId`(몇~몇 줄)\"처럼 출처를 밝힌다. 펜스 안 코드는 입력 `code`와 **동일**해야 하며 임의로 변형하지 않는다.",
+    "- 각 펜스 **앞** 문장에서 \"[[SUBMISSION:id]]의 `roleId`(몇~몇 줄)\"처럼 출처를 밝힌다. 펜스 안 코드는 해당 제출 **`lines` 원문**과 **동일**해야 하며 임의로 변형하지 않는다.",
     "- 두 제출을 대조할 때는 펜스를 **연속 두 개** 두거나, 한 펜스 안에 짧은 주석으로 구분해 **차이가 보이게** 한다. 가능하면 같은 역할 축(roleId)끼리 짝을 지어 서술한다.",
     "- 발췌는 **전체 파일을 붙이지 않는다.** 대신 핵심 루프·분기·자료구조 선언 등 **짧은 연속 줄**을 여러 번 인용해도 된다.",
     "- 금지: 코드 없이 일반론만 장황하게 쓰기, 동일 내용 반복, 펜스 없이 식별자만 나열하기.",
@@ -138,23 +144,23 @@ function cohortUserRegionsContractReminder(locale: CohortReportLocale): string {
     return [
       "",
       "---",
-      "Before you output JSON: count lines in each submission's `code` (split by `\\n`).",
+      "Before you output JSON: each submission has a **`lines` array**. **Line numbers are 1-based indices into `lines`** (line k is `lines[k-1]`). N = `lines.length`.",
       "- **Under 12 lines**: 1–5 regions OK.",
       "- **12+ lines**: **2–5** regions per submission, **distinct** snake_case `roleId`. Never `entire_code` / `whole_file` / a **single** region from line 1 through the last line. Split by real comparison themes (time normalization, weekday filter, main simulation loop, parse/I/O, etc.).",
       "- Each region = **one** inclusive contiguous [startLine,endLine]; include **every** blank line and brace inside that span (no striping).",
       "- **Identical** roleId set and **same** region count k on **every** submission.",
-      "- **Main/simulation loop** spans **must include** the line with `for` / `while` / `do` — not only tails after `break`, closing braces alone, or function preamble without the loop header.",
+      "- **Main/simulation loop**: the span **must include** the line with `for` / `while` / `do` / `forEach` — not only tails after `break`, closing braces alone, or helper nested functions (`def convert`, inner `function`) above the outer simulation loop without that loop header.",
     ].join("\n");
   }
   return [
     "",
     "---",
-    "JSON을 출력하기 **직전**에 각 제출 `code` 줄 수를 센다(`\\n` 기준).",
+    "JSON을 출력하기 **직전**에 각 제출 **`lines` 배열 길이**를 센다(줄 번호는 **`lines` 기준 1-based**, k번째 줄=`lines[k-1]`).",
     "- **12줄 미만**: regions 1~5개.",
     "- **12줄 이상**: 제출마다 regions **2~5개**, 서로 다른 **snake_case** roleId. **`entire_code`/`whole_file`/1행~마지막행을 한 구역으로만 덮기 금지.** 시간 보정·평일 필터·메인 루프·입출력 등 **실제 비교 축**으로 나눈다.",
     "- region은 연속 [startLine,endLine] **한 덩어리**; 그 안의 **빈 줄·주석·`}`·`break`**까지 포함(줄무늬 금지).",
     "- 모든 제출에 **동일한** roleId 집합·**같은** k.",
-    "- **주요 루프·시뮬레이션**: 구간 안에 **`for`/`while`/`do`가 있는 줄**이 반드시 포함되어야 한다. 닫는 꼬리·함수 선언부만 칠하지 마라.",
+    "- **주요 루프·시뮬레이션**: 구간 안에 **`for`/`while`/`do`/`forEach`가 있는 줄**이 반드시 포함되어야 한다. **`def convert`/중첩 헬퍼 블록 전체**를 메인 루프 축에 묶지 말고 시간 보정 등 다른 축 또는 미색으로 둔다. 닫는 꼬리·함수 선언부만 칠하지 마라.",
   ].join("\n");
 }
 
@@ -451,14 +457,18 @@ export class AssignmentCohortAnalysisService {
         problemUrl: assignment.problemUrl,
         problemContext,
         reportLocale,
-        submissions: versionRows.map(({ submission, version }) => ({
-          submissionId: submission.id,
-          title: submission.title,
-          authorNickname: nickByUserId.get(submission.authorUserId) ?? "",
-          versionNo: submission.currentVersionNo,
-          language: version.language,
-          code: version.code,
-        })),
+        submissions: versionRows.map(({ submission, version }) => {
+          const lines = submissionCodeToLines(version.code);
+          return {
+            submissionId: submission.id,
+            lineCount: lines.length,
+            lines,
+            title: submission.title,
+            authorNickname: nickByUserId.get(submission.authorUserId) ?? "",
+            versionNo: submission.currentVersionNo,
+            language: version.language,
+          };
+        }),
       };
 
       const systemPrompt = [
@@ -468,21 +478,21 @@ export class AssignmentCohortAnalysisService {
         "",
         "[★ 최우선 — regions 출력 계약. 이걸 먼저 맞춘 뒤 reportMarkdown을 쓴다]",
         "1) `submissions[]`에 입력의 **모든** submissionId를 빠짐없이 넣는다. 각 원소는 `submissionId`, `regions`만.",
-        "2) 각 제출의 `code` 문자열로 **줄 수 N**을 센다(마지막 줄 포함, `\\n`으로 나눈 개수).",
+        "2) 각 제출의 **`lines` 배열 길이가 N**이다(= 원문을 `\\n`으로 나눈 줄 수와 동일). **regions의 startLine/endLine은 항상 이 `lines` 기준 1-based이다.** k번째 줄의 텍스트는 **`lines[k-1]`** 이다. 입력에 단일 `code` 문자열은 없다 — 줄 위치 판단은 **`lines`만** 따른다.",
         "3) **N < 12** 이면 regions는 1~5개(한 구역으로도 가능). **N ≥ 12** 이면 regions는 **반드시 2~5개**이고, **서로 다른** `roleId`(짧은 snake_case 권장, 예: `time_adjust`, `weekday_filter`, `main_loop`).",
         "4) **N ≥ 12** 일 때 **금지**: `roleId`가 `entire_code` 이거나 라벨이 「코드 전체」「Full program」; **구역이 1개뿐**이면서 `startLine=1`·`endLine=N`으로 전 파일을 덮는 것; `whole_file` 식별자.",
         "5) 각 region은 **연속 구간** `[startLine,endLine]`(포함) **정확히 하나**. 그 사이의 코드·빈 줄·주석·`}`·`break`/`continue`를 **빠짐없이** 포함한다(같은 블록 안 줄무늬 금지).",
         "6) **모든 제출**에서 **동일한** roleId 집합과 **같은 개수** k의 regions를 둔다(제출마다 줄 범위는 달라도 된다).",
         "",
-        "[regions 올바른 형태 예 — 구조만 참고, 줄 번호는 실제 code에 맞출 것]",
-        '예: 한 제출 code가 40줄일 때 `{"submissionId":"<uuid>","regions":[{"roleId":"time_normalize","roleLabel":"시간·한도 보정","startLine":5,"endLine":18},{"roleId":"main_check","roleLabel":"메인 지각 판정 루프","startLine":20,"endLine":38}]}` — 1~4줄·39~40줄은 비교 축 밖이면 regions에 넣지 않아도 된다(미색).',
+        "[regions 올바른 형태 예 — 구조만 참고, 줄 번호는 해당 제출 `lines`에 맞출 것]",
+        '예: 한 제출 `lines` 길이가 40일 때 `{"submissionId":"<uuid>","regions":[{"roleId":"time_normalize","roleLabel":"시간·한도 보정","startLine":5,"endLine":18},{"roleId":"main_check","roleLabel":"메인 지각 판정 루프","startLine":20,"endLine":38}]}` — 1~4줄·39~40줄은 비교 축 밖이면 regions에 넣지 않아도 된다(미색).',
         "",
         "[중요 — 코드 출력 금지]",
-        "- 각 제출의 전체 코드 문자열을 출력에 **다시 쓰지 않는다**. 입력 JSON에 이미 있다.",
+        "- 각 제출의 전체 원문을 출력에 **다시 쓰지 않는다**. 입력 `submissions[].lines`에 이미 줄 단위로 있다.",
         "- submissions[] 각 원소는 **submissionId**와 **regions**만 포함한다. (다른 키 불필요)",
         "",
         "[줄 번호]",
-        "- regions의 startLine·endLine은 **해당 제출의 입력 code 문자열** 기준 1-based 줄 번호이다. 줄바꿈은 입력과 동일해야 한다.",
+        "- regions의 startLine·endLine은 **해당 제출 입력 객체의 `lines` 배열** 기준 1-based이다. **줄 k의 내용은 `lines[k-1]`** 이다. 서버 검증은 DB 원문 코드와 대조하지만, 너에게 주는 인덱스는 **`lines`와 1:1**이다.",
         "",
         "[reportMarkdown]",
         "- 마크다운으로 작성한다.",
@@ -499,7 +509,7 @@ export class AssignmentCohortAnalysisService {
         "- 코드 펜스는 **발췌한 원문**에 맞는 언어 태그(예: python, java, cpp, javascript, typescript, c)를 쓴다.",
         "- **어느 제출의 전체 코드도** 리포트에 붙이지 않는다. 펜스에는 짧은 발췌만 넣는다.",
         "- 각 발췌는 직전·직후 문장과 이어지게 하고, [[SUBMISSION:id]]와 해당 구역의 `roleId`를 본문에서 한 번 이상 언급해 리포트와 열 색이 대응되게 한다.",
-        "- 발췌는 해당 제출의 원문 code와 의미가 같아야 하며 과장·변형하지 않는다.",
+        "- 발췌는 해당 제출의 원문(`lines`를 이은 문자열)과 의미가 같아야 하며 과장·변형하지 않는다.",
         cohortLocaleInstruction(reportLocale),
         "- 모델명·프롬프트·시스템·버전·시드 등 구성 메타는 절대 언급하지 않는다.",
         "- 표절 단정·실력 평가·정답 판정은 하지 않는다.",
@@ -547,7 +557,9 @@ export class AssignmentCohortAnalysisService {
         "- **특정 반복문 하나**(외곽 for, 안쪽 while 등)가 축이면 **루프 헤더부터 해당 닫는 중괄호까지** 한 구간. 루프 **안의 빈 줄·주석·`break`/`continue`/내장 if 전부** 포함한다. **헤더 줄만 칠하고 본문은 미색으로 두는 것은 금지**다.",
         "",
         "## 루프·시뮬레이션 축 (`main_loop`, `주요 루프`, 메인 지각 루프 등) — 오탐 방지(필수)",
-        "- roleLabel·역할이 **메인/주요 루프·시뮬레이션 반복**을 뜻하면, 해당 region의 `[startLine,endLine]` **안에 반드시** `for` / `while` / `do` / range-for 등 **반복문을 여는 키워드가 있는 줄**이 포함되어야 한다. 구간 전체에 루프 키워드가 **한 줄도 없으면 무조건 잘못된 출력**이다.",
+        "- roleLabel·역할이 **메인/주요 루프·시뮬레이션 반복**을 뜻하면, 해당 region의 `[startLine,endLine]` **안에 반드시** `for` / `while` / `do` / `forEach` 등 **반복문을 여는 키워드가 있는 줄**이 포함되어야 한다. 구간 전체에 루프 키워드가 **한 줄도 없으면 무조건 잘못된 출력**이다.",
+        "- **`main_loop`의 startLine은 가능하면 그 구역에서 가장 바깥쪽 시뮬레이션용 반복문 헤더가 있는 줄**이다. 그 **위에 붙은 `def convert`/`function foo` 같은 중첩 헬퍼 함수 블록 전체**는 이 축에 넣지 않고, **`time_normalize` 등 다른 roleId**로 두거나 미색으로 둔다(헬퍼와 바깥 루프를 한 덩어리로 묶지 않는다).",
+        "- 소스에 **「주요 루프」 한 줄 주석·표식만 있고** 실제 `for`/`while`은 그 아래 줄이면, 색 칠하는 구간은 **표식 줄을 포함하지 않아도 되고**, **반드시 실제 반복문 헤더가 있는 줄부터** 포함해야 한다(표식만 칠하고 루프는 빼면 실패).",
         "- **절대 금지 — 실제로 자주 발생한 오류:**",
         "  (a) `break` 다음에만 이어지는 **닫는 `}` 묶음·루프 밖 증감(`day++`)·후처리 if**만 칠하고, 정작 **`for`/`while` 헤더가 있는 줄은 구간 밖**에 두는 것.",
         "  (b) **함수 시그니처·헬퍼 함수의 끝(`return`·`}`)·다음 함수의 선언부·`int ans = 0` 같은 초기화만** 칠하고, **그 아래 줄에서 시작하는 진짜 `for (…)` 루프는 미색**으로 남기는 것.",
