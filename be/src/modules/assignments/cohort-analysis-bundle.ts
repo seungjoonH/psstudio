@@ -138,7 +138,7 @@ function wholeFileRegion(lines: number, locale: CohortReportLocale): CohortRegio
   };
 }
 
-function normalizeAnchorText(value: unknown): string | null {
+export function normalizeAnchorText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   let text = value.replace(/\r\n/g, "\n").trim();
   if (text.length === 0) return null;
@@ -157,7 +157,7 @@ function trimBlankEdgeLines(lines: string[]): string[] {
   return s <= e ? lines.slice(s, e + 1) : [];
 }
 
-function findContiguousAnchorRange(sourceLines: string[], anchorText: string): { startLine: number; endLine: number } | null {
+export function findContiguousAnchorRange(sourceLines: string[], anchorText: string): { startLine: number; endLine: number } | null {
   const anchorLines = trimBlankEdgeLines(anchorText.split("\n"));
   if (anchorLines.length === 0) return null;
   const n = sourceLines.length;
@@ -184,6 +184,31 @@ function findContiguousAnchorRange(sourceLines: string[], anchorText: string): {
   };
 
   return tryMatch(eq) ?? tryMatch(eqTrim);
+}
+
+/** 집단 분석·제출 AI 리뷰 공통: 정규화된 start/end 앵커 문자열로 원문 줄 범위를 찾는다. */
+export function resolveLineRangeFromNormalizedAnchors(
+  sourceLines: string[],
+  startAnchor: string | null,
+  endAnchor: string | null,
+): { startLine: number; endLine: number } | null {
+  if (startAnchor !== null && endAnchor !== null) {
+    const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
+    const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
+    if (startRange === null || endRange === null) return null;
+    return { startLine: startRange.startLine, endLine: endRange.endLine };
+  }
+  if (startAnchor !== null) {
+    const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
+    if (startRange === null) return null;
+    return { startLine: startRange.startLine, endLine: startRange.endLine };
+  }
+  if (endAnchor !== null) {
+    const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
+    if (endRange === null) return null;
+    return { startLine: endRange.startLine, endLine: endRange.endLine };
+  }
+  return null;
 }
 
 /** 긴 코드에서 구역당 최소 2줄 규칙을 맞추기 위해 한 줄짜리 범위를 안전하게 확장합니다. */
@@ -257,32 +282,12 @@ export function parseRegionsLenient(
 
     if (startAnchor !== null || endAnchor !== null) {
       resolvedByAnchor = true;
-      if (startAnchor !== null && endAnchor !== null) {
-        const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
-        const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
-        if (startRange === null || endRange === null) {
-          throw new Error("cohort_bundle_anchor_not_found");
-        }
-        startLine = startRange.startLine;
-        endLine = endRange.endLine;
-      } else if (startAnchor !== null) {
-        const startRange = findContiguousAnchorRange(sourceLines, startAnchor);
-        if (startRange === null) {
-          throw new Error("cohort_bundle_anchor_not_found");
-        }
-        startLine = startRange.startLine;
-        endLine = startRange.endLine;
-      } else {
-        if (endAnchor === null) {
-          throw new Error("cohort_bundle_anchor_not_found");
-        }
-        const endRange = findContiguousAnchorRange(sourceLines, endAnchor);
-        if (endRange === null) {
-          throw new Error("cohort_bundle_anchor_not_found");
-        }
-        startLine = endRange.startLine;
-        endLine = endRange.endLine;
+      const resolved = resolveLineRangeFromNormalizedAnchors(sourceLines, startAnchor, endAnchor);
+      if (resolved === null) {
+        throw new Error("cohort_bundle_anchor_not_found");
       }
+      startLine = resolved.startLine;
+      endLine = resolved.endLine;
     } else {
       const sl = normalizeLineNumber(r.startLine);
       const el = normalizeLineNumber(r.endLine);

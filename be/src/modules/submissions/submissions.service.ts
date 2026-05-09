@@ -15,8 +15,12 @@ import { In } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { Assignment } from "../assignments/assignment.entity.js";
-import { requestLlmChat } from "../ai/llm-chat-client.js";
+import {
+  normalizeAnchorText,
+  resolveLineRangeFromNormalizedAnchors,
+} from "../assignments/cohort-analysis-bundle.js";
 import { fetchProblemPromptFromUrl, type ProblemPromptContext } from "../assignments/problem-prompt-from-url.js";
+import { requestLlmChat } from "../ai/llm-chat-client.js";
 import { Comment } from "../comments/comment.entity.js";
 import { Notification } from "../notifications/notification.entity.js";
 import { ReactionsService, type ReactionSummaryItem } from "../reactions/reactions.service.js";
@@ -385,26 +389,133 @@ function summaryLooksLikeRawApiEnvelope(text: string): boolean {
   return t.startsWith("{") || t.startsWith('{"');
 }
 
-function parseLineCommentsArray(commentsRaw: unknown): AiReviewLineComment[] {
+/** LLM lineComments 원소(줄 번호 또는 집단 분석과 동일한 앵커 텍스트). */
+type LlmAiReviewLineCommentRow = {
+  body: string;
+  startAnchorText: string | null;
+  endAnchorText: string | null;
+  startLine: number | null;
+  endLine: number | null;
+  anchorText: string | null;
+};
+
+function parseLineCommentsLlmArray(commentsRaw: unknown): LlmAiReviewLineCommentRow[] {
   if (!Array.isArray(commentsRaw)) return [];
   return commentsRaw
     .map((item) => {
-      const candidate = item as Partial<AiReviewLineComment>;
-      const start = Number(candidate.startLine);
-      const end = Number(candidate.endLine);
-      const anchorText =
-        typeof candidate.anchorText === "string" && candidate.anchorText.trim().length > 0
-          ? candidate.anchorText.trim()
-          : null;
-      const body = typeof candidate.body === "string" ? candidate.body : "";
-      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) return null;
+      if (item === null || typeof item !== "object" || Array.isArray(item)) return null;
+      const rec = item as Record<string, unknown>;
+      const body = typeof rec.body === "string" ? clip(rec.body) : "";
       if (body.trim().length === 0) return null;
-      return { startLine: start, endLine: end, anchorText, body: clip(body) };
+
+      const sar = rec.startAnchorText ?? rec.start_anchor_text;
+      const ear = rec.endAnchorText ?? rec.end_anchor_text;
+      const startAnchorText =
+        typeof sar === "string" && sar.trim().length > 0 ? sar.trim() : null;
+      const endAnchorText = typeof ear === "string" && ear.trim().length > 0 ? ear.trim() : null;
+
+      const startRaw = Number(rec.startLine);
+      const endRaw = Number(rec.endLine);
+      const startLine =
+        Number.isInteger(startRaw) && startRaw >= 1 ? startRaw : (null as number | null);
+      const endLine = Number.isInteger(endRaw) && endRaw >= 1 ? endRaw : (null as number | null);
+
+      const atr = rec.anchorText;
+      const anchorText =
+        typeof atr === "string" && atr.trim().length > 0 ? atr.trim() : null;
+
+      const hasAnchors = startAnchorText !== null || endAnchorText !== null;
+      const hasLines =
+        startLine !== null && endLine !== null && endLine >= startLine;
+      if (!hasAnchors && !hasLines) return null;
+
+      return {
+        body,
+        startAnchorText,
+        endAnchorText,
+        startLine,
+        endLine,
+        anchorText,
+      };
     })
-    .filter((value): value is AiReviewLineComment => value !== null);
+    .filter((v): v is LlmAiReviewLineCommentRow => v !== null);
 }
 
-export function parseAiReviewPayload(raw: string): AiReviewPayload {
+function pickSnippetAnchorFromRange(codeLines: string[], startLine: number, endLine: number): string | null {
+  for (let ln = startLine; ln <= endLine; ln++) {
+    const line = codeLines[ln - 1];
+    if (line !== undefined && line.trim().length > 0) {
+      const t = line.trim();
+      return t.length <= 160 ? t : `${t.slice(0, 157)}...`;
+    }
+  }
+  return null;
+}
+
+function materializeAiReviewLineComments(
+  codeLines: string[],
+  rows: LlmAiReviewLineCommentRow[],
+): AiReviewLineComment[] {
+  const out: AiReviewLineComment[] = [];
+  for (const row of rows) {
+    const sNorm = row.startAnchorText !== null ? normalizeAnchorText(row.startAnchorText) : null;
+    const eNorm = row.endAnchorText !== null ? normalizeAnchorText(row.endAnchorText) : null;
+    if (sNorm !== null || eNorm !== null) {
+      const resolved = resolveLineRangeFromNormalizedAnchors(codeLines, sNorm, eNorm);
+      if (resolved === null) continue;
+      let { startLine, endLine } = resolved;
+      if (startLine > endLine) {
+        const t = startLine;
+        startLine = endLine;
+        endLine = t;
+      }
+      out.push({
+        startLine,
+        endLine,
+        anchorText: pickSnippetAnchorFromRange(codeLines, startLine, endLine),
+        body: row.body,
+      });
+      continue;
+    }
+    if (row.startLine !== null && row.endLine !== null && row.endLine >= row.startLine) {
+      out.push({
+        startLine: row.startLine,
+        endLine: row.endLine,
+        anchorText: row.anchorText,
+        body: row.body,
+      });
+    }
+  }
+  return out;
+}
+
+/** 단위 테스트 등 코드 원문 없이 파싱만 할 때(앵커만 있는 항목은 버린다). */
+function materializeAiReviewLineCommentsWithoutCode(rows: LlmAiReviewLineCommentRow[]): AiReviewLineComment[] {
+  return rows
+    .filter(
+      (r): r is LlmAiReviewLineCommentRow & { startLine: number; endLine: number } =>
+        r.startLine !== null && r.endLine !== null && r.endLine >= r.startLine,
+    )
+    .map((r) => ({
+      startLine: r.startLine,
+      endLine: r.endLine,
+      anchorText: r.anchorText,
+      body: r.body,
+    }));
+}
+
+function lineCommentsFromParsedPayload(
+  parsed: Partial<AiReviewPayload>,
+  submissionCode: string | undefined,
+): AiReviewLineComment[] {
+  const rows = parseLineCommentsLlmArray(parsed.lineComments);
+  const codeLines =
+    submissionCode !== undefined && submissionCode.length > 0 ? submissionCode.split("\n") : null;
+  if (codeLines !== null) return materializeAiReviewLineComments(codeLines, rows);
+  return materializeAiReviewLineCommentsWithoutCode(rows);
+}
+
+export function parseAiReviewPayload(raw: string, submissionCode?: string): AiReviewPayload {
   const parsed = tryParseAiReviewPayloadFromRaw(raw);
   if (parsed === null) {
     return { summary: AI_REVIEW_JSON_PARSE_FAILURE_SUMMARY, lineComments: [] };
@@ -413,7 +524,7 @@ export function parseAiReviewPayload(raw: string): AiReviewPayload {
     typeof parsed.summary === "string" && parsed.summary.trim().length > 0
       ? clip(parsed.summary.trim())
       : "코드가 전반적으로 잘 작성되어 있습니다. 지금 상태를 유지해도 좋습니다.";
-  const lineComments = parseLineCommentsArray(parsed.lineComments);
+  const lineComments = lineCommentsFromParsedPayload(parsed, submissionCode);
 
   if (summaryLooksLikeRawApiEnvelope(summary)) {
     const inner = tryParseAiReviewPayloadFromRaw(summary);
@@ -424,7 +535,7 @@ export function parseAiReviewPayload(raw: string): AiReviewPayload {
       !summaryLooksLikeRawApiEnvelope(inner.summary.trim())
         ? clip(inner.summary.trim())
         : null;
-    const innerLineComments = inner !== null ? parseLineCommentsArray(inner.lineComments) : [];
+    const innerLineComments = inner !== null ? lineCommentsFromParsedPayload(inner, submissionCode) : [];
     const salvagedComments = lineComments.length > 0 ? lineComments : innerLineComments;
 
     let nextSummary: string;
@@ -1177,7 +1288,11 @@ export class SubmissionsService {
               "",
               "── 출력 형식 ──",
               "반드시 **유효한 JSON 객체 한 개만** 출력한다. 앞뒤에 설명문·마크다운 제목·코드펜스(```) 금지.",
-              "{\"summary\":string,\"lineComments\":[{\"startLine\":number,\"endLine\":number,\"anchorText\":string,\"body\":string}]}",
+              "{\"summary\":string,\"lineComments\":[{\"body\":string,\"startAnchorText\":string,\"endAnchorText\":string}]}",
+              "lineComments 각 원소는 **body**(한국어 피드백)와, 집단 코드 AI 비교 분석과 동일하게 **startAnchorText** / **endAnchorText**만 쓴다.",
+              "**startLine/endLine/anchorText 필드는 출력하지 않는다.** 서버가 제출 원문에서 앵커 문자열로 줄 번호를 찾아 붙인다.",
+              "startAnchorText는 결함이 있는 구간의 **첫 물리 줄 전체**(또는 연속 여 줄을 그대로) 제출 코드에서 복사한다. 한 구간만 지적하면 endAnchorText는 생략 가능(그 경우 start 구간만으로 범위가 정해진다).",
+              "endAnchorText를 쓸 때는 구간 **마지막 물리 줄 전체**를 제출 코드에서 그대로 복사한다. 앵커는 공백·들여쓰기까지 원문과 일치해야 서버가 같은 방식으로 줄을 찾을 수 있다.",
               "summary 값에는 요약 문장만 넣는다. summary 안에 응답 JSON을 다시 넣지 않는다.",
               "",
               "── summary vs lineComments (UI 계약, 위반 금지) ──",
@@ -1233,11 +1348,10 @@ export class SubmissionsService {
               `- fenced 코드블록은 반드시 \`\`\`${fenceLang} 로 시작한다 ([제출 코드]와 같은 언어). JSON 문자열 안에서는 줄바꿈을 실제 개행(\\n)으로 넣어 문단·블록을 구분한다.`,
               "- 근거에 입력·중간값·기대값을 적을 때는 `- ` 목록이나 짧은 표를 써도 된다.",
               "",
-              "── 앵커·범위 ──",
-              "- 검증된 결함이 **특정 줄·연속 몇 줄**과 연결되면 해당 범위를 startLine/endLine으로 잡고 lineComment를 작성한다. 한 줄짜리 분기 버그면 보통 startLine=endLine로 그 줄만 지정한다.",
-              "- startLine/endLine은 1-based, 여러 줄 범위 가능. **공백만 있는 줄을 가리키면 안 된다.** 토큰·식이 있는 코드 줄을 지정한다.",
-              "- anchorText는 지정한 라인 범위 안에 실제로 존재하는 부분 문자열이어야 한다.",
-              "- 특정 식별자 변경 제안 시 그 식별자가 anchor 범위에 실제로 있어야 한다.",
+              "── 앵커(줄 번호 금지) ──",
+              "- 각 lineComment는 **제출 코드 원문에서 잘라 붙인 startAnchorText**(필수)와 선택적 **endAnchorText**로 구간을 가리킨다. 줄 번호를 세어 출력하지 않는다.",
+              "- 앵커는 **연속 물리 줄**이어야 하며, 집단 코드 AI 비교 분석의 regions와 같은 규칙이다(잘못된 줄 추측 금지).",
+              "- 한 줄만 지적하면 startAnchorText에 그 줄 전체만 넣고 endAnchorText는 생략한다. 여러 줄이면 시작 줄 전체·끝 줄 전체를 각각 넣는다.",
               "",
               "── 추가 제약 ──",
               "- 주석/Docstring/JSDoc/매개변수 설명 추가 제안은 금지. '설명이 있으면 좋습니다' 같은 문서화 위주 피드백 금지.",
@@ -1253,7 +1367,7 @@ export class SubmissionsService {
               "다음 코드를 [문제 문맥]·[문제 본문 핵심] 기준으로 리뷰해줘.",
               "검증된 결함만 lineComments에 넣어줘. **결함 0개도 정상 결과**다.",
               "구체적 버그 설명(원인·반례·수정)은 summary가 아니라 **해당 코드 줄 범위의 lineComments**에만 넣어줘. summary는 짧게.",
-              "같은 결함을 여러 lineComments로 쪼개지 말고 한 곳에 단일 코멘트로 정리해줘. 필요하면 여러 줄 범위를 써줘.",
+              "각 lineComment는 body와 **제출 코드에서 복사한 startAnchorText**(및 필요 시 endAnchorText)로 구간을 표시해줘. 줄 번호는 쓰지 마.",
               "결함을 주장하기 전 반드시 실제 입력으로 코드를 끝까지 실행 추적하고, 기대 출력과 실제 출력을 비교해줘. 둘이 같으면 그 lineComment는 폐기.",
               "",
               "[문제 문맥]",
@@ -1283,7 +1397,7 @@ export class SubmissionsService {
           },
         ],
       });
-      return parseAiReviewPayload(response.content);
+      return parseAiReviewPayload(response.content, code);
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("_http_")) {

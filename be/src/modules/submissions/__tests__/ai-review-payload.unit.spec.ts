@@ -84,4 +84,17 @@ describe("parseAiReviewPayload", () => {
     expect(out.summary).toBe("요약");
     expect(out.lineComments.length).toBe(1);
   });
+
+  it("startAnchorText와 제출 원문으로 줄 번호를 확정한다", () => {
+    const code = ["function x() {", "  return 1;", "}", "for (let i=0;i<3;i++) {", "  a++;", "}"].join("\n");
+    const raw = JSON.stringify({
+      summary: "요약",
+      lineComments: [{ body: "루프 문제", startAnchorText: "for (let i=0;i<3;i++) {" }],
+    });
+    const out = parseAiReviewPayload(raw, code);
+    expect(out.lineComments.length).toBe(1);
+    expect(out.lineComments[0].startLine).toBe(4);
+    expect(out.lineComments[0].endLine).toBe(4);
+    expect(out.lineComments[0].anchorText).toContain("for");
+  });
 });
