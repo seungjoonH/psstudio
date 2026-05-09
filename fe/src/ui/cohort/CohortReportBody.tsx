@@ -105,9 +105,9 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
       if (p.kind === "md") {
         if (p.text.trim().length === 0) return;
         nodes.push(
-          <div className={styles.inlineMdWrap} key={`im-${j}`}>
+          <span className={styles.inlineMdWrap} key={`im-${j}`}>
             <MarkdownPreview content={p.text} inline />
-          </div>,
+          </span>,
         );
         return;
       }
@@ -116,9 +116,9 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
     inlineQueue = [];
     if (nodes.length === 0) return;
     blocks.push(
-      <div className={styles.inlineRow} key={`row-${blockKey++}`}>
+      <p className={styles.inlineFlow} key={`row-${blockKey++}`}>
         {nodes}
-      </div>,
+      </p>,
     );
   }
 

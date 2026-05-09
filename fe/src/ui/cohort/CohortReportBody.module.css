@@ -5,24 +5,20 @@
   color: var(--color-text);
 }
 
-/* 칩과 뒤따르는 문장은 같은 플렉스 줄에 고정하고, 긴 문장만 안쪽에서 줄바꿈(wrap으로 두 아이템이 줄 단위로 갈라지면 안 됨). */
-.inlineRow {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  gap: 0.35em;
-  margin-bottom: 0.65em;
-  width: 100%;
+/* HTML <p> 안에 볼드·span처럼 칩·마크다운 조각을 인라인으로 이어 붙인다(flex 행 금지 — 좁은 폭에서 글자 단위로 깨짐). */
+.inlineFlow {
+  margin: 0 0 0.65em;
+  display: block;
   max-width: 100%;
   box-sizing: border-box;
-  min-width: 0;
+  font-size: inherit;
+  line-height: inherit;
 }
 
-/* div 안에 인라인 마크다운(span 루트)만 두어 칩과 같은 플렉스 행에서 줄바꿈 없이 이어지게 한다. */
+/* 마크다운 조각은 span으로 두어 <p> 안에 허용되는 인라인 자식만 둔다. */
 .inlineMdWrap {
-  min-width: 0;
-  flex: 1 1 auto;
-  align-self: baseline;
+  display: inline;
+  vertical-align: baseline;
 }
 
 .mdBlock {
@@ -36,8 +32,8 @@
   flex-shrink: 0;
   gap: 6px;
   max-width: min(100%, 280px);
-  margin: 0;
-  vertical-align: baseline;
+  margin: 0 0.15em 0 0;
+  vertical-align: middle;
   padding: 1px 6px 1px 4px;
   border-radius: 999px;
   border: 1px solid var(--color-border);
