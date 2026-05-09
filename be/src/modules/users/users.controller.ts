@@ -4,7 +4,7 @@ import type { Response } from "express";
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { Transform, Type } from "class-transformer";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
-import { IsNull } from "typeorm";
+import { In, IsNull } from "typeorm";
 import { clearSessionCookie } from "../auth/auth-cookie.js";
 import { CurrentSessionId, CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { AuthGuard } from "../auth/guards/auth.guard.js";
@@ -12,7 +12,10 @@ import { SessionService } from "../auth/session/session.service.js";
 import { dataSource } from "../../config/data-source.js";
 import { Assignment } from "../assignments/assignment.entity.js";
 import { Notification } from "../notifications/notification.entity.js";
+import { Review } from "../reviews/review.entity.js";
+import { ReviewReply } from "../reviews/review-reply.entity.js";
 import { Submission } from "../submissions/submission.entity.js";
+import { User } from "./user.entity.js";
 import { UsersService } from "./users.service.js";
 
 class UpdateNicknameRequest {
@@ -118,6 +121,14 @@ function resolveNotificationActor(payload: Record<string, unknown>): {
   };
 }
 
+/** 제목이 `OOO님이 …` 형태일 때 행위자 표시용 이름을 뽑습니다. */
+function parseActorNameFromNotificationTitle(title: string): string | null {
+  const m = /^(.+?)님이/.exec(title.trim());
+  if (m === null || m[1] === undefined) return null;
+  const name = m[1].trim();
+  return name.length > 0 ? name : null;
+}
+
 @Controller("api/v1/users")
 @Dependencies(UsersService, SessionService)
 @UseGuards(AuthGuard)
@@ -150,18 +161,102 @@ export class UsersController {
       order: { createdAt: "DESC" },
       take: query.limit,
     });
+    const actorIds = new Set<string>();
+    const reviewIdsForAuthor = new Set<string>();
+    const replyIdsForAuthor = new Set<string>();
+    for (const row of rows) {
+      const payload = row.payload as Record<string, unknown>;
+      const fromPayload = pickStr(payload, "actorUserId");
+      if (fromPayload !== undefined) {
+        actorIds.add(fromPayload);
+      } else if (row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
+        const rid = pickStr(payload, "reviewId");
+        if (rid !== undefined) reviewIdsForAuthor.add(rid);
+      } else if (
+        row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
+        row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE
+      ) {
+        const replyId = pickStr(payload, "replyId");
+        if (replyId !== undefined) replyIdsForAuthor.add(replyId);
+      }
+    }
+    const reviewAuthorByReviewId = new Map<string, string>();
+    if (reviewIdsForAuthor.size > 0) {
+      const revs = await dataSource.getRepository(Review).find({
+        where: { id: In([...reviewIdsForAuthor]) },
+      });
+      for (const r of revs) {
+        reviewAuthorByReviewId.set(r.id, r.authorUserId);
+        actorIds.add(r.authorUserId);
+      }
+    }
+    const replyAuthorByReplyId = new Map<string, string>();
+    if (replyIdsForAuthor.size > 0) {
+      const reps = await dataSource.getRepository(ReviewReply).find({
+        where: { id: In([...replyIdsForAuthor]) },
+      });
+      for (const rep of reps) {
+        replyAuthorByReplyId.set(rep.id, rep.authorUserId);
+        actorIds.add(rep.authorUserId);
+      }
+    }
+    const actorUsers =
+      actorIds.size === 0
+        ? []
+        : await dataSource.getRepository(User).find({
+            where: { id: In([...actorIds]) },
+            withDeleted: true,
+          });
+    const actorUserMap = new Map(actorUsers.map((u) => [u.id, u]));
     return {
       success: true,
       data: rows.map((row) => {
         const payload = row.payload as Record<string, unknown>;
-        const actor = resolveNotificationActor(payload);
+        const fromPayload = resolveNotificationActor(payload);
+        let actorNickname = fromPayload.actorNickname;
+        let actorProfileImageUrl = fromPayload.actorProfileImageUrl;
+        let actorUserId = pickStr(payload, "actorUserId");
+        if (actorUserId === undefined && row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
+          const rid = pickStr(payload, "reviewId");
+          if (rid !== undefined) {
+            const uid = reviewAuthorByReviewId.get(rid);
+            if (uid !== undefined) actorUserId = uid;
+          }
+        }
+        if (
+          actorUserId === undefined &&
+          (row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
+            row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE)
+        ) {
+          const replyId = pickStr(payload, "replyId");
+          if (replyId !== undefined) {
+            const uid = replyAuthorByReplyId.get(replyId);
+            if (uid !== undefined) actorUserId = uid;
+          }
+        }
+        if (actorUserId !== undefined) {
+          const u = actorUserMap.get(actorUserId);
+          if (u !== undefined) {
+            if (actorNickname === null && u.nickname.trim().length > 0) {
+              actorNickname = u.nickname.trim();
+            }
+            if (actorProfileImageUrl === null && u.profileImageUrl.trim().length > 0) {
+              actorProfileImageUrl = u.profileImageUrl.trim();
+            }
+          }
+        }
+        const title = resolveNotificationTitle(row.type, payload);
+        if (actorNickname === null) {
+          const parsed = parseActorNameFromNotificationTitle(title);
+          if (parsed !== null) actorNickname = parsed;
+        }
         return {
           id: row.id,
-          title: resolveNotificationTitle(row.type, payload),
+          title,
           createdAt: row.createdAt.toISOString(),
           href: resolveNotificationHref(row.type, payload),
-          actorNickname: actor.actorNickname,
-          actorProfileImageUrl: actor.actorProfileImageUrl,
+          actorNickname,
+          actorProfileImageUrl,
         };
       }),
     };
