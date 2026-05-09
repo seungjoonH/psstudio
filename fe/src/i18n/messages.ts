@@ -123,7 +123,7 @@ export const messages = {
       newSubmission: "새 제출",
       submissionFallback: "제출",
       diff: "버전 비교",
-      cohortAnalysis: "집단 코드 비교",
+      cohortAnalysis: "과제 제출 코드 AI 비교 분석",
       dashboard: "대시보드",
       fallback: "페이지",
     },
@@ -177,6 +177,7 @@ export const messages = {
       chart: {
         submissionTrend: "일자별 제출 추이",
         peak: "최대 {count}건",
+        trendDayHover: "{date} · {count}건",
         contributionShare: "멤버 기여도 비율",
         totalContributors: "기여 멤버 {count}명",
       },
@@ -425,7 +426,6 @@ export const messages = {
       detail: {
         subtitle: "{platform} · 마감 {date}",
         settings: "설정",
-        lateBadge: "마감 지남",
         solvedBadge: "해결",
         unsolvedBadge: "미해결",
         dueToggleRemain: "남은 일수로 보기",
@@ -448,7 +448,7 @@ export const messages = {
         sidebarEmpty: "아직 제출이 없습니다.",
         errorTitle: "과제를 불러오지 못했습니다.",
         cohort: {
-          title: "집단 코드 비교",
+          title: "과제 제출 코드 AI 비교 분석",
           lead: "모든 그룹원들의 제출 코드를 비교 분석해보세요.",
           blockedDue: "마감 후에 실행할 수 있습니다.",
           blockedCount: "제출이 2건 이상일 때 실행할 수 있습니다.",
@@ -456,20 +456,20 @@ export const messages = {
           running: "분석 중입니다. 잠시만 기다려 주세요.",
           failed: "분석 실패",
           done: "완료",
-          none: "아직 실행된 집단 분석이 없습니다.",
+          none: "아직 실행된 과제 제출 코드 AI 비교 분석이 없습니다.",
           reportHeading: "Markdown 리포트",
           viewFull: "전체 분석 보기",
         },
       },
       cohortPage: {
-        shellTitle: "{name} · 집단 코드 비교",
+        shellTitle: "{name} · 과제 제출 코드 AI 비교 분석",
         back: "과제로 돌아가기",
-        heading: "집단 코드 비교",
+        heading: "과제 제출 코드 AI 비교 분석",
         cannotStartHere:
           "이 페이지에서 바로 실행할 수 없습니다. 과제 상세에서 마감과 제출 수 조건을 확인한 뒤 실행해 주세요.",
         codeHeading: "제출 코드",
         missingCodeArtifacts:
-          "저장된 분석에 코드 열이 없습니다. 과제 상세에서 집단 분석을 다시 실행해 주세요.",
+          "저장된 분석에 코드 열이 없습니다. 과제 상세에서 과제 제출 코드 AI 비교 분석을 다시 실행해 주세요.",
         rerun: "분석 다시 실행",
       },
       new: {
@@ -808,6 +808,7 @@ export const messages = {
       chart: {
         submissionTrend: "Daily submission trend",
         peak: "Peak {count}",
+        trendDayHover: "{date} · {count}",
         contributionShare: "Contribution share",
         totalContributors: "{count} contributors",
       },
@@ -1056,7 +1057,6 @@ export const messages = {
       detail: {
         subtitle: "{platform} · due {date}",
         settings: "Settings",
-        lateBadge: "Past due",
         solvedBadge: "Solved",
         unsolvedBadge: "Unsolved",
         dueToggleRemain: "Show days left",

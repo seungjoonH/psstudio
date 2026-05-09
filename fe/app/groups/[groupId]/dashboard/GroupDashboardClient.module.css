@@ -1,0 +1,351 @@
+/* 그룹 대시보드 카드/그래프/테이블 레이아웃을 담당합니다. */
+.root {
+  display: grid;
+  gap: 14px;
+}
+
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.segment {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.segmentBtn,
+.segmentActive {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  height: 32px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmentActive {
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+  color: var(--color-text);
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 980px) {
+  .kpiGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.kpiCard {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.kpiCard > span {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.kpiCard > strong {
+  font-size: 24px;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.chartGrid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 1100px) {
+  .chartGrid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+}
+
+.chartCard,
+.tableCard {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cardHead h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.cardHead span {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.lineWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.lineChartHit {
+  position: relative;
+  cursor: crosshair;
+}
+
+.lineChart {
+  width: 100%;
+  height: 210px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--color-primary) 5%, var(--color-surface));
+  display: block;
+}
+
+.crosshair {
+  stroke: color-mix(in oklab, var(--color-primary) 55%, var(--color-muted));
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+  pointer-events: none;
+}
+
+.hoverDot {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.chartTooltip {
+  position: absolute;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-text) 12%, transparent);
+  z-index: 2;
+}
+
+.lineArea {
+  fill: color-mix(in oklab, var(--color-primary) 20%, transparent);
+}
+
+.lineStroke {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lineAxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.pieWrap {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 820px) {
+  .pieWrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+.pieChart {
+  width: 220px;
+  height: 220px;
+}
+
+.pieText {
+  font-size: 22px;
+  font-weight: 800;
+  fill: var(--color-text);
+}
+
+.pieSubText {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--color-muted);
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.legend li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.legend li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+
+.legend li strong {
+  color: var(--color-text);
+}
+
+.tableWrap {
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.table th {
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.table td {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.memberCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar {
+  border-radius: 999px;
+}
+
+.bottomGrid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 1100px) {
+  .bottomGrid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+}
+
+.assignmentList,
+.platformList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.assignmentRow,
+.platformRow {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-muted);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.assignmentHead,
+.platformTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.assignmentLink {
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.assignmentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.assignmentProgress {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-border) 65%, var(--color-surface));
+  overflow: hidden;
+}
+
+.assignmentProgress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa, #34d399);
+  min-width: 0;
+}
+
+.progressFillFull {
+  width: calc(100% + 2px) !important;
+  margin-right: -2px;
+}
