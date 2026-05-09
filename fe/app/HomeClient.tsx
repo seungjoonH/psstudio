@@ -52,6 +52,16 @@ function getDaysLeft(dueAt: string): number {
   return Math.max(0, Math.ceil((due - now) / (24 * 60 * 60 * 1000)));
 }
 
+/** 알림 행은 항상 사람 아바타를 쓴다(payload·제목에서 이름을 추출). */
+function notificationActorDisplayName(n: HomeRecentNotification): string {
+  const fromApi = n.actorNickname?.trim();
+  if (fromApi !== undefined && fromApi.length > 0) return fromApi;
+  const m = /^(.+?)님이/.exec(n.title.trim());
+  const fromTitle = m?.[1]?.trim();
+  if (fromTitle !== undefined && fromTitle.length > 0) return fromTitle;
+  return "?";
+}
+
 export function HomeClient({
   me,
   loginApiBase,
@@ -173,7 +183,7 @@ export function HomeClient({
         <article className={styles.column} aria-labelledby="home-notif-title">
           <header className={styles.columnHead}>
             <span className={`${styles.cardIcon} ${styles.noticeIcon}`} aria-hidden>
-              <Icon name="bell" size={16} />
+              <Icon name="mail" size={16} />
             </span>
             <div>
               <h2 id="home-notif-title" className={styles.cardTitle}>
@@ -187,19 +197,14 @@ export function HomeClient({
           ) : (
             <ul className={styles.list}>
               {notifications.map((n) => {
-                const face =
-                  n.actorNickname !== null ? (
-                    <UserAvatar
-                      nickname={n.actorNickname}
-                      imageUrl={n.actorProfileImageUrl ?? ""}
-                      size={40}
-                      className={styles.feedAvatar}
-                    />
-                  ) : (
-                    <span className={`${styles.feedGlyph} ${styles.noticeGlyph}`} aria-hidden>
-                      <Icon name="bell" size={18} />
-                    </span>
-                  );
+                const face = (
+                  <UserAvatar
+                    nickname={notificationActorDisplayName(n)}
+                    imageUrl={n.actorProfileImageUrl ?? ""}
+                    size={40}
+                    className={styles.feedAvatar}
+                  />
+                );
                 const main = (
                   <div className={styles.feedMain}>
                     <span className={styles.notifTitle}>{n.title}</span>
