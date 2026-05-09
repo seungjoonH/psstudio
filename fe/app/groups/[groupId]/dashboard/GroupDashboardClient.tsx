@@ -57,6 +57,24 @@ type PieSlice = { label: string; value: number; color: string };
 const RANGE_OPTIONS = [7, 30, 90] as const;
 const PIE_COLORS = ["#60a5fa", "#34d399", "#f59e0b", "#f472b6", "#a78bfa", "#22d3ee"];
 
+function memberPieMetric(member: MemberStat, sort: "solved" | "submissions" | "onTime" | "streak"): number {
+  switch (sort) {
+    case "solved":
+      return member.solvedAssignments;
+    case "submissions":
+      return member.submissionCount;
+    case "onTime": {
+      const n = member.submissionCount;
+      if (n === 0) return 0;
+      return Math.round((member.onTimeRate / 100) * n);
+    }
+    case "streak":
+      return member.streak;
+    default:
+      return member.submissionCount;
+  }
+}
+
 export function GroupDashboardClient({ groupId, members, assignments, submissions }: Props) {
   const { t } = useI18n();
   const [rangeDays, setRangeDays] = useState<(typeof RANGE_OPTIONS)[number]>(30);
@@ -141,18 +159,13 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       .map(([platform, count]) => ({ platform, count }))
       .sort((a, b) => b.count - a.count);
 
-    const pieBase = memberStats
-      .filter((member) => member.submissionCount > 0)
-      .slice(0, 5)
-      .map((member, index) => ({
-        label: member.nickname,
-        value: member.submissionCount,
-        color: PIE_COLORS[index % PIE_COLORS.length],
-      }));
-    const otherValue = memberStats
-      .filter((member) => member.submissionCount > 0)
-      .slice(5)
-      .reduce((sum, member) => sum + member.submissionCount, 0);
+    const contributors = memberStats.filter((member) => member.submissionCount > 0);
+    const pieBase = contributors.slice(0, 5).map((member, index) => ({
+      label: member.nickname,
+      value: memberPieMetric(member, memberSort),
+      color: PIE_COLORS[index % PIE_COLORS.length],
+    }));
+    const otherValue = contributors.slice(5).reduce((sum, member) => sum + memberPieMetric(member, memberSort), 0);
     const pieSlices: PieSlice[] =
       otherValue > 0 ? [...pieBase, { label: t("groupDashboard.other"), value: otherValue, color: "#94a3b8" }] : pieBase;
 
@@ -193,6 +206,15 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
 
   const peakDaily = analysis.dailySeries.reduce((max, point) => Math.max(max, point.count), 0);
 
+  const sortMetricLabel =
+    memberSort === "solved"
+      ? t("groupDashboard.sort.solved")
+      : memberSort === "submissions"
+        ? t("groupDashboard.sort.submissions")
+        : memberSort === "onTime"
+          ? t("groupDashboard.sort.onTime")
+          : t("groupDashboard.sort.streak");
+
   return (
     <div className={styles.root}>
       <section className={styles.filterBar}>
@@ -205,25 +227,6 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
               onClick={() => setRangeDays(days)}
             >
               {t("groupDashboard.rangeDays", { days })}
-            </button>
-          ))}
-        </div>
-        <div className={styles.segment}>
-          {(
-            [
-              { id: "solved", label: t("groupDashboard.sort.solved") },
-              { id: "submissions", label: t("groupDashboard.sort.submissions") },
-              { id: "onTime", label: t("groupDashboard.sort.onTime") },
-              { id: "streak", label: t("groupDashboard.sort.streak") },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={memberSort === item.id ? styles.segmentActive : styles.segmentBtn}
-              onClick={() => setMemberSort(item.id)}
-            >
-              {item.label}
             </button>
           ))}
         </div>
@@ -262,7 +265,13 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
         <article className={styles.chartCard}>
           <header className={styles.cardHead}>
             <h3>{t("groupDashboard.chart.contributionShare")}</h3>
-            <span>{t("groupDashboard.chart.totalContributors", { count: analysis.memberStats.filter((member) => member.submissionCount > 0).length })}</span>
+            <span className={styles.cardHeadRight}>
+              {t("groupDashboard.chart.pieByMetric", { metric: sortMetricLabel })}
+              {" · "}
+              {t("groupDashboard.chart.totalContributors", {
+                count: analysis.memberStats.filter((member) => member.submissionCount > 0).length,
+              })}
+            </span>
           </header>
           <div className={styles.pieWrap}>
             <PieChart slices={analysis.pieSlices} />
@@ -280,9 +289,31 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       </section>
 
       <section className={styles.tableCard}>
-        <header className={styles.cardHead}>
-          <h3>{t("groupDashboard.memberTable.title")}</h3>
-          <span>{t("groupDashboard.memberTable.caption")}</span>
+        <header className={styles.memberTableHead}>
+          <div className={styles.memberTableHeadIntro}>
+            <h3>{t("groupDashboard.memberTable.title")}</h3>
+            <p className={styles.memberTableHint}>{t("groupDashboard.memberSortHint")}</p>
+            <span className={styles.memberTablePeriod}>{t("groupDashboard.memberTable.caption")}</span>
+          </div>
+          <div className={styles.segment} role="group" aria-label={t("groupDashboard.memberSortHint")}>
+            {(
+              [
+                { id: "solved", label: t("groupDashboard.sort.solved") },
+                { id: "submissions", label: t("groupDashboard.sort.submissions") },
+                { id: "onTime", label: t("groupDashboard.sort.onTime") },
+                { id: "streak", label: t("groupDashboard.sort.streak") },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={memberSort === item.id ? styles.segmentActive : styles.segmentBtn}
+                onClick={() => setMemberSort(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </header>
         <div className={styles.tableWrap}>
           <table className={styles.table}>

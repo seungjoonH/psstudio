@@ -179,8 +179,10 @@ export const messages = {
         peak: "최대 {count}건",
         trendDayHover: "{date} · {count}건",
         contributionShare: "멤버 기여도 비율",
+        pieByMetric: "{metric} 기준 비중",
         totalContributors: "기여 멤버 {count}명",
       },
+      memberSortHint: "멤버 표와 오른쪽 원형 차트에 같은 순서·비중 기준이 적용됩니다.",
       memberTable: {
         title: "멤버별 활동 지표",
         caption: "최근 선택 기간 기준",
@@ -810,8 +812,10 @@ export const messages = {
         peak: "Peak {count}",
         trendDayHover: "{date} · {count}",
         contributionShare: "Contribution share",
+        pieByMetric: "Share by {metric}",
         totalContributors: "{count} contributors",
       },
+      memberSortHint: "Sort order and donut slices follow this metric (table + chart).",
       memberTable: {
         title: "Member activity metrics",
         caption: "Based on selected period",

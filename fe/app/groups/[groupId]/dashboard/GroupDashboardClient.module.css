@@ -109,6 +109,47 @@
   font-weight: 600;
 }
 
+.cardHeadRight {
+  text-align: right;
+  line-height: 1.35;
+  max-width: min(100%, 400px);
+}
+
+.memberTableHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memberTableHeadIntro {
+  display: grid;
+  gap: 4px;
+  min-width: min(100%, 240px);
+  flex: 1;
+}
+
+.memberTableHeadIntro h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.memberTableHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.memberTablePeriod {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
 .lineWrap {
   display: grid;
   gap: 8px;
