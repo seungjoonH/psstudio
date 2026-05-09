@@ -61,6 +61,7 @@ function cohortLocaleOverride(locale: CohortReportLocale): string[] {
       "- **Split recipe if stuck:** (A) top/helpers/signature through line before main loop, (B) main loop / core block, (C) return / tail. Never one anchor spanning line 1 through last line as your only region.",
       "- Before emitting JSON, **re-count** `regions.length` for every submission with `lineCount` ≥ 12; if any count is 1 or 0, fix regions first.",
       "- **Root JSON shape:** exactly `{ \"reportMarkdown\": string, \"submissions\": [ … ] }`. The character after `\"submissions\":` must be **`[`**. Never wrap the bundle in `response`/`data`. Never double-encode `submissions` as a string.",
+      "- **Style exemplar file:** follow **tone and evidence layout only** — **never copy its fixed TOC phrases/order** (e.g. preprocessing→loops→… as a template).",
     ];
   }
   return [
@@ -86,7 +87,7 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "- **`submissions` 배열 형식(필수):** 루트 객체에서 `\"submissions\":` 바로 다음은 **`[` 로 시작하는 배열 리터럴**이어야 한다. 올바른 예: `\"submissions\": [{ \"submissionId\": \"…\", \"regions\": [...] }, …]` . `{ uuid: { regions } }` 맵 형태는 서버가 예외적으로 읽을 수 있으나 **모델은 반드시 배열만 출력**한다.",
     "- `submissions` 내용을 **JSON 문자열로 한 번 더 인코딩**하지 마라. 문자열이면 검증기가 실패할 수 있다(`cohort_bundle_submissions_not_array`).",
     "- 응답을 **`response`·`data`·`result` 등으로 한 겹 더 싸지 마라.** 최상위가 곧 번들 `{ reportMarkdown, submissions }` 여야 한다.",
-    "- 참고용 `design/cohort-report-template.example.md`의 **`### 1. 전처리`** 같은 **번호 목차 체계를 그대로 베끼지 마라.** 비교 축은 [REPORT CONTRACT]대로 **`##` + 주제·백틱 roleId**를 쓴다. 번호 `###`만으로 축을 대체하면 UI·검증 규약과 어긋난다.",
+    "- 참고용 `design/cohort-report-template.example.md`는 **뉘앙스만** 따른다. **예시와 동일한 목차 문장·동일한 네 축 순서·동일한 절 제목을 출력하라는 요구가 아니다.** **`### 1. 전처리`** 같은 번호 목차를 그대로 베끼지 마라. 비교 축은 [REPORT CONTRACT]대로 **`##` + 주제·백틱 roleId**를 쓴다.",
     "- `submissions`는 반드시 **배열**이다. UUID 맵 `{ \"uuid\": { \"regions\": … } }`는 최후의 비권장 형태일 뿐이며, **항상 배열 출력을 우선**한다.",
     "- submissions 각 원소는 `submissionId`, `regions`만 포함한다.",
     "- regions 각 원소는 `roleId`, `roleLabel`, `startAnchorText`, `endAnchorText`만 포함한다.",
@@ -141,7 +142,7 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "",
     "[REPORT CONTRACT]",
     "- region을 먼저 확정한 뒤 reportMarkdown을 생성한다(2단계 생성).",
-    "- 개요에서 나열한 비교 순서가 있으면 **`##` 섹션 순서·각 절에서 다루는 주제**가 그와 일치해야 한다. 예: 개요에 전처리→반복문→판정 순이면 `##`도 같은 순서로 두고, 각 절 스니펫은 해당 주제의 region만 인용한다.",
+    "- 개요에서 **스스로 연** 비교 순서가 있으면 **`##` 섹션 순서·각 절 주제**가 그와 일치해야 한다. 단, 그 순서는 **예시 파일의 「전처리→반복문→…」와 같을 필요 없고**, 해당 코드에 맞게 새로 정한 로드맵이면 된다.",
     "- 비교 주제 순서를 문서 끝까지 유지한다.",
     "- `#` 1회, `##`/`###`로 구성.",
     "- **UI:** 화면 색 구역은 각 제출 JSON의 `regions[].roleId` 앵커 구간과 일치해야 한다. 제출마다 `roleId` 집합이 달라도 된다.",
@@ -165,8 +166,9 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "- `problemContext` 기반으로 제출 간 유사점/차이를 비교한다.",
     "",
     "[STYLE EXEMPLAR — reportMarkdown 참고 본문]",
-    "- 아래 마크다운은 길이·비교 서술·`[[SUBMISSION:uuid]]`·표 없이 나열하는 방식·펜스 배치의 품질 참고용이다.",
-    "- 예시의 `### 개요`, 번호 단계(`### 1. …`)는 샘플 목차일 뿐이다. 실제 reportMarkdown의 각 `##`는 [REPORT CONTRACT]의 비교 주제·대표 `roleId` 규칙을 따른다. 예시와 같은 ### 번호 체계로 축을 대체하지 않는다.",
+    "- 저장소 `design/cohort-report-template.example.md` 전문은 **문체·비교 밀도·근거 펜스 배치·`[[SUBMISSION:uuid]]` 사용법 등 뉘앙스**만 참고한다. **예시와 같은 목차 문구·같은 순서·같은 절 이름을 따라 하라는 뜻이 절대 아니다.** (예: 「전처리→반복문→자료구조와 판정→정리」 고정 목차 복붙 금지.)",
+    "- 각 과제·각 제출 묶음마다 **도입부 로드맵과 `##` 축 제목을 코드에 맞게 새로** 짓는다. 반복문이 없으면 반복문 절을 약속하지 않는다.",
+    "- 이어 붙는 예시 파일 본문은 길이·비교 서술·표 없이 나열하는 방식의 품질 참고용이다. 예시의 `### 개요`, 번호 단계(`### 1. …`), 개요 속 「차례대로 … 순으로」 한 줄은 샘플일 뿐이다. 실제 reportMarkdown의 각 `##`는 [REPORT CONTRACT]의 비교 주제·대표 `roleId` 규칙을 따른다. 예시와 같은 ### 번호 체계로 축을 대체하지 않는다.",
     "- 예시 UUID는 플레이스홀더다. 출력 reportMarkdown에는 INPUT JSON의 submissionId만 넣는다.",
     ...(locale === "en"
       ? [
@@ -198,6 +200,7 @@ function buildCohortSystemPrompt(locale: CohortReportLocale): string {
     "- [ ] 각 12줄+ 제출에서 region이 2~5개인가(제출 간 k 동일 불필요)",
     "- [ ] 추상 라벨로 함수 대부분을 한 구역에 묶지 않았는가",
     "- [ ] 개요·`##` 축 이름과 JSON regions·각 절 펜스가 같은 기준으로 묶였는가(위에서는 전처리라며 아래에서 순회 본문을 전처리로 부르지 않았는가)",
+    "- [ ] `cohort-report-template.example.md`와 **동일한 목차 문구·순서**를 베끼지 않았는가(뉘앙스만 참고)",
     "- [ ] 한 제출 안에서 region 줄 구간이 불필요하게 거의 전체를 덮는 한 덩어리 + 그 안의 부분 축으로 중복 라벨하지 않았는가",
     "- [ ] `entire_code`/`whole_file`/전구간 단일 region 미사용",
     "- [ ] 동일 의미 문장을 제출별로 반복하지 않았는가",
