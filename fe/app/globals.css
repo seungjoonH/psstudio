@@ -1,19 +1,24 @@
 /* 앱 전역 테마 토큰과 기본 레이아웃 스타일입니다. */
 :root {
-  --color-bg: #eef2f7;
-  --color-surface: #f7f9fc;
-  --color-surface-muted: #e5ebf3;
-  --color-surface-elevated: #fbfcfe;
+  --color-bg: #e7edf5;
+  --color-surface: #f0f3fa;
+  --color-surface-muted: #dfe7f1;
+  --color-surface-elevated: #f5f7fc;
   --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #b8c3d1;
+  --color-muted: #5c6b7e;
+  --color-border: #aeb9c8;
   --color-primary: #2563eb;
   --color-primary-text: #ffffff;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-info: #0284c7;
+  --color-danger: #dc2626;
   --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.24);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --ui-duration: 0.18s;
   --ui-duration-fast: 0.12s;
@@ -33,6 +38,10 @@
   --color-border: #334155;
   --color-primary: #60a5fa;
   --color-primary-text: #0f172a;
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-info: #38bdf8;
+  --color-danger: #f87171;
   --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.28);
   color-scheme: dark;
 }
