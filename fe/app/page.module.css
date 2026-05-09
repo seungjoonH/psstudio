@@ -9,12 +9,12 @@
   gap: var(--space-4);
   grid-template-columns: minmax(0, 1fr);
   padding: 22px;
-  border: 1px solid color-mix(in oklab, var(--color-primary) 24%, var(--color-border));
+  border: 1px solid color-mix(in oklab, var(--color-primary) 14%, var(--color-border));
   border-radius: 22px;
   background:
-    radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 24%, transparent), transparent 34%),
-    linear-gradient(135deg, var(--color-surface), color-mix(in oklab, var(--color-primary) 7%, var(--color-surface)));
-  box-shadow: 0 18px 45px color-mix(in oklab, var(--color-primary) 10%, transparent);
+    radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 38%),
+    linear-gradient(135deg, var(--color-surface-paper), var(--color-surface));
+  box-shadow: 0 18px 45px color-mix(in oklab, var(--color-primary) 6%, transparent);
 }
 
 .heroEyebrow {
@@ -53,9 +53,9 @@
   gap: 4px;
   min-width: 120px;
   padding: 14px;
-  border: 1px solid color-mix(in oklab, var(--color-primary) 12%, var(--color-border));
+  border: 1px solid var(--color-border);
   border-radius: 16px;
-  background: color-mix(in oklab, var(--color-surface) 94%, var(--color-primary));
+  background: var(--color-surface-paper);
 }
 
 .statValue {

@@ -4,6 +4,8 @@
   --color-surface: #f0f3fa;
   --color-surface-muted: #dfe7f1;
   --color-surface-elevated: #f5f7fc;
+  /* 카드·히어로 등 밝은 패널용(거의 흰색). 다크 모드에선 surface와 동일하게 덮어씁니다. */
+  --color-surface-paper: #fafbfd;
   --color-text: #0f172a;
   --color-muted: #5c6b7e;
   --color-border: #aeb9c8;
@@ -33,6 +35,7 @@
   --color-surface: #111827;
   --color-surface-muted: #1e293b;
   --color-surface-elevated: #0b1222;
+  --color-surface-paper: var(--color-surface);
   --color-text: #e5e7eb;
   --color-muted: #94a3b8;
   --color-border: #334155;
