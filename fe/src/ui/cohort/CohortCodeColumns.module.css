@@ -81,9 +81,9 @@
 }
 
 .columnWrap {
-  flex: 0 0 min(92vw, 440px);
+  flex: 0 0 min(94vw, 540px);
   scroll-snap-align: center;
-  min-width: min(92vw, 440px);
+  min-width: min(94vw, 540px);
 }
 
 .column {
@@ -151,7 +151,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* gap 대신 태그만 아래 여백 — 음영 띠가 끊기지 않게 */
+  gap: 0;
 }
 
 .roleTag {
@@ -159,17 +160,43 @@
   font-weight: 700;
   color: var(--color-muted);
   padding: 2px 4px 0;
+  margin-bottom: 2px;
   line-height: 1.2;
+}
+
+/* region 음영: 빈 줄도 최소 한 줄 박스 높이를 유지하고, 행 높이만큼 채움 */
+.lineBand {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-height: 1.45em;
+  display: flex;
+  flex-direction: column;
 }
 
 .code {
   display: block;
+  flex: 1 1 auto;
+  min-height: 1.45em;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
+/* shiki 토큰(줄 단위). 배경 띠는 바깥 .band* 가 담당 */
+.codeShiki {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 1.45em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.codeShiki :global(.line) {
+  display: inline;
+}
+
 .bandPad {
   padding: 1px 6px;
+  box-sizing: border-box;
 }
 
 .band0 {
