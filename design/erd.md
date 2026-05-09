@@ -108,10 +108,11 @@ erDiagram
       uuid assignment_id FK UK "과제당 1행, 실패 시 재시도로 동일 행 갱신"
       string status "PENDING|RUNNING|DONE|FAILED"
       string target_language "실행 시작 시점의 그룹 rule_translation_language 스냅샷"
+      string report_locale "리포트·역할 라벨 생성 로케일 (예: ko, en), 트리거 시 Accept-Language 기준"
       uuid triggered_by_user_id FK
       int token_used
       text report_markdown "status=DONE일 때 과제 단위 Markdown"
-      jsonb artifacts "정규화 코드·파일별 diff 등 — 구현이 구조 결정"
+      jsonb artifacts "schemaVersion 2: 제출별 normalizedCode·regions(roleId, roleLabel, 줄 범위) 등 — 구버전은 pairwise diff 포함 가능"
       text failure_reason
       datetime started_at
       datetime finished_at

@@ -122,18 +122,40 @@ export type CohortAnalysisArtifacts = {
   deadSpansBySubmission: Record<string, { line: number; endLine?: number }[]>;
 };
 
+export type CohortRegionArtifact = {
+  roleId: string;
+  roleLabel: string;
+  startLine: number;
+  endLine: number;
+};
+
+export type CohortSubmissionArtifact = {
+  submissionId: string;
+  normalizedCode: string;
+  originalLanguage: string;
+  regions: CohortRegionArtifact[];
+};
+
+export type CohortArtifactsV2 = {
+  schemaVersion: 2;
+  submissions: CohortSubmissionArtifact[];
+};
+
 export type CohortAnalysisDto = {
   status: "NONE" | "RUNNING" | "DONE" | "FAILED";
   targetLanguage?: string;
+  reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
-  artifacts?: CohortAnalysisArtifacts;
+  artifacts?: CohortArtifactsV2 | CohortAnalysisArtifacts | Record<string, unknown>;
   tokenUsed?: number;
   includedSubmissions?: Array<{
     submissionId: string;
     versionNo: number;
     authorUserId: string;
     authorNickname: string;
+    title: string;
+    authorProfileImageUrl: string;
   }>;
   startedAt?: string | null;
   finishedAt?: string | null;
@@ -143,6 +165,16 @@ export function getCohortAnalysis(assignmentId: string): Promise<CohortAnalysisD
   return apiFetch(`/api/v1/assignments/${assignmentId}/cohort-analysis`);
 }
 
-export function startCohortAnalysis(assignmentId: string): Promise<CohortAnalysisDto> {
-  return apiFetch(`/api/v1/assignments/${assignmentId}/cohort-analysis`, { method: "POST" });
+export function startCohortAnalysis(
+  assignmentId: string,
+  options?: { acceptLanguage?: string },
+): Promise<CohortAnalysisDto> {
+  const extraHeaders: Record<string, string> = {};
+  if (options?.acceptLanguage !== undefined && options.acceptLanguage.length > 0) {
+    extraHeaders["Accept-Language"] = options.acceptLanguage;
+  }
+  return apiFetch(`/api/v1/assignments/${assignmentId}/cohort-analysis`, {
+    method: "POST",
+    headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
+  });
 }

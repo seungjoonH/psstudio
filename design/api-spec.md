@@ -537,16 +537,18 @@
 
 - `POST /assignments/:assignmentId/cohort-analysis`
   - 권한: 같은 그룹의 모든 멤버(세부는 구현 시 `design.md`와 동일한 그룹원 공개 모델을 따름).
+  - 헤더: `Accept-Language`로 리포트·역할 라벨 로케일(`ko`/`en` 등)을 결정한다.
   - 전제: 과제 마감 경과, `rules.translationLanguage !== 'none'`, 유효 제출 2건 이상.
-  - 동작: 비동기 작업을 큐에 발행. 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `CONFLICT` 또는 `FORBIDDEN`.
+  - 동작: 비동기 파이프라인 실행. 이미 해당 과제에 `DONE` 상태의 집단 분석이 있으면 `409 Conflict`.
   - 실패한 이전 시도가 있으면 재시도 허용. 성공(`DONE`) 확정 전까지는 새 제출·새 버전이 다음 시도의 입력 집합에 포함될 수 있음.
 - `GET /assignments/:assignmentId/cohort-analysis`
-  - 응답: `status`(예: `PENDING|RUNNING|DONE|FAILED`), 진행/실패 메시지, 완료 시 파일별 diff 아티팩트 참조, `reportMarkdown`(긴 단일 MD), 성공 시 포함된 `submissionId`·`versionNo` 스냅샷 목록 등.
+  - 응답: `status`(`RUNNING|DONE|FAILED`), `reportLocale`, 진행/실패 메시지, 완료 시 `reportMarkdown`, `artifacts`(권장 스키마 `schemaVersion: 2` — 제출별 `normalizedCode`, `regions[]`의 `roleId`·`roleLabel`·줄 범위), `tokenUsed`, 성공 시 포함된 제출 스냅샷(`submissionId`, `versionNo`, `title`, `authorProfileImageUrl`, 닉네임 등).
 
 #### 정책
 
-- 정규화·스타일 통일·유의미 diff 분류는 **LLM**에 의존. 코드 **실행 검증은 하지 않음**.
-- 데드 코드(미사용 선언) 강조는 **정적 분석** 기반이며 상호 diff 판단에는 사용하지 않음.
+- 정규화·역할 구역·리포트 문체는 **단일 LLM JSON**으로 생성하며, **파싱 검증 실패 시 전체 `FAILED`**. 코드 **실행 검증은 하지 않음**.
+- 리포트 본문에서 제출 참조는 `[[SUBMISSION:<uuid>]]` 플레이스홀더만 허용하는 것을 원칙으로 한다.
+- 데드 코드(미사용 선언) 강조는 **정적 분석** 기반이며 집단 비교 역할 구역 판단에는 사용하지 않음.
 - 결과 산출물·API 응답·DB·로그 어디에도 **모델명·프롬프트 버전·시드 등 LLM 구성 메타를 저장하지 않음**.
 - 과제 삭제 시 집단 분석 결과는 제출·번역 캐시 등과 함께 삭제.
 

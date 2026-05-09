@@ -98,7 +98,7 @@ flowchart LR
 - 이메일 초대 1회용 토큰 발급 + Resend 호출
 - 알림 이벤트 생성 및 읽음/삭제 처리
 - AI 코드 리뷰/문제 분석/번역 작업 큐 발행 및 결과 저장(번역은 제출 버전 단위 캐시)
-- 과제 집단 코드 비교 분석(마감 후·과제당 1회 성공) 큐 및 `ASSIGNMENT_COHORT_ANALYSES` 저장
+- 과제 집단 코드 비교 분석(마감 후·과제당 1회 성공) 인-프로세스 파이프라인 및 `ASSIGNMENT_COHORT_ANALYSES`·`report_locale`·`artifacts`(schema v2) 저장
 
 ### 3.3 Database (Supabase + Redis)
 

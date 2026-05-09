@@ -1,6 +1,7 @@
 "use server";
 
 // 과제 관련 서버 액션입니다.
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -145,7 +146,10 @@ export async function getCohortAnalysisStateAction(assignmentId: string) {
 }
 
 export async function startCohortAnalysisAction(groupId: string, assignmentId: string) {
-  const data = await startCohortAnalysis(assignmentId);
+  const h = await headers();
+  const acceptLanguage = h.get("accept-language") ?? "ko";
+  const data = await startCohortAnalysis(assignmentId, { acceptLanguage });
   revalidatePath(`/groups/${groupId}/assignments/${assignmentId}`);
+  revalidatePath(`/groups/${groupId}/assignments/${assignmentId}/cohort`);
   return data;
 }

@@ -8,6 +8,7 @@ import { AssignmentsHintPlainToDescriptionPlain1781000000000 } from "../../migra
 import { SubmissionsNoteMarkdown1782000000000 } from "../../migrations/1782000000000-submissions-note-markdown.js";
 import { CommentsSubmissionVersionNo1783000000000 } from "../../migrations/1783000000000-comments-submission-version-no.js";
 import { AssignmentCohortAnalyses1784000000000 } from "../../migrations/1784000000000-assignment-cohort-analyses.js";
+import { AssignmentCohortReportLocale1785000000000 } from "../../migrations/1785000000000-assignment-cohort-report-locale.js";
 import { ENV } from "./env.js";
 import { AiTokenBalance } from "../modules/ai-tokens/ai-token-balance.entity.js";
 import { Announcement } from "../modules/board/announcement.entity.js";
@@ -72,6 +73,7 @@ export const MIGRATIONS = [
   SubmissionsNoteMarkdown1782000000000,
   CommentsSubmissionVersionNo1783000000000,
   AssignmentCohortAnalyses1784000000000,
+  AssignmentCohortReportLocale1785000000000,
 ];
 
 export const dataSource = new DataSource({

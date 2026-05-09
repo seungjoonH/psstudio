@@ -22,6 +22,9 @@ export class AssignmentCohortAnalysis {
   @Column({ name: "target_language", type: "varchar", length: 32 })
   targetLanguage!: string;
 
+  @Column({ name: "report_locale", type: "varchar", length: 16, nullable: true })
+  reportLocale!: string | null;
+
   @Column({ name: "triggered_by_user_id", type: "uuid" })
   triggeredByUserId!: string;
 

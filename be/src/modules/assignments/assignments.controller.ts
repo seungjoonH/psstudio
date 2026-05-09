@@ -6,6 +6,7 @@ import {
   Dependencies,
   ForbiddenException,
   Get,
+  Headers,
   HttpCode,
   Param,
   Patch,
@@ -30,6 +31,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { AuthGuard } from "../auth/guards/auth.guard.js";
 import { GroupsService } from "../groups/groups.service.js";
 import { canPerform } from "../groups/permissions.js";
+import { normalizeCohortReportLocale } from "./cohort-analysis-bundle.js";
 import { AssignmentCohortAnalysisService } from "./assignment-cohort-analysis.service.js";
 import { AssignmentsService } from "./assignments.service.js";
 
@@ -145,10 +147,15 @@ export class AssignmentsController {
   }
 
   @Post("api/v1/assignments/:assignmentId/cohort-analysis")
-  async startCohortAnalysis(@CurrentUser() me: { id: string }, @Param("assignmentId") assignmentId: string) {
+  async startCohortAnalysis(
+    @CurrentUser() me: { id: string },
+    @Param("assignmentId") assignmentId: string,
+    @Headers("accept-language") acceptLanguage?: string,
+  ) {
     const a = await this.assignments.getById(assignmentId);
     await this.groups.requireRole(a.groupId, me.id);
-    return { success: true, data: await this.cohortAnalysis.trigger(assignmentId, me.id) };
+    const reportLocale = normalizeCohortReportLocale(acceptLanguage);
+    return { success: true, data: await this.cohortAnalysis.trigger(assignmentId, me.id, reportLocale) };
   }
 
   @Patch("api/v1/assignments/:assignmentId")

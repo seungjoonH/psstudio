@@ -2,9 +2,9 @@
 
 // 과제 상세 화면을 2열 레이아웃과 그룹 제출 사이드바로 렌더링합니다.
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../../../../src/i18n/I18nProvider";
-import type { AssignmentDto, CohortAnalysisArtifacts, CohortAnalysisDto } from "../../../../../src/assignments/server";
+import type { AssignmentDto, CohortAnalysisDto } from "../../../../../src/assignments/server";
 import type { SubmissionListItemDto } from "../../../../../src/submissions/server";
 import { AppShell } from "../../../../../src/shell/AppShell";
 import { Badge } from "../../../../../src/ui/Badge";
@@ -13,7 +13,6 @@ import { Icon } from "../../../../../src/ui/Icon";
 import { UserAvatar } from "../../../../../src/ui/UserAvatar";
 import { GroupSubnavCluster } from "../../GroupSubnavCluster";
 import { GroupRouteBreadcrumbs } from "../../GroupRouteBreadcrumbs";
-import { MarkdownPreview } from "../../../../../src/ui/MarkdownPreview";
 import { getCohortAnalysisStateAction, startCohortAnalysisAction } from "../actions";
 import styles from "./AssignmentDetailClient.module.css";
 
@@ -29,17 +28,6 @@ type Props = {
   translationLanguage: string;
   cohortInitial: CohortAnalysisDto;
 };
-
-function orderedPairIds(a: string, b: string): [string, string] {
-  return a < b ? [a, b] : [b, a];
-}
-
-function pickPairwiseDiff(artifacts: CohortAnalysisArtifacts | undefined, x: string, y: string): string {
-  if (!artifacts || !x || !y || x === y) return "";
-  const [sa, sb] = orderedPairIds(x, y);
-  const d = artifacts.pairwiseDiffs.find((p) => p.submissionIdA === sa && p.submissionIdB === sb);
-  return d?.diffText ?? "";
-}
 
 function formatProblemRef(problemUrl: string, platform: string): string {
   try {
@@ -90,9 +78,6 @@ export function AssignmentDetailClient({
   const [cohort, setCohort] = useState<CohortAnalysisDto>(cohortInitial);
   const [cohortErr, setCohortErr] = useState<string | null>(null);
   const [cohortStarting, setCohortStarting] = useState(false);
-  const [pickA, setPickA] = useState("");
-  const [pickB, setPickB] = useState("");
-  const cohortPicksInit = useRef(false);
 
   const duePassed = Date.now() >= due.getTime();
   const cohortLangOk = translationLanguage !== "none";
@@ -110,17 +95,6 @@ export function AssignmentDetailClient({
     return () => window.clearInterval(id);
   }, [cohort.status, assignmentId]);
 
-  useEffect(() => {
-    if (cohort.status !== "DONE") {
-      cohortPicksInit.current = false;
-      return;
-    }
-    const inc = cohort.includedSubmissions ?? [];
-    if (inc.length < 2 || cohortPicksInit.current) return;
-    cohortPicksInit.current = true;
-    setPickA(inc[0].submissionId);
-    setPickB(inc[1].submissionId);
-  }, [cohort.status, cohort.includedSubmissions]);
   const problemRef = formatProblemRef(a.problemUrl, a.platform);
   const daysLeft = useMemo(() => Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000))), [due]);
   const dueLabel = a.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
@@ -140,18 +114,12 @@ export function AssignmentDetailClient({
   const canSeeHint = hasSubmitted || !hintHiddenUntilSubmit || showHintTemporarily;
   const canSeeAlgorithms = hasSubmitted || !algorithmsHiddenUntilSubmit || showAlgorithmsTemporarily;
 
-  const included = cohort.includedSubmissions ?? [];
-  const diffText = useMemo(
-    () => pickPairwiseDiff(cohort.artifacts, pickA, pickB),
-    [cohort.artifacts, pickA, pickB],
-  );
-
-  const canTryStartCohort =
+  const showCohortAction =
     cohortLangOk &&
     duePassed &&
     cohortCountOk &&
-    cohort.status !== "DONE" &&
-    cohort.status !== "RUNNING";
+    (cohort.status === "NONE" || cohort.status === "FAILED" || cohort.status === "RUNNING");
+  const cohortActionBusy = cohortStarting || cohort.status === "RUNNING";
 
   async function handleStartCohort() {
     setCohortErr(null);
@@ -302,18 +270,26 @@ export function AssignmentDetailClient({
                 <p className={styles.cohortBlocked}>{t("assignment.detail.cohort.blockedCount")}</p>
               ) : null}
               {cohortErr !== null ? <p className={styles.cohortError}>{cohortErr}</p> : null}
-              {(cohort.status === "NONE" || cohort.status === "FAILED") && canTryStartCohort ? (
-                <button
-                  type="button"
-                  className={styles.cohortPrimaryBtn}
-                  disabled={cohortStarting}
-                  onClick={() => void handleStartCohort()}
-                >
-                  {cohortStarting ? t("assignment.detail.cohort.starting") : t("assignment.detail.cohort.start")}
-                </button>
-              ) : null}
-              {cohort.status === "RUNNING" ? (
-                <p className={styles.cohortStatus}>{t("assignment.detail.cohort.running")}</p>
+              {showCohortAction ? (
+                <div className={styles.cohortActionRow}>
+                  <button
+                    type="button"
+                    className={styles.cohortPrimaryBtn}
+                    disabled={cohortActionBusy}
+                    aria-busy={cohortActionBusy}
+                    onClick={() => void handleStartCohort()}
+                  >
+                    {t("assignment.detail.cohort.start")}
+                  </button>
+                  {cohortActionBusy ? (
+                    <span
+                      className={styles.cohortSpinner}
+                      role="status"
+                      aria-live="polite"
+                      aria-label={t("assignment.detail.cohort.running")}
+                    />
+                  ) : null}
+                </div>
               ) : null}
               {cohort.status === "FAILED" ? (
                 <p className={styles.cohortStatus}>
@@ -321,60 +297,12 @@ export function AssignmentDetailClient({
                   {cohort.failureReason ? ` — ${cohort.failureReason}` : ""}
                 </p>
               ) : null}
-              {cohort.status === "DONE" && cohort.reportMarkdown ? (
-                <>
-                  <h3 className={styles.cohortSubheading}>{t("assignment.detail.cohort.reportHeading")}</h3>
-                  <div className={styles.cohortMd}>
-                    <MarkdownPreview content={cohort.reportMarkdown} />
-                  </div>
-                  {typeof cohort.tokenUsed === "number" ? (
-                    <p className={styles.cohortMuted}>
-                      {t("assignment.detail.cohort.tokenUsed", { count: cohort.tokenUsed })}
-                    </p>
-                  ) : null}
-                  {included.length >= 2 ? (
-                    <>
-                      <h3 className={styles.cohortSubheading}>{t("assignment.detail.cohort.diffHeading")}</h3>
-                      <div className={styles.cohortDiffControls}>
-                        <label className={styles.cohortSelectLabel}>
-                          <span>{t("assignment.detail.cohort.pickA")}</span>
-                          <select
-                            className={styles.cohortSelect}
-                            value={pickA}
-                            onChange={(ev) => setPickA(ev.target.value)}
-                          >
-                            {included.map((row) => (
-                              <option key={row.submissionId} value={row.submissionId}>
-                                {t("assignment.detail.cohort.authorLabel", {
-                                  nickname: row.authorNickname,
-                                  version: row.versionNo,
-                                })}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className={styles.cohortSelectLabel}>
-                          <span>{t("assignment.detail.cohort.pickB")}</span>
-                          <select
-                            className={styles.cohortSelect}
-                            value={pickB}
-                            onChange={(ev) => setPickB(ev.target.value)}
-                          >
-                            {included.map((row) => (
-                              <option key={`b-${row.submissionId}`} value={row.submissionId}>
-                                {t("assignment.detail.cohort.authorLabel", {
-                                  nickname: row.authorNickname,
-                                  version: row.versionNo,
-                                })}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      <pre className={styles.cohortDiffPre}>{diffText.length > 0 ? diffText : "—"}</pre>
-                    </>
-                  ) : null}
-                </>
+              {cohort.status === "DONE" ? (
+                <div className={styles.cohortDoneRow}>
+                  <Link href={`${assignmentBase}/cohort`} className={styles.cohortViewFull}>
+                    {t("assignment.detail.cohort.viewFull")}
+                  </Link>
+                </div>
               ) : null}
             </section>
           ) : null}

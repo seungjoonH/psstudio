@@ -1,7 +1,5 @@
 // 과제 집단 코드 비교 분석 트리거·파이프라인·조회를 담당하는 서비스입니다.
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { createTwoFilesPatch } from "diff";
-import { jsonrepair } from "jsonrepair";
 import { type DataSource, In, IsNull } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
@@ -12,40 +10,28 @@ import { Assignment } from "./assignment.entity.js";
 import { AssignmentCohortAnalysisMember } from "./assignment-cohort-analysis-member.entity.js";
 import { AssignmentCohortAnalysis } from "./assignment-cohort-analysis.entity.js";
 import { assertCohortAnalysisTriggerAllowed } from "./assignment-cohort-analysis.policy.js";
+import {
+  type CohortArtifactsV2,
+  type CohortReportLocale,
+  parseAndValidateCohortBundle,
+} from "./cohort-analysis-bundle.js";
 import { Group } from "../groups/group.entity.js";
 
-/** 리포트 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
+/** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
 
-type NormalizedEntry = {
-  files: { main: string };
-  originalLanguage: string;
-};
-
-type PairwiseDiff = {
-  submissionIdA: string;
-  submissionIdB: string;
-  file: string;
-  diffText: string;
-};
-
-type CohortArtifacts = {
-  normalizedBySubmission: Record<string, NormalizedEntry>;
-  pairwiseDiffs: PairwiseDiff[];
+export type CohortArtifactsLegacy = {
+  normalizedBySubmission: Record<string, { files: { main: string }; originalLanguage: string }>;
+  pairwiseDiffs: Array<{ submissionIdA: string; submissionIdB: string; file: string; diffText: string }>;
   deadSpansBySubmission: Record<string, { line: number; endLine?: number }[]>;
 };
-
-function clip(text: string, max: number): string {
-  if (text.length <= max) return text;
-  return `${text.slice(0, max)}\n\n… (truncated)`;
-}
 
 function targetLanguageInstruction(targetLanguage: string): string {
   switch (targetLanguage) {
     case "pseudo":
       return "의사코드(pseudo). 문법은 느슨해도 되지만 제어 구조·연산이 명확해야 한다.";
     case "python":
-      return "Python 3 문법으로, 실행 가능한 한 줄 단위 코드.";
+      return "Python 3 문법으로, 실행 가능한 코드.";
     case "java":
       return "Java 문법으로, 실행 가능한 코드.";
     case "cpp":
@@ -57,30 +43,8 @@ function targetLanguageInstruction(targetLanguage: string): string {
     case "c":
       return "C 문법으로, 실행 가능한 코드.";
     default:
-      return `${targetLanguage} 문법에 맞는 코드.`;
+      return `${targetLanguage} 문법에 맞는 실행 가능한 코드.`;
   }
-}
-
-function parseNormalizedCodeJson(raw: string): string | null {
-  const trimmed = raw.trim();
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidates: string[] = [];
-  if (fenced !== null) candidates.push(fenced[1].trim());
-  candidates.push(trimmed);
-  const seen = new Set<string>();
-  for (const c of candidates) {
-    if (c.length === 0 || seen.has(c)) continue;
-    seen.add(c);
-    try {
-      const obj = JSON.parse(jsonrepair(c)) as { normalizedCode?: unknown };
-      if (typeof obj.normalizedCode === "string" && obj.normalizedCode.trim().length > 0) {
-        return obj.normalizedCode.trim();
-      }
-    } catch {
-      /* try next */
-    }
-  }
-  return null;
 }
 
 async function openRouterCompletion(
@@ -112,18 +76,34 @@ async function openRouterCompletion(
   return { text, tokens };
 }
 
+function cohortLocaleInstruction(locale: CohortReportLocale): string {
+  if (locale === "en") {
+    return [
+      "Write reportMarkdown and every roleLabel in natural English.",
+      "Use a friendly explanatory tone suitable for young learners.",
+    ].join(" ");
+  }
+  return [
+    "reportMarkdown과 각 regions의 roleLabel은 한국어로 작성한다.",
+    "문체는 합니다·입니다체를 쓰고, 중학생도 이해할 수 있게 짧은 문장으로 설명한다.",
+  ].join(" ");
+}
+
 export type CohortAnalysisPublicDto = {
   status: "NONE" | "RUNNING" | "DONE" | "FAILED";
   targetLanguage?: string;
+  reportLocale?: string | null;
   failureReason?: string | null;
   reportMarkdown?: string | null;
-  artifacts?: CohortArtifacts;
+  artifacts?: CohortArtifactsV2 | CohortArtifactsLegacy | Record<string, unknown>;
   tokenUsed?: number;
   includedSubmissions?: Array<{
     submissionId: string;
     versionNo: number;
     authorUserId: string;
     authorNickname: string;
+    title: string;
+    authorProfileImageUrl: string;
   }>;
   startedAt?: string | null;
   finishedAt?: string | null;
@@ -149,6 +129,7 @@ export class AssignmentCohortAnalysisService {
     const base: CohortAnalysisPublicDto = {
       status: row.status,
       targetLanguage: row.targetLanguage,
+      reportLocale: row.reportLocale,
       failureReason: row.failureReason,
       reportMarkdown: row.reportMarkdown,
       tokenUsed: row.tokenUsed,
@@ -156,7 +137,7 @@ export class AssignmentCohortAnalysisService {
       finishedAt: row.finishedAt?.toISOString() ?? null,
     };
     if (row.status === "DONE") {
-      base.artifacts = row.artifacts as unknown as CohortArtifacts;
+      base.artifacts = row.artifacts as unknown as CohortArtifactsV2 | CohortArtifactsLegacy | Record<string, unknown>;
       const members = await this.ds.getRepository(AssignmentCohortAnalysisMember).find({
         where: { cohortAnalysisId: row.id },
       });
@@ -172,13 +153,17 @@ export class AssignmentCohortAnalysisService {
         const authorIds = [...new Set(subs.map((s) => s.authorUserId))];
         const users = authorIds.length > 0 ? await this.ds.getRepository(User).find({ where: { id: In(authorIds) } }) : [];
         const nick = new Map(users.map((u) => [u.id, u.nickname]));
+        const profile = new Map(users.map((u) => [u.id, u.profileImageUrl]));
         base.includedSubmissions = members.map((m) => {
-          const author = subById.get(m.submissionId)?.authorUserId ?? "";
+          const s = subById.get(m.submissionId);
+          const author = s?.authorUserId ?? "";
           return {
             submissionId: m.submissionId,
             versionNo: verNoById.get(m.submissionVersionId) ?? 0,
             authorUserId: author,
             authorNickname: nick.get(author) ?? "",
+            title: s?.title ?? "",
+            authorProfileImageUrl: profile.get(author) ?? "",
           };
         });
       }
@@ -186,7 +171,7 @@ export class AssignmentCohortAnalysisService {
     return base;
   }
 
-  async trigger(assignmentId: string, userId: string): Promise<CohortAnalysisPublicDto> {
+  async trigger(assignmentId: string, userId: string, reportLocale: CohortReportLocale): Promise<CohortAnalysisPublicDto> {
     const assignment = await this.ds.getRepository(Assignment).findOne({ where: { id: assignmentId } });
     if (assignment === null || assignment.deletedAt !== null) {
       throw new NotFoundException("과제를 찾을 수 없습니다.");
@@ -215,6 +200,7 @@ export class AssignmentCohortAnalysisService {
         assignmentId,
         status: "RUNNING",
         targetLanguage: group.ruleTranslationLanguage,
+        reportLocale,
         triggeredByUserId: userId,
         tokenUsed: 0,
         reportMarkdown: null,
@@ -227,6 +213,7 @@ export class AssignmentCohortAnalysisService {
     } else {
       existing.status = "RUNNING";
       existing.targetLanguage = group.ruleTranslationLanguage;
+      existing.reportLocale = reportLocale;
       existing.triggeredByUserId = userId;
       existing.tokenUsed = 0;
       existing.reportMarkdown = null;
@@ -277,118 +264,72 @@ export class AssignmentCohortAnalysisService {
         versionRows.push({ submission: sub, version });
       }
 
-      let totalTokens = 0;
-      const normalizedBySubmission: Record<string, NormalizedEntry> = {};
+      const authorIds = [...new Set(versionRows.map((v) => v.submission.authorUserId))];
+      const authors =
+        authorIds.length > 0 ? await this.ds.getRepository(User).find({ where: { id: In(authorIds) } }) : [];
+      const nickByUserId = new Map(authors.map((u) => [u.id, u.nickname]));
+
       const target = analysis.targetLanguage;
       const langHint = targetLanguageInstruction(target);
+      const reportLocale: CohortReportLocale =
+        analysis.reportLocale === "en" || analysis.reportLocale === "ko" ? analysis.reportLocale : "ko";
 
-      for (const { submission, version } of versionRows) {
-        const { text, tokens } = await openRouterCompletion(
-          [
-            {
-              role: "system",
-              content: [
-                "너는 알고리즘 제출 코드를 정규화하는 도구다.",
-                "출력은 반드시 JSON 한 개만: {\"normalizedCode\": string}",
-                "normalizedCode에는 주석·문서화 문자열을 넣지 않는다.",
-                "동작 의미(로직)는 절대 바꾸지 않는다.",
-                "이름·선언 방식 등 스타일만 과제 그룹 공통 표면에 맞게 통일한다.",
-                `목표 표현: ${langHint}`,
-                "원본 언어와 목표가 같아도 불필요한 공백·스타일 차이는 줄인다.",
-              ].join("\n"),
-            },
-            {
-              role: "user",
-              content: [
-                `[원본 언어] ${version.language}`,
-                `[목표 공통 언어 키] ${target}`,
-                "",
-                "```",
-                version.code,
-                "```",
-              ].join("\n"),
-            },
-          ],
-          ENV.llmModelTranslation(),
-          0.15,
-        );
-        totalTokens += tokens;
-        const normalized = parseNormalizedCodeJson(text);
-        if (normalized === null) {
-          throw new Error("normalize_parse_failed");
-        }
-        normalizedBySubmission[submission.id] = {
-          files: { main: normalized },
+      const bundleInput = {
+        assignmentTitle: assignment.title,
+        targetLanguageKey: target,
+        targetLanguageHint: langHint,
+        reportLocale,
+        submissions: versionRows.map(({ submission, version }) => ({
+          submissionId: submission.id,
+          title: submission.title,
+          authorNickname: nickByUserId.get(submission.authorUserId) ?? "",
+          versionNo: submission.currentVersionNo,
           originalLanguage: version.language,
-        };
-      }
+          code: version.code,
+        })),
+      };
 
-      const ids = versionRows.map((v) => v.submission.id).sort();
-      const pairwiseDiffs: PairwiseDiff[] = [];
-      for (let i = 0; i < ids.length; i += 1) {
-        for (let j = i + 1; j < ids.length; j += 1) {
-          const idA = ids[i];
-          const idB = ids[j];
-          const codeA = normalizedBySubmission[idA]?.files.main ?? "";
-          const codeB = normalizedBySubmission[idB]?.files.main ?? "";
-          const diffText = createTwoFilesPatch(
-            `submissions/${idA}/main`,
-            `submissions/${idB}/main`,
-            codeA,
-            codeB,
-            "",
-            "",
-            { context: 3 },
-          );
-          pairwiseDiffs.push({ submissionIdA: idA, submissionIdB: idB, file: "main", diffText });
-        }
-      }
+      const systemPrompt = [
+        "너는 스터디 그룹 과제 제출 코드를 한 번에 정규화·구역 분할·비교 설명까지 수행한다.",
+        "출력은 반드시 유효한 JSON 객체 한 개만이다. 앞뒤 설명·마크다운 코드펜스로 감싸지 않는 것이 좋다(순수 JSON).",
+        '키: "reportMarkdown"(string), "submissions"(배열).',
+        "",
+        "[reportMarkdown]",
+        "- 마크다운으로 작성한다.",
+        "- 제출을 언급할 때는 반드시 플레이스홀더만 쓴다: [[SUBMISSION:<submissionId>]] 형식(UUID는 입력에 나온 submissionId 그대로).",
+        "- 본문 일반 텍스트에 UUID를 노출하지 않는다.",
+        cohortLocaleInstruction(reportLocale),
+        "- 모델명·프롬프트·시스템·버전·시드 등 구성 메타는 절대 언급하지 않는다.",
+        "- 표절 단정·실력 평가·정답 판정은 하지 않는다.",
+        "- 알고리즘·자료구조·구현 방식 차이를 중심으로 서술한다.",
+        "",
+        "[submissions 배열]",
+        "각 원소: submissionId, normalizedCode, originalLanguage, regions.",
+        "- submissionId는 입력과 동일해야 한다. 모든 제출을 빠짐없이 포함한다.",
+        `- normalizedCode: 그룹 공통 표현 목표에 맞게 변환한 전체 코드 문자열이다. ${langHint}`,
+        "- 의미(로직)는 바꾸지 않는다. 주석·문서 문자열은 넣지 않는다.",
+        "- 원본 언어와 목표가 같아도 가독성 있게 줄바꿈·들여쓰기를 넣고, 한 줄로 압축하지 않는다.",
+        "",
+        "[regions]",
+        "- 각 구역: roleId(영문 스네이크 케이스 등 짧은 식별자), roleLabel(사람이 읽는 이름), startLine, endLine.",
+        "- 1-based 줄 번호. normalizedCode를 줄 단위로 나눈 범위 안에 있어야 한다.",
+        "- 동일한 의미·역할의 코드 블록은 **모든 제출에서 같은 roleId**를 재사용한다.",
+        "- 서로 다른 제출에서 대응되는 부분은 같은 roleId로 묶는다.",
+      ].join("\n");
 
-      const summaryForReport = ids
-        .map((id) => {
-          const code = normalizedBySubmission[id]?.files.main ?? "";
-          return `### submission ${id}\n${clip(code, 6000)}`;
-        })
-        .join("\n\n");
-      const diffSample = pairwiseDiffs
-        .slice(0, 15)
-        .map((d) => clip(d.diffText, 4000))
-        .join("\n\n---\n\n");
+      const userPrompt = JSON.stringify(bundleInput);
 
-      const { text: reportMd, tokens: reportTokens } = await openRouterCompletion(
+      const { text: rawBundle, tokens } = await openRouterCompletion(
         [
-          {
-            role: "system",
-            content: [
-              "너는 스터디 그룹 과제 제출 코드를 비교 분석해 긴 Markdown 리포트 한 편을 쓴다.",
-              "한국어로 작성한다.",
-              "모델명·프롬프트·시스템·버전·시드 등 구성 메타는 절대 언급하지 않는다.",
-              "표절 단정·실력 평가·정답 판정은 하지 않는다.",
-              "알고리즘·자료구조 차이, 구현 방식 차이(예: 재귀 vs 반복, 내장 API vs 직접 구현)를 중심으로 서술한다.",
-              "가독성: 제목(# ## ###), 목록, 짧은 문단을 쓴다.",
-            ].join("\n"),
-          },
-          {
-            role: "user",
-            content: [
-              "[정규화된 제출 요약 — 파일 main 기준]",
-              summaryForReport,
-              "",
-              "[정규화본 pairwise diff 일부]",
-              diffSample.length > 0 ? diffSample : "(diff 없음)",
-            ].join("\n"),
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         COHORT_REPORT_MODEL(),
-        0.25,
+        0.2,
       );
-      totalTokens += reportTokens;
 
-      const artifacts: CohortArtifacts = {
-        normalizedBySubmission,
-        pairwiseDiffs,
-        deadSpansBySubmission: Object.fromEntries(ids.map((id) => [id, [] as { line: number; endLine?: number }[]])),
-      };
+      const idsSorted = versionRows.map((v) => v.submission.id).sort();
+      const { reportMarkdown, artifacts } = parseAndValidateCohortBundle(rawBundle, idsSorted, target);
 
       await this.ds.transaction(async (tx) => {
         await tx.getRepository(AssignmentCohortAnalysisMember).delete({ cohortAnalysisId: analysisId });
@@ -403,8 +344,8 @@ export class AssignmentCohortAnalysisService {
         }
         const rowDone = await tx.getRepository(AssignmentCohortAnalysis).findOneOrFail({ where: { id: analysisId } });
         rowDone.status = "DONE";
-        rowDone.tokenUsed = totalTokens;
-        rowDone.reportMarkdown = reportMd.trim().length > 0 ? reportMd.trim() : "(리포트가 비었습니다.)";
+        rowDone.tokenUsed = tokens;
+        rowDone.reportMarkdown = reportMarkdown.length > 0 ? reportMarkdown : "(리포트가 비었습니다.)";
         rowDone.artifacts = artifacts as unknown as Record<string, unknown>;
         rowDone.failureReason = null;
         rowDone.finishedAt = new Date();

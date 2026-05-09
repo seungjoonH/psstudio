@@ -467,8 +467,32 @@
   color: var(--color-text);
 }
 
-.cohortPrimaryBtn {
+.cohortActionRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   justify-self: start;
+}
+
+.cohortSpinner {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--color-primary);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: cohortSpinnerRot 0.65s linear infinite;
+}
+
+@keyframes cohortSpinnerRot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cohortPrimaryBtn {
   height: 40px;
   padding: 0 16px;
   border-radius: 10px;
@@ -483,6 +507,28 @@
 .cohortPrimaryBtn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.cohortDoneRow {
+  justify-self: start;
+}
+
+.cohortViewFull {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.cohortViewFull:hover {
+  filter: brightness(0.95);
 }
 
 .cohortSubheading {
