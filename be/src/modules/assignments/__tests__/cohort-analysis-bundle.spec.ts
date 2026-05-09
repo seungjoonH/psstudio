@@ -78,6 +78,30 @@ describe("parseAndValidateCohortBundle", () => {
     expect(out.artifacts.submissions[0].regions[0].endLine).toBe(2);
   });
 
+  it("파일 끝 줄바꿈이 있어도 LLM lines 배열과 같은 원문 줄 수로 클램프한다", () => {
+    const codeWithTrailingNl = "line1\nline2\n";
+    const map = new Map<string, string>([
+      ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", codeWithTrailingNl],
+      ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "x\ny\n"],
+    ]);
+    const bundle = {
+      reportMarkdown: "x",
+      submissions: [
+        {
+          submissionId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          regions: [{ roleId: "a", roleLabel: "A", startLine: 1, endLine: 3 }],
+        },
+        {
+          submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          regions: [{ roleId: "a", roleLabel: "A", startLine: 1, endLine: 2 }],
+        },
+      ],
+    };
+    const out = parseAndValidateCohortBundle(JSON.stringify(bundle), ids, map, "ko");
+    const a = out.artifacts.submissions.find((x) => x.submissionId === ids[0]);
+    expect(a?.regions[0]?.endLine).toBe(3);
+  });
+
   it("리포트에 여러 언어 펜스가 있어도 거절하지 않는다", () => {
     const json = {
       ...validJson,

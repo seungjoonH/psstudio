@@ -259,8 +259,8 @@ export function normalizeSubmissionRegionCountsToHeadTemplate(
 
   for (const sub of submissions) {
     const raw = codeBySubmissionId.get(sub.submissionId) ?? "";
-    const code = raw.trim();
-    const totalLines = countLines(code);
+    /** trim 금지 — parse 단계와 동일하게 원문 줄 수 기준 */
+    const totalLines = countLines(raw);
 
     while (sub.regions.length > targetK) {
       mergeClosestAdjacentPair(sub.regions);
@@ -544,9 +544,9 @@ export function parseAndValidateCohortBundle(
     if (code === undefined || code.trim().length === 0) {
       throw new Error("cohort_bundle_code_empty");
     }
-    const trimmedCode = code.trim();
-    const regions = parseRegionsLenient(regionsRaw, trimmedCode, reportLocale);
-    assertSemanticRegionsRequiredForLongFiles(regions, trimmedCode);
+    /** 줄 번호는 LLM 입력 `lines`(submissionCodeToLines·split 원문)와 동일해야 한다. `trim()`하면 마지막 줄바꿈 등으로 N이 줄어들어 구역이 전부 어긋난다. */
+    const regions = parseRegionsLenient(regionsRaw, code, reportLocale);
+    assertSemanticRegionsRequiredForLongFiles(regions, code);
 
     submissions.push({
       submissionId,
