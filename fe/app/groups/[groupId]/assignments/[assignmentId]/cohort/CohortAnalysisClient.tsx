@@ -3,11 +3,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type {
-  CohortAnalysisDto,
-  CohortSubmissionArtifact,
-  ProblemPromptDto,
-} from "../../../../../../src/assignments/server";
+import type { CohortAnalysisDto, CohortSubmissionArtifact } from "../../../../../../src/assignments/server";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
 import { sanitizeCohortReportMarkdown } from "../../../../../../src/lib/cohortReportMarkdown";
 import { CohortCodeColumns } from "../../../../../../src/ui/cohort/CohortCodeColumns";
@@ -28,8 +24,6 @@ type Props = {
   assignmentTitle: string;
   cohortInitial: CohortAnalysisDto;
   canStartCohort: boolean;
-  /** 과제 problem URL에서 정제한 본문(제출 AI 리뷰와 동일 파이프라인). */
-  problemPrompt: ProblemPromptDto | null;
 };
 
 export function CohortAnalysisClient({
@@ -38,7 +32,6 @@ export function CohortAnalysisClient({
   assignmentTitle,
   cohortInitial,
   canStartCohort,
-  problemPrompt,
 }: Props) {
   const { t, locale: uiLocale } = useI18n();
   const [cohort, setCohort] = useState<CohortAnalysisDto>(cohortInitial);
@@ -124,30 +117,6 @@ export function CohortAnalysisClient({
         ) : null}
       </div>
       <p className={styles.sub}>{assignmentTitle}</p>
-
-      <section className={styles.problemCard} aria-labelledby="cohort-problem">
-        <h2 id="cohort-problem" className={styles.problemHeading}>
-          {t("assignment.cohortPage.problemHeading")}
-        </h2>
-        {problemPrompt !== null ? (
-          <div className={styles.problemBody}>
-            <div className={styles.problemBlock}>
-              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemSummary")}</h3>
-              <p className={styles.problemText}>{problemPrompt.summary}</p>
-            </div>
-            <div className={styles.problemBlock}>
-              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemInput")}</h3>
-              <p className={styles.problemText}>{problemPrompt.input}</p>
-            </div>
-            <div className={styles.problemBlock}>
-              <h3 className={styles.problemLabel}>{t("assignment.cohortPage.problemOutput")}</h3>
-              <p className={styles.problemText}>{problemPrompt.output}</p>
-            </div>
-          </div>
-        ) : (
-          <p className={styles.problemUnavailable}>{t("assignment.cohortPage.problemUnavailable")}</p>
-        )}
-      </section>
 
       {err !== null ? <p className={styles.error}>{err}</p> : null}
 

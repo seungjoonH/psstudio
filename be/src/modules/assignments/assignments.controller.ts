@@ -34,7 +34,6 @@ import { canPerform } from "../groups/permissions.js";
 import { normalizeCohortReportLocale } from "./cohort-analysis-bundle.js";
 import { AssignmentCohortAnalysisService } from "./assignment-cohort-analysis.service.js";
 import { AssignmentsService } from "./assignments.service.js";
-import { fetchProblemPromptFromUrl } from "./problem-prompt-from-url.js";
 
 class CreateAssignmentBody {
   @IsString() @MinLength(1) @MaxLength(200) title!: string;
@@ -138,14 +137,6 @@ export class AssignmentsController {
     const a = await this.assignments.getById(assignmentId);
     await this.groups.requireRole(a.groupId, me.id);
     return { success: true, data: serialize(a) };
-  }
-
-  @Get("api/v1/assignments/:assignmentId/problem-prompt")
-  async getProblemPrompt(@CurrentUser() me: { id: string }, @Param("assignmentId") assignmentId: string) {
-    const a = await this.assignments.getById(assignmentId);
-    await this.groups.requireRole(a.groupId, me.id);
-    const data = await fetchProblemPromptFromUrl(a.problemUrl);
-    return { success: true, data };
   }
 
   @Get("api/v1/assignments/:assignmentId/cohort-analysis")

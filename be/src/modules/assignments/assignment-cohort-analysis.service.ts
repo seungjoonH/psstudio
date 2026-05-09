@@ -107,6 +107,9 @@ function cohortMarkdownStructureAndCodeRules(locale: CohortReportLocale): string
       "- When contrasting two submissions, place **two fences back-to-back** or one short fence with clear comments so the **diff** is visible. Prefer pairing the **same roleId** across submissions.",
       "- Never paste a **full file**. Use several short contiguous excerpts if needed.",
       "- Forbidden: long abstract comparison without fences, repeating the same point, listing identifiers without a fence.",
+      "",
+      "[problem text — internal context only]",
+      "- `problemContext` is for **analysis accuracy**; the app does **not** show raw scraped problem text to users. In `reportMarkdown`, do **not** reproduce long verbatim problem statements from external sites; **summarize** what the task requires in your own short prose.",
     ];
   }
   return [
@@ -506,6 +509,7 @@ export class AssignmentCohortAnalysisService {
         "[문제 본문 — 분석의 전제]",
         "- 사용자 입력 JSON에는 `assignmentTitle`, `problemUrl`, `problemContext`, `submissions` 등이 있다.",
         "- `problemContext`는 `problemUrl` 페이지를 GET해 HTML→평문으로 바꾼 뒤, 제출 AI 리뷰와 **동일한 규칙**으로 뽑은 `{ summary, input, output }` 이다. 페이지를 불러오지 못하면 **null**일 수 있다.",
+        "- **서비스 UI에는 문제 원문을 노출하지 않는다.** 너에게 주는 `problemContext`는 비교 분석 정확도를 위한 **내부 컨텍스트**다. `reportMarkdown`에서는 문제 사이트 본문을 길게 인용·복제하지 말고, 과제 요구는 **네 문장으로 짧게 요약**한다.",
         "- **regions 선택·reportMarkdown 서술은 모두 문제 요구사항·입출력·제약과 연결한다.** 코드만 보고 일반론을 늘어놓지 않는다.",
         "- `problemContext`가 null이면 `assignmentTitle`과 코드에서 드러나는 범위만 언급하고, 문제 전문을 단정하지 않는다.",
         "",

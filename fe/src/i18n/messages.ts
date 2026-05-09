@@ -467,12 +467,6 @@ export const messages = {
         heading: "집단 코드 비교",
         cannotStartHere:
           "이 페이지에서 바로 실행할 수 없습니다. 과제 상세에서 마감과 제출 수 조건을 확인한 뒤 실행해 주세요.",
-        problemHeading: "문제 본문",
-        problemSummary: "요약",
-        problemInput: "입력",
-        problemOutput: "출력",
-        problemUnavailable:
-          "문제 URL에서 본문을 불러오거나 정제하지 못했습니다. 원문은 과제에 연결된 문제 페이지에서 확인할 수 있습니다.",
         codeHeading: "제출 코드",
         missingCodeArtifacts:
           "저장된 분석에 코드 열이 없습니다. 과제 상세에서 집단 분석을 다시 실행해 주세요.",
@@ -1104,12 +1098,6 @@ export const messages = {
         heading: "Cohort code comparison",
         cannotStartHere:
           "You cannot start analysis from this page alone. Open the assignment page and check due date and submission count.",
-        problemHeading: "Problem statement",
-        problemSummary: "Summary",
-        problemInput: "Input",
-        problemOutput: "Output",
-        problemUnavailable:
-          "Could not fetch or extract the problem text from the URL. Open the linked problem page from the assignment for the original statement.",
         codeHeading: "Submitted code",
         missingCodeArtifacts:
           "This saved analysis has no code columns. Please rerun cohort analysis from the assignment page.",

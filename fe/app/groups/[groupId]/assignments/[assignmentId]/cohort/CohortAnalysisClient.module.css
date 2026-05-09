@@ -44,57 +44,6 @@
   color: var(--color-muted);
 }
 
-.problemCard {
-  display: grid;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.problemHeading {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.problemBody {
-  display: grid;
-  gap: 14px;
-}
-
-.problemBlock {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.problemLabel {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.problemText {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--color-text);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.problemUnavailable {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-muted);
-}
-
 .section {
   display: grid;
   gap: 12px;

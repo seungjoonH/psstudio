@@ -509,11 +509,6 @@
 
 ### 11.1 트리거·조회
 
-- `GET /assignments/:assignmentId/problem-prompt`
-  - 권한: 과제 단건 조회와 동일(그룹 멤버).
-  - 동작: 과제 `problem_url`에 서버가 HTTP GET 후 HTML→평문→마커 기준으로 `요약`·`입력`·`출력` 추출. **제출 AI 코드 리뷰 프롬프트 구성 시 사용하는 로직과 동일**(`problem-prompt-from-url`). 성공 시 `{ summary, input, output }`, 페이지를 불러오지 못하거나 추출 실패 시 **`null` 데이터**.
-  - 용도: 집단 코드 비교 UI 등에서 문제 본문을 코드와 함께 표시.
-
 - `POST /assignments/:assignmentId/cohort-analysis`
   - 권한: 같은 그룹의 모든 멤버(세부는 구현 시 `design.md`와 동일한 그룹원 공개 모델을 따름).
   - 헤더: `Accept-Language`로 리포트·역할 라벨 로케일(`ko`/`en` 등)을 결정한다. 웹 클라이언트는 브라우저 기본 헤더 대신 **앱에서 선택한 UI 언어**를 우선 반영해 요청한다.
