@@ -1249,11 +1249,25 @@ export class SubmissionsService {
           ? [fallbackTrivialComment]
           : [];
 
+    let summaryBody =
+      aiPayload.summary.trim().length > 0
+        ? aiPayload.summary.trim()
+        : "리뷰 요약을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+
+    /** 모델이 lineComments를 줬지만 앵커·줄 클램프 후 인라인 Review가 0개면 UI에 코드 옆 스레드가 안 생긴다. 본문에 병합하고 안내한다. */
+    const modelReturnedLineComments = aiPayload.lineComments.length > 0;
+    if (lineComments.length === 0 && modelReturnedLineComments) {
+      const appendix = aiPayload.lineComments
+        .map((c) => c.body.trim())
+        .filter((b) => b.length > 0)
+        .join("\n\n---\n\n");
+      const note =
+        "인라인 코드 리뷰는 제출 원문 줄과의 앵커 매칭에 실패해 코드 옆에 표시되지 못했습니다. 의도했던 설명은 아래에 이어 붙입니다.";
+      summaryBody =
+        appendix.length > 0 ? `${note}\n\n${summaryBody}\n\n---\n\n${appendix}` : `${note}\n\n${summaryBody}`;
+    }
+
     await this.ds.transaction(async (tx) => {
-      const summaryBody =
-        aiPayload.summary.trim().length > 0
-          ? aiPayload.summary.trim()
-          : "리뷰 요약을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.";
       await tx.getRepository(Comment).save(
         tx.getRepository(Comment).create({
           groupId: assignment.groupId,
@@ -1344,6 +1358,7 @@ export class SubmissionsService {
               "── summary vs lineComments (UI) ──",
               "summary는 **전역 총평** 한 블록. 구체 결함·원인·반례·수정·줄 지적·함수명·줄 번호는 **lineComments만**.",
               "제품 UI에서 전역 summary는 인라인(라인) 코멘트보다 **화면 아래**에 있다. summary에서 인라인 코멘트를 가리킬 때는 **위**·**위쪽**·**인라인**·**해당 줄** 등으로 쓴다. **아래** 라인 코멘트 표현은 방향이 반대이므로 금지.",
+              "**summary와 JSON 일치:** `lineComments` 배열이 **비어 있으면** summary에서 코드 옆 인라인 리뷰가 **달렸다**·**위쪽에 적었다**처럼 **인라인 존재를 암시하지 말 것**. 인라인용 설명은 반드시 `lineComments`에 넣고, 앵커는 제출 원문 **물리 줄 전체**와 글자 단위로 일치시킨다. 서버가 앵커 매칭에 실패하면 인라인은 생기지 않고 요약 댓글에만 병합될 수 있다.",
               "lineComments가 1개 이상이면 summary는 **짧은 안내로 끝내지 말 것**. 인라인 피드백을 **바탕으로** 이 풀이에 대한 **정성적 총평**을 **자유 서술**로 쓴다(고정 멘트·성의 없는 한 줄·객관식 선택지 나열 금지). 전반적 완성도, 문제 맥락과의 맞음, 인라인 이슈와의 관계 등 **해당 제출에 맞게** 달라질 수 있다. **리뷰어(모델)의 판단이 틀릴 수 있음**을 염두에 둔 **겸손한** 표현을 쓴다.",
               "lineComments가 비어 있으면 summary는 **긍정·관찰만**; '문제·개선 필요·주의·여지' 등 결함 암시 단어 금지. 제출이 **전반적으로 무난하고** 인라인 지적도 없으면 **진심 어린 칭찬·안정적 완성도**를 써도 된다(억지 지적 금지).",
               "매 실행 summary 1개.",
