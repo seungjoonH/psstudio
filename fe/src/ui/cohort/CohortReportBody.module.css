@@ -5,16 +5,17 @@
   color: var(--color-text);
 }
 
-/* 칩·인라인 마크다운을 블록 div가 아니라 span 묶음으로 두어 문단 안에서 자연스럽게 흐르게 한다. */
-.inlineFlow {
-  display: inline;
-  vertical-align: baseline;
+/* 칩·인라인 마크다운: 유효한 문단(<p>) 안에 phrasing 자식만 둔다(span + 링크 칩). */
+.chipInlineParagraph {
+  margin: 0 0 0.65em;
   font-size: inherit;
   line-height: inherit;
+  color: inherit;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
-/* 마크다운 조각은 span으로 두어 형제 칩과 같은 줄에서 줄바꿈된다. */
+/* 마크다운 조각은 span으로 두어 <p> 안에서 칩과 같은 줄바꿈 흐름을 탄다. */
 .inlineMdWrap {
   display: inline;
   vertical-align: baseline;
