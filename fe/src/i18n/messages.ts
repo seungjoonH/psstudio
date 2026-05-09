@@ -242,6 +242,7 @@ export const messages = {
       title: "내 그룹",
       subtitle: "내가 속한 그룹을 확인하거나 새 그룹에 참가해보세요.",
       backToGroups: "내 그룹으로",
+      pendingTodos: "남은 할 일 {count}개",
     },
     joinByCode: {
       title: "초대 코드로 가입",
@@ -875,6 +876,7 @@ export const messages = {
       title: "My groups",
       subtitle: "See groups you joined and join new ones.",
       backToGroups: "Back to my groups",
+      pendingTodos: "{count} open tasks",
     },
     joinByCode: {
       title: "Join with invite code",

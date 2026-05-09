@@ -143,8 +143,9 @@
     - `rules.*` ↔ `ruleUseDeadline`, `ruleDefaultDeadlineTime`, ….
   - 응답에 `groupCode`(8자, 새로 생성된 영구 코드)를 포함합니다.
 - `GET /groups`
-  - 응답: `[{ id, name, description, maxMembers, memberCount, ownerUserId, myRole, memberPreviews }]`
+  - 응답: `[{ id, name, description, maxMembers, memberCount, ownerUserId, myRole, memberPreviews, myPendingAssignmentCount }]`
   - `memberPreviews`는 가입 시각 오름차순으로 최대 4명의 `{ userId, nickname, profileImageUrl }`를 포함합니다(아바타 스택 표시용).
+  - `myPendingAssignmentCount`는 **현재 사용자**가 아직 제출하지 않은 활성 과제(`assignments.deleted_at IS NULL`) 개수입니다.
 - `GET /groups/:groupId`
   - 응답: 그룹의 모든 메타(이름/설명/최대 인원/멤버 수/그룹 코드/가입 방식 토글/그룹 규칙).
   - `groupCode`는 그룹원 모두에게 노출합니다(공유 토큰 성격).
