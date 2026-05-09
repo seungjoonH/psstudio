@@ -268,6 +268,8 @@ export const messages = {
       pageSubtitle: "대소문자 구분 8자리 초대 코드를 입력하세요.",
       pagePlaceholder: "예) Ab3xY7Qz",
       pageSubmit: "참여하기",
+      invalidFormat: "영문·숫자 8자리(대소문자 구분)로 입력해 주세요.",
+      unknownError: "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     },
     groupNew: {
       title: "새 그룹",
@@ -918,6 +920,8 @@ export const messages = {
       pageSubtitle: "Enter the 8-char invite code (case sensitive).",
       pagePlaceholder: "e.g. Ab3xY7Qz",
       pageSubmit: "Join",
+      invalidFormat: "Enter exactly 8 letters or digits (case sensitive).",
+      unknownError: "We couldn’t complete the request. Please try again.",
     },
     groupNew: {
       title: "New group",
