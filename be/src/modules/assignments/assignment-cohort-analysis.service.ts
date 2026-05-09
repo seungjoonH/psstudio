@@ -25,10 +25,6 @@ import { fetchProblemPromptFromUrl } from "./problem-prompt-from-url.js";
 /** 리포트·번들 생성은 문제 메타 추론과 동일한 모델 키를 씁니다(추가 env 없음). */
 const COHORT_REPORT_MODEL = () => ENV.llmModelProblemAnalyze();
 
-/** 재시도 시 이전 응답이 형식에 맞지 않았음을 알리고, regions만 다시 맞추라고 지시합니다(소비자·서버 언급 없음). */
-const COHORT_SEMANTIC_RETRY_HINT =
-  "\n\n[재시도 — 이전 JSON은 regions 규칙을 어겼다] 각 제출 `code` 줄 수를 다시 세어라. **12줄 이상**이면 제출마다 `regions`를 **2~5개**(서로 다른 snake_case `roleId`)로만 출력하라. **`entire_code`·`whole_file`·「코드 전체」 라벨 금지.** **startLine=1 & endLine=마지막줄 인 구역이 유일**한 형태(한 덩어리로 전 파일) 금지. 헬퍼 함수 블록 / 메인 시뮬레이션 루프 / 입출력·파싱 등 **실제 논점**으로 나눠라. 각 region은 **연속 구간** 하나이고 그 안의 빈 줄·`}`·`break`까지 포함. 모든 제출에 **동일한 roleId 집합·같은 개수 k**. 특히 **주요 루프·`main_loop`** 구역은 **`for`/`while`/`do` 헤더 줄이 구간 안에** 들어가야 하며, 닫는 꼬리만·함수 앞부분만 칠하지 마라.";
-
 async function openRouterCompletion(
   messages: { role: "system" | "user"; content: string }[],
   model: string,
@@ -608,11 +604,10 @@ export class AssignmentCohortAnalysisService {
       let totalTokens = 0;
 
       for (let attempt = 0; attempt < 3; attempt++) {
-        const sysPrompt = attempt === 0 ? systemPrompt : systemPrompt + COHORT_SEMANTIC_RETRY_HINT;
         const temperature = attempt === 0 ? 0.2 : 0.42;
         const { text: rawBundle, tokens } = await openRouterCompletion(
           [
-            { role: "system", content: sysPrompt },
+            { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
           COHORT_REPORT_MODEL(),
