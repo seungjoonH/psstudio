@@ -463,7 +463,7 @@ export const messages = {
         errorTitle: "과제를 불러오지 못했습니다.",
         cohort: {
           title: "집단 코드 비교",
-          lead: "마감 후 그룹 공통 언어로 제출 코드를 정규화하고, diff와 리포트로 비교합니다.",
+          lead: "모든 그룹원들의 제출 코드를 비교 분석해보세요.",
           blockedNoLang: "그룹에 공통 언어가 없어 이 기능을 쓸 수 없습니다.",
           blockedDue: "마감 후에 실행할 수 있습니다.",
           blockedCount: "제출이 2건 이상일 때 실행할 수 있습니다.",
@@ -1103,7 +1103,7 @@ export const messages = {
         errorTitle: "Failed to load assignment.",
         cohort: {
           title: "Cohort code comparison",
-          lead: "After the due date, normalize submissions to the group common language and compare via diffs and a report.",
+          lead: "Compare and analyze submissions from everyone in the group.",
           blockedNoLang: "Set a group common language to use this feature.",
           blockedDue: "Available after the due date.",
           blockedCount: "Requires at least two submissions.",
