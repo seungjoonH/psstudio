@@ -9,7 +9,7 @@
 - 시간 포맷: ISO 8601 UTC 저장, 클라이언트 표시 시 KST 변환
 - 인증 방식: OAuth 로그인 세션 기반 인증(google, github)
 - 비인증 접근은 로그인/공개 페이지 외 `401 Unauthorized`
-- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_PROVIDER`(`openrouter|requesty`), `OPEN_ROUTER_API_KEY`, `REQUESTY_API_KEY`, `REQUESTY_BASE_URL`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`, `LLM_MODEL_SUBMISSION_REVIEW`, 집단 분석용 모델 키 등, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
+- 서버 환경변수 최소 스키마: `BE_PORT`, `BE_PUBLIC_BASE_URL`, `FE_PUBLIC_BASE_URL`, `DATABASE_URL`, `REDIS_URL`, `SESSION_COOKIE_NAME`, `SESSION_SECRET`, OAuth client id/secret/redirect URI, `LLM_PROVIDER`(`openrouter|requesty`), `OPEN_ROUTER_API_KEY`, `REQUESTY_API_KEY`, `REQUESTY_BASE_URL`, LLM 모델명(`LLM_MODEL_PROBLEM_ANALYZE`는 집단 분석 등, `LLM_MODEL_ASSIGNMENT_AUTOFILL`은 과제 생성「AI 자동 채우기」전용, `LLM_MODEL_SUBMISSION_REVIEW`는 제출 리뷰 등, OpenRouter 기준 예: `openai/gpt-4o-mini`), `AI_TOKEN_DEFAULT`, 이메일(`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
 - Docker Compose 로컬 기본 서비스: `fe`, `be`, `worker`, `supabase`, `redis`
 - API 문서: `GET /api-docs`
 - OpenAPI JSON: `GET /api-docs/json`

@@ -620,7 +620,7 @@ export class AssignmentsService {
       );
     }
 
-    const model = ENV.llmModelProblemAnalyze();
+    const model = ENV.llmModelAssignmentAutofill();
     const contexts = buildAiProblemContexts(parsedUrl.platform, problemHtml);
     if (contexts.length === 0) {
       throw new BadRequestException("문제 페이지 본문을 정제하지 못해 AI 자동 채우기를 중단했습니다.");

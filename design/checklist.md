@@ -123,7 +123,8 @@
 - LLM 공급자는 **OpenRouter 기본 유지 + Requesty 선택 지원**으로 운영합니다.
 - 환경변수는 provider 분기용 **`LLM_PROVIDER`**와 키 **`OPEN_ROUTER_API_KEY`**, **`REQUESTY_API_KEY`**, 엔드포인트 **`REQUESTY_BASE_URL`**를 사용합니다.
 - 모델은 기능별 분리합니다.
-  - `LLM_MODEL_PROBLEM_ANALYZE`.
+  - `LLM_MODEL_PROBLEM_ANALYZE`(집단 분석 등).
+  - `LLM_MODEL_ASSIGNMENT_AUTOFILL`(과제 생성「AI 자동 채우기」).
   - `LLM_MODEL_SUBMISSION_ANALYZE`.
 - 프롬프트 템플릿은 기능별 yaml 또는 ts 파일로 관리합니다(`design.md` 5.4 정책).
 - 토큰 차감은 성공한 분석에만 발생합니다.
@@ -169,6 +170,7 @@
   - `REQUESTY_API_KEY`.
   - `LLM_PROVIDER` (`openrouter|requesty`).
   - `LLM_MODEL_PROBLEM_ANALYZE`.
+  - `LLM_MODEL_ASSIGNMENT_AUTOFILL`.
   - `LLM_MODEL_SUBMISSION_REVIEW` (AI 코드 리뷰 전용).
   - 집단 코드 비교 등 추가 LLM 호출용 모델 키는 구현에 맞게 `be/.env.local`에 둡니다.
 - 이메일.

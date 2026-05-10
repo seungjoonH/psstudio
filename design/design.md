@@ -84,7 +84,7 @@ Supabase는 운영 또는 통합 개발 환경에서 Supabase Cloud나 Supabase 
 로컬에서는 워크스페이스 루트가 아니라 `be/.env.local`만 사용합니다. 값은 저장소에 넣지 않습니다.
 
 - 이메일 발송(Resend): `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`.
-- LLM 호출용 provider/키/모델명: `LLM_PROVIDER`(`openrouter|requesty`), `OPEN_ROUTER_API_KEY`, `REQUESTY_API_KEY`, `REQUESTY_BASE_URL`, `LLM_MODEL_PROBLEM_ANALYZE`(기본 예시 `openai/gpt-4o-mini`), `LLM_MODEL_SUBMISSION_REVIEW` 등 BE 부팅 시 필수로 읽는 키는 `design/api-spec.md` §1과 동일하게 유지합니다.
+- LLM 호출용 provider/키/모델명: `LLM_PROVIDER`(`openrouter|requesty`), `OPEN_ROUTER_API_KEY`, `REQUESTY_API_KEY`, `REQUESTY_BASE_URL`, `LLM_MODEL_PROBLEM_ANALYZE`(집단 분석 등), `LLM_MODEL_ASSIGNMENT_AUTOFILL`(과제 생성「AI 자동 채우기」전용), `LLM_MODEL_SUBMISSION_REVIEW` 등 BE 부팅 시 필수로 읽는 키는 `design/api-spec.md` §1과 동일하게 유지합니다.
 
 ## 4.2 전역 UI 인프라
 
@@ -215,7 +215,7 @@ Supabase는 운영 또는 통합 개발 환경에서 Supabase Cloud나 Supabase 
 19. deadline 기본값은 `23:59 KST`이고 과제별로 커스텀할 수 있습니다.
 19-1. 과제 생성 폼에서는 `마감 시간`과 `과제 수행 주기`(기간: 1/3/7/14일 또는 요일: 일~토) 중 하나를 선택해 deadline을 자동 계산해 채우되, 사용자가 `마감일`(`datetime-local`)을 직접 수정할 수 있습니다. 직접 수정 시 현재 선택된 모드(기간/요일)에 맞는 값이 있으면 자동으로 선택되고, 기간 모드에서 14일 초과 또는 preset(1/3/7/14일) 불일치인 값, 요일 모드에서 8일 이상 미래 값은 해당 선택을 해제합니다.
 19-2. 과제 생성 폼에는 `알고리즘` 입력을 둡니다. 알고리즘은 미리 정의된 키워드 셋으로 관리하며, 사용자가 `BFS, DFS`처럼 쉼표 입력하면 동의어를 정규화해 미리 정의된 키워드로 치환합니다. 생성 시 선택된 알고리즘 키워드는 과제 메타데이터 `algorithms`에 저장됩니다.
-19-3. 과제 생성 폼의 `AI 자동 채우기` 버튼은 문제 URL을 기준으로 백엔드 AI(OpenRouter 또는 Requesty) 호출 결과를 사용해 힌트·알고리즘 초안을 자동 반영하고, **제목은 `Programmers`·`BOJ`·`LeetCode`에서 문제 페이지 HTML의 공식 명칭(`data-lesson-title`, `#problem_title`, `og:title` 등)을 우선 추출**한다. 공식 제목 추출에 실패할 때만 AI가 제안한 `title`을 쓴다. 그 외 플랫폼(`Other`)은 제목도 AI가 채운다. 서버는 AI 호출 전에 문제 페이지 본문 유효성을 검사합니다. `입력`/`출력` 키워드 쌍 또는 코드 에디터 블록(`code-editor`, `codehilite`, `rouge-code`)이 확인되지 않으면 AI 호출을 생략하고 오류를 반환합니다. 난이도는 플랫폼 정책을 따릅니다. `Programmers`와 `BOJ`는 AI 추정값을 쓰지 않고 문제 페이지 메타데이터에서만 확정값을 반영하며, 메타 추출 실패 시 난이도를 비워 둡니다. `LeetCode`와 기타 플랫폼은 AI 응답을 `Easy/Medium/Hard` 등 규칙으로 정규화해 반영합니다. AI는 알고리즘을 최소 1개 이상 반환해야 하며, 서버가 제공한 허용 목록 안에서만 선택해야 합니다. 미반환 또는 허용 목록 불일치면 자동 채우기를 실패 처리합니다. 선택한 provider의 API 키(`OPEN_ROUTER_API_KEY` 또는 `REQUESTY_API_KEY`)가 없거나 호출이 실패하면 폼에서 에러 토스트를 표시하고, 사용자는 저장 전에 값을 직접 수정할 수 있습니다. 사용 모델은 `LLM_MODEL_PROBLEM_ANALYZE` 환경변수로 지정합니다.
+19-3. 과제 생성 폼의 `AI 자동 채우기` 버튼은 문제 URL을 기준으로 백엔드 AI(OpenRouter 또는 Requesty) 호출 결과를 사용해 힌트·알고리즘 초안을 자동 반영하고, **제목은 `Programmers`·`BOJ`·`LeetCode`에서 문제 페이지 HTML의 공식 명칭(`data-lesson-title`, `#problem_title`, `og:title` 등)을 우선 추출**한다. 공식 제목 추출에 실패할 때만 AI가 제안한 `title`을 쓴다. 그 외 플랫폼(`Other`)은 제목도 AI가 채운다. 서버는 AI 호출 전에 문제 페이지 본문 유효성을 검사합니다. `입력`/`출력` 키워드 쌍 또는 코드 에디터 블록(`code-editor`, `codehilite`, `rouge-code`)이 확인되지 않으면 AI 호출을 생략하고 오류를 반환합니다. 난이도는 플랫폼 정책을 따릅니다. `Programmers`와 `BOJ`는 AI 추정값을 쓰지 않고 문제 페이지 메타데이터에서만 확정값을 반영하며, 메타 추출 실패 시 난이도를 비워 둡니다. `LeetCode`와 기타 플랫폼은 AI 응답을 `Easy/Medium/Hard` 등 규칙으로 정규화해 반영합니다. AI는 알고리즘을 최소 1개 이상 반환해야 하며, 서버가 제공한 허용 목록 안에서만 선택해야 합니다. 미반환 또는 허용 목록 불일치면 자동 채우기를 실패 처리합니다. 선택한 provider의 API 키(`OPEN_ROUTER_API_KEY` 또는 `REQUESTY_API_KEY`)가 없거나 호출이 실패하면 폼에서 에러 토스트를 표시하고, 사용자는 저장 전에 값을 직접 수정할 수 있습니다. 사용 모델은 `LLM_MODEL_ASSIGNMENT_AUTOFILL` 환경변수로 지정한다(집단 분석 등 다른 용도는 `LLM_MODEL_PROBLEM_ANALYZE`).
 19-4. 과제 힌트와 알고리즘은 공개 속성(`hintHiddenUntilSubmit`, `algorithmsHiddenUntilSubmit`)을 가집니다. 기본값은 `true`이며, 이 상태에서는 과제 생성자를 포함한 모든 그룹원이 기본 화면에서 볼 수 없습니다. 사용자가 `힌트 보기`/`알고리즘 보기`를 누르면 현재 세션에서만 일시적으로 확인할 수 있고, 본인 코드 제출이 1회 이상 존재하면 해당 사용자에게는 영구 공개됩니다. 제출이 다시 0건이 되면 공개 상태도 즉시 해제됩니다.
 19-5. 그룹 캘린더 날짜 셀의 `+` 버튼으로 과제 생성 페이지에 진입하면, 선택한 날짜가 과제 생성 폼 `마감일` 기본값으로 자동 채워집니다(시간은 그룹 기본 마감 시각 사용).
 20. deadline 이후 제출 허용 여부는 그룹 기본 설정과 과제별 설정에서 정합니다.
