@@ -101,35 +101,37 @@ export function HomeClient({
               <p className={styles.cardDesc}>{t("home.kanban.todoDesc")}</p>
             </div>
           </header>
-          {todoItems.length === 0 ? (
-            <p className={styles.cardEmpty}>{t("home.kanban.todoEmpty")}</p>
-          ) : (
-            <ul className={styles.list}>
-              {todoItems.map((item) => {
-                const daysLeft = getDaysLeft(item.dueAt);
-                const isLate = new Date(item.dueAt).getTime() < Date.now();
-                return (
-                  <li key={item.id}>
-                    <Link href={item.href} className={styles.feedRow}>
-                      <span className={`${styles.feedGlyph} ${styles.todoGlyph}`} aria-hidden>
-                        <Icon name="calendar" size={18} />
-                      </span>
-                      <div className={styles.feedMain}>
-                        <span className={styles.listTitle}>{item.title}</span>
-                        <span className={styles.listMeta}>
-                          <Badge tone="neutral">{item.groupName}</Badge>
-                          <Badge tone="neutral">{item.platform}</Badge>
+          <div className={styles.columnBody}>
+            {todoItems.length === 0 ? (
+              <p className={styles.cardEmpty}>{t("home.kanban.todoEmpty")}</p>
+            ) : (
+              <ul className={styles.list}>
+                {todoItems.map((item) => {
+                  const daysLeft = getDaysLeft(item.dueAt);
+                  const isLate = new Date(item.dueAt).getTime() < Date.now();
+                  return (
+                    <li key={item.id}>
+                      <Link href={item.href} className={styles.feedRow}>
+                        <span className={`${styles.feedGlyph} ${styles.todoGlyph}`} aria-hidden>
+                          <Icon name="calendar" size={18} />
                         </span>
-                        <Badge tone={dueBadgeTone(isLate, daysLeft)} className={styles.duePill}>
-                          {formatDateTime(item.dueAt, locale)}
-                        </Badge>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                        <div className={styles.feedMain}>
+                          <span className={styles.listTitle}>{item.title}</span>
+                          <span className={styles.listMeta}>
+                            <Badge tone="neutral">{item.groupName}</Badge>
+                            <Badge tone="neutral">{item.platform}</Badge>
+                          </span>
+                          <Badge tone={dueBadgeTone(isLate, daysLeft)} className={styles.duePill}>
+                            {formatDateTime(item.dueAt, locale)}
+                          </Badge>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </article>
 
         <article className={styles.column} aria-labelledby="home-done-title">
@@ -144,25 +146,27 @@ export function HomeClient({
               <p className={styles.cardDesc}>{t("home.kanban.doneDesc")}</p>
             </div>
           </header>
-          {submissions.length === 0 ? (
-            <p className={styles.cardEmpty}>{t("home.recent.submissions.empty")}</p>
-          ) : (
-            <ul className={styles.list}>
-              {submissions.map((s) => (
-                <li key={s.id}>
-                  <Link href={s.href} className={styles.feedRow}>
-                    <div className={styles.feedMain}>
-                      <span className={styles.listTitle}>{s.title}</span>
-                      <span className={styles.listMeta}>
-                        <span className={styles.listLang}>{s.language}</span>
-                        <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className={styles.columnBody}>
+            {submissions.length === 0 ? (
+              <p className={styles.cardEmpty}>{t("home.recent.submissions.empty")}</p>
+            ) : (
+              <ul className={styles.list}>
+                {submissions.map((s) => (
+                  <li key={s.id}>
+                    <Link href={s.href} className={styles.feedRow}>
+                      <div className={styles.feedMain}>
+                        <span className={styles.listTitle}>{s.title}</span>
+                        <span className={styles.listMeta}>
+                          <span className={styles.listLang}>{s.language}</span>
+                          <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </article>
 
         <article className={styles.column} aria-labelledby="home-notif-title">
@@ -182,43 +186,45 @@ export function HomeClient({
               <p className={styles.cardDesc}>{t("home.kanban.noticeDesc")}</p>
             </div>
           </header>
-          {notifications.length === 0 ? (
-            <p className={styles.cardEmpty}>{t("home.recent.notifications.empty")}</p>
-          ) : (
-            <ul className={styles.list}>
-              {notifications.map((n) => {
-                const face = (
-                  <UserAvatar
-                    nickname={notificationActorDisplayName(n)}
-                    imageUrl={n.actorProfileImageUrl ?? ""}
-                    size={40}
-                    className={styles.feedAvatar}
-                  />
-                );
-                const main = (
-                  <div className={styles.feedMain}>
-                    <span className={styles.notifTitle}>{n.title}</span>
-                    <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
-                  </div>
-                );
-                return (
-                  <li key={n.id}>
-                    {n.href !== null ? (
-                      <Link href={n.href} className={styles.feedRow}>
-                        {face}
-                        {main}
-                      </Link>
-                    ) : (
-                      <div className={styles.feedRowStatic}>
-                        {face}
-                        {main}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <div className={styles.columnBody}>
+            {notifications.length === 0 ? (
+              <p className={styles.cardEmpty}>{t("home.recent.notifications.empty")}</p>
+            ) : (
+              <ul className={styles.list}>
+                {notifications.map((n) => {
+                  const face = (
+                    <UserAvatar
+                      nickname={notificationActorDisplayName(n)}
+                      imageUrl={n.actorProfileImageUrl ?? ""}
+                      size={40}
+                      className={styles.feedAvatar}
+                    />
+                  );
+                  const main = (
+                    <div className={styles.feedMain}>
+                      <span className={styles.notifTitle}>{n.title}</span>
+                      <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
+                    </div>
+                  );
+                  return (
+                    <li key={n.id}>
+                      {n.href !== null ? (
+                        <Link href={n.href} className={styles.feedRow}>
+                          {face}
+                          {main}
+                        </Link>
+                      ) : (
+                        <div className={styles.feedRowStatic}>
+                          {face}
+                          {main}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </article>
       </section>
     </div>

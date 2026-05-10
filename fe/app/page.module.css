@@ -1,5 +1,6 @@
 /* 홈 화면 레이아웃 스타일입니다. */
 .dashboard {
+  --home-list-item-height: 96px;
   display: grid;
   gap: var(--space-5);
 }
@@ -75,17 +76,27 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
-  align-items: start;
+  align-items: stretch;
 }
 
 .column {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 16px 18px;
   border: 1px solid var(--color-border);
   border-radius: 18px;
   background: var(--color-surface);
   min-height: 280px;
+  min-width: 0;
+}
+
+.columnBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .columnHead {
@@ -166,13 +177,18 @@
 
 .cardEmpty {
   margin: 0;
-  padding: 24px 12px;
+  box-sizing: border-box;
+  min-height: var(--home-list-item-height);
+  padding: 12px 14px;
   border: 1px dashed color-mix(in oklab, var(--color-border) 65%, transparent);
   border-radius: 12px;
   font-size: 13px;
   color: var(--color-muted);
   text-align: center;
   background: color-mix(in oklab, var(--color-surface-muted) 40%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .list {
@@ -185,9 +201,11 @@
 
 .feedRow,
 .feedRowStatic {
+  box-sizing: border-box;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+  min-height: var(--home-list-item-height);
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
