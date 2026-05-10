@@ -113,9 +113,6 @@ export function HomeClient({
                   return (
                     <li key={item.id}>
                       <Link href={item.href} className={styles.feedRow}>
-                        <span className={`${styles.feedGlyph} ${styles.todoGlyph}`} aria-hidden>
-                          <Icon name="calendar" size={18} />
-                        </span>
                         <div className={styles.feedMain}>
                           <span className={styles.listTitle}>{item.title}</span>
                           <span className={styles.listMeta}>
