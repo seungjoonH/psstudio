@@ -51,6 +51,16 @@ export const messages = {
         noticeDesc: "내 활동과 관련된 최신 소식입니다.",
       },
     },
+    notifications: {
+      pageTitle: "알림",
+      subtitle: "내 활동과 관련된 알림을 확인하고 삭제할 수 있습니다.",
+      empty: "알림이 없습니다.",
+      deleteOne: "삭제",
+      deleteOneAria: "이 알림 삭제",
+      deleteAll: "전체 삭제",
+      deleteAllConfirm: "모든 알림을 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+      deleteFailed: "삭제에 실패했습니다.",
+    },
     me: {
       title: "설정",
       signedOut: "로그인된 사용자가 없습니다. OAuth 콜백을 먼저 호출하세요.",
@@ -681,6 +691,16 @@ export const messages = {
         doneDesc: "Your most recent submissions.",
         noticeDesc: "Latest updates related to your activity.",
       },
+    },
+    notifications: {
+      pageTitle: "Notifications",
+      subtitle: "View and remove alerts about your activity.",
+      empty: "No notifications yet.",
+      deleteOne: "Remove",
+      deleteOneAria: "Remove this notification",
+      deleteAll: "Clear all",
+      deleteAllConfirm: "Delete all notifications? This cannot be undone.",
+      deleteFailed: "Could not delete.",
     },
     me: {
       title: "Settings",

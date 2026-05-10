@@ -65,6 +65,30 @@ export async function fetchRecentNotificationsServer(limit = 5): Promise<HomeRec
   }));
 }
 
+export async function deleteNotificationServer(notificationId: string): Promise<void> {
+  const res = await fetch(
+    `${apiBase()}/api/v1/users/me/notifications/${encodeURIComponent(notificationId)}`,
+    {
+      method: "DELETE",
+      cache: "no-store",
+      headers: { cookie: await buildCookieHeader() },
+    },
+  );
+  if (res.status === 401) throw new Error("로그인이 필요합니다.");
+  if (res.status === 404) throw new Error("알림을 찾을 수 없습니다.");
+  if (!res.ok) throw new Error("알림 삭제에 실패했습니다.");
+}
+
+export async function deleteAllNotificationsServer(): Promise<void> {
+  const res = await fetch(`${apiBase()}/api/v1/users/me/notifications`, {
+    method: "DELETE",
+    cache: "no-store",
+    headers: { cookie: await buildCookieHeader() },
+  });
+  if (res.status === 401) throw new Error("로그인이 필요합니다.");
+  if (!res.ok) throw new Error("알림 삭제에 실패했습니다.");
+}
+
 export async function fetchRecentSubmissionsServer(limit = 5): Promise<HomeRecentSubmission[]> {
   const res = await fetch(
     `${apiBase()}/api/v1/users/me/submissions?limit=${limit}&sort=createdAtDesc`,

@@ -7,6 +7,7 @@ import type { HomeRecentNotification } from "../src/auth/api.server";
 import { LoginClient } from "./login/LoginClient";
 import { useI18n } from "../src/i18n/I18nProvider";
 import { dueBadgeTone } from "../src/lib/dueBadgeTone";
+import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
 import { Badge } from "../src/ui/Badge";
 import { Icon } from "../src/ui/Icon";
 import { UserAvatar } from "../src/ui/UserAvatar";
@@ -50,16 +51,6 @@ function getDaysLeft(dueAt: string): number {
   const now = Date.now();
   const due = new Date(dueAt).getTime();
   return Math.max(0, Math.ceil((due - now) / (24 * 60 * 60 * 1000)));
-}
-
-/** 알림 행은 항상 사람 아바타를 쓴다(payload·제목에서 이름을 추출). */
-function notificationActorDisplayName(n: HomeRecentNotification): string {
-  const fromApi = n.actorNickname?.trim();
-  if (fromApi !== undefined && fromApi.length > 0) return fromApi;
-  const m = /^(.+?)님이/.exec(n.title.trim());
-  const fromTitle = m?.[1]?.trim();
-  if (fromTitle !== undefined && fromTitle.length > 0) return fromTitle;
-  return "?";
 }
 
 export function HomeClient({
@@ -179,10 +170,15 @@ export function HomeClient({
             <span className={`${styles.cardIcon} ${styles.noticeIcon}`} aria-hidden>
               <Icon name="mail" size={16} />
             </span>
-            <div>
-              <h2 id="home-notif-title" className={styles.cardTitle}>
-                {t("home.recent.notifications.title")}
-              </h2>
+            <div className={styles.columnHeadBody}>
+              <div className={styles.columnHeadTop}>
+                <h2 id="home-notif-title" className={styles.cardTitle}>
+                  {t("home.recent.notifications.title")}
+                </h2>
+                <Link href="/notifications" className={styles.viewAllLink}>
+                  {t("home.recent.notifications.viewAll")}
+                </Link>
+              </div>
               <p className={styles.cardDesc}>{t("home.kanban.noticeDesc")}</p>
             </div>
           </header>

@@ -1,0 +1,81 @@
+/* 알림 목록 페이지 레이아웃입니다. */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+  background: var(--color-surface-paper);
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+a.rowMain:hover {
+  color: inherit;
+}
+
+.rowBody {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.avatar {
+  flex-shrink: 0;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 12px;
+  border: 1px dashed color-mix(in oklab, var(--color-border) 65%, transparent);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+  background: color-mix(in oklab, var(--color-surface-muted) 40%, transparent);
+}

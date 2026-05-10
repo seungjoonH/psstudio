@@ -94,6 +94,31 @@
   gap: 10px;
 }
 
+.columnHeadBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.columnHeadTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewAllLink {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewAllLink:hover {
+  text-decoration: underline;
+}
+
 .cardIcon {
   display: inline-flex;
   align-items: center;

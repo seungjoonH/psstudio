@@ -1,5 +1,17 @@
 // 내 사용자 정보 조회/수정/탈퇴 컨트롤러입니다.
-import { Body, Controller, Delete, Dependencies, Get, Patch, Query, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Dependencies,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Query,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 import type { Response } from "express";
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { Transform, Type } from "class-transformer";
@@ -26,15 +38,20 @@ class UpdateNicknameRequest {
   nickname!: string;
 }
 
-class ListMeRecentQuery {
+class ListMeNotificationsQuery {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 5;
+}
+
+class ListMeSubmissionQuery {
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(20)
   limit: number = 5;
-}
-
-class ListMeSubmissionQuery extends ListMeRecentQuery {
   @IsOptional()
   @IsIn(["createdAtAsc", "createdAtDesc"])
   sort?: "createdAtAsc" | "createdAtDesc";
@@ -129,6 +146,113 @@ function parseActorNameFromNotificationTitle(title: string): string | null {
   return name.length > 0 ? name : null;
 }
 
+async function buildMeNotificationListItems(rows: Notification[]): Promise<
+  {
+    id: string;
+    title: string;
+    createdAt: string;
+    href: string | null;
+    actorNickname: string | null;
+    actorProfileImageUrl: string | null;
+  }[]
+> {
+  const actorIds = new Set<string>();
+  const reviewIdsForAuthor = new Set<string>();
+  const replyIdsForAuthor = new Set<string>();
+  for (const row of rows) {
+    const payload = row.payload as Record<string, unknown>;
+    const fromPayload = pickStr(payload, "actorUserId");
+    if (fromPayload !== undefined) {
+      actorIds.add(fromPayload);
+    } else if (row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
+      const rid = pickStr(payload, "reviewId");
+      if (rid !== undefined) reviewIdsForAuthor.add(rid);
+    } else if (
+      row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
+      row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE
+    ) {
+      const replyId = pickStr(payload, "replyId");
+      if (replyId !== undefined) replyIdsForAuthor.add(replyId);
+    }
+  }
+  const reviewAuthorByReviewId = new Map<string, string>();
+  if (reviewIdsForAuthor.size > 0) {
+    const revs = await dataSource.getRepository(Review).find({
+      where: { id: In([...reviewIdsForAuthor]) },
+    });
+    for (const r of revs) {
+      reviewAuthorByReviewId.set(r.id, r.authorUserId);
+      actorIds.add(r.authorUserId);
+    }
+  }
+  const replyAuthorByReplyId = new Map<string, string>();
+  if (replyIdsForAuthor.size > 0) {
+    const reps = await dataSource.getRepository(ReviewReply).find({
+      where: { id: In([...replyIdsForAuthor]) },
+    });
+    for (const rep of reps) {
+      replyAuthorByReplyId.set(rep.id, rep.authorUserId);
+      actorIds.add(rep.authorUserId);
+    }
+  }
+  const actorUsers =
+    actorIds.size === 0
+      ? []
+      : await dataSource.getRepository(User).find({
+          where: { id: In([...actorIds]) },
+          withDeleted: true,
+        });
+  const actorUserMap = new Map(actorUsers.map((u) => [u.id, u]));
+  return rows.map((row) => {
+    const payload = row.payload as Record<string, unknown>;
+    const resolvedActor = resolveNotificationActor(payload);
+    let actorNickname = resolvedActor.actorNickname;
+    let actorProfileImageUrl = resolvedActor.actorProfileImageUrl;
+    let actorUserId = pickStr(payload, "actorUserId");
+    if (actorUserId === undefined && row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
+      const rid = pickStr(payload, "reviewId");
+      if (rid !== undefined) {
+        const uid = reviewAuthorByReviewId.get(rid);
+        if (uid !== undefined) actorUserId = uid;
+      }
+    }
+    if (
+      actorUserId === undefined &&
+      (row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
+        row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE)
+    ) {
+      const replyId = pickStr(payload, "replyId");
+      if (replyId !== undefined) {
+        const uid = replyAuthorByReplyId.get(replyId);
+        if (uid !== undefined) actorUserId = uid;
+      }
+    }
+    if (actorUserId !== undefined) {
+      const u = actorUserMap.get(actorUserId);
+      if (u !== undefined) {
+        if (actorNickname === null && u.nickname.trim().length > 0) {
+          actorNickname = u.nickname.trim();
+        }
+        actorProfileImageUrl =
+          u.profileImageUrl.trim().length > 0 ? u.profileImageUrl.trim() : null;
+      }
+    }
+    const title = resolveNotificationTitle(row.type, payload);
+    if (actorNickname === null) {
+      const parsed = parseActorNameFromNotificationTitle(title);
+      if (parsed !== null) actorNickname = parsed;
+    }
+    return {
+      id: row.id,
+      title,
+      createdAt: row.createdAt.toISOString(),
+      href: resolveNotificationHref(row.type, payload),
+      actorNickname,
+      actorProfileImageUrl,
+    };
+  });
+}
+
 @Controller("api/v1/users")
 @Dependencies(UsersService, SessionService)
 @UseGuards(AuthGuard)
@@ -154,112 +278,39 @@ export class UsersController {
   }
 
   @Get("me/notifications")
-  async getRecentNotifications(@CurrentUser() me: { id: string }, @Query() query: ListMeRecentQuery) {
+  async getRecentNotifications(@CurrentUser() me: { id: string }, @Query() query: ListMeNotificationsQuery) {
     await this.usersService.ensureInitialized();
     const rows = await dataSource.getRepository(Notification).find({
       where: { recipientUserId: me.id, deletedAt: IsNull() },
       order: { createdAt: "DESC" },
       take: query.limit,
     });
-    const actorIds = new Set<string>();
-    const reviewIdsForAuthor = new Set<string>();
-    const replyIdsForAuthor = new Set<string>();
-    for (const row of rows) {
-      const payload = row.payload as Record<string, unknown>;
-      const fromPayload = pickStr(payload, "actorUserId");
-      if (fromPayload !== undefined) {
-        actorIds.add(fromPayload);
-      } else if (row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
-        const rid = pickStr(payload, "reviewId");
-        if (rid !== undefined) reviewIdsForAuthor.add(rid);
-      } else if (
-        row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
-        row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE
-      ) {
-        const replyId = pickStr(payload, "replyId");
-        if (replyId !== undefined) replyIdsForAuthor.add(replyId);
-      }
-    }
-    const reviewAuthorByReviewId = new Map<string, string>();
-    if (reviewIdsForAuthor.size > 0) {
-      const revs = await dataSource.getRepository(Review).find({
-        where: { id: In([...reviewIdsForAuthor]) },
-      });
-      for (const r of revs) {
-        reviewAuthorByReviewId.set(r.id, r.authorUserId);
-        actorIds.add(r.authorUserId);
-      }
-    }
-    const replyAuthorByReplyId = new Map<string, string>();
-    if (replyIdsForAuthor.size > 0) {
-      const reps = await dataSource.getRepository(ReviewReply).find({
-        where: { id: In([...replyIdsForAuthor]) },
-      });
-      for (const rep of reps) {
-        replyAuthorByReplyId.set(rep.id, rep.authorUserId);
-        actorIds.add(rep.authorUserId);
-      }
-    }
-    const actorUsers =
-      actorIds.size === 0
-        ? []
-        : await dataSource.getRepository(User).find({
-            where: { id: In([...actorIds]) },
-            withDeleted: true,
-          });
-    const actorUserMap = new Map(actorUsers.map((u) => [u.id, u]));
     return {
       success: true,
-      data: rows.map((row) => {
-        const payload = row.payload as Record<string, unknown>;
-        const fromPayload = resolveNotificationActor(payload);
-        let actorNickname = fromPayload.actorNickname;
-        let actorProfileImageUrl = fromPayload.actorProfileImageUrl;
-        let actorUserId = pickStr(payload, "actorUserId");
-        if (actorUserId === undefined && row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
-          const rid = pickStr(payload, "reviewId");
-          if (rid !== undefined) {
-            const uid = reviewAuthorByReviewId.get(rid);
-            if (uid !== undefined) actorUserId = uid;
-          }
-        }
-        if (
-          actorUserId === undefined &&
-          (row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
-            row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE)
-        ) {
-          const replyId = pickStr(payload, "replyId");
-          if (replyId !== undefined) {
-            const uid = replyAuthorByReplyId.get(replyId);
-            if (uid !== undefined) actorUserId = uid;
-          }
-        }
-        if (actorUserId !== undefined) {
-          const u = actorUserMap.get(actorUserId);
-          if (u !== undefined) {
-            if (actorNickname === null && u.nickname.trim().length > 0) {
-              actorNickname = u.nickname.trim();
-            }
-            // 행위자를 User로 식별할 수 있으면 프로필 URL은 항상 DB 최신값을 쓴다(스냅샷 payload보다 신뢰).
-            actorProfileImageUrl =
-              u.profileImageUrl.trim().length > 0 ? u.profileImageUrl.trim() : null;
-          }
-        }
-        const title = resolveNotificationTitle(row.type, payload);
-        if (actorNickname === null) {
-          const parsed = parseActorNameFromNotificationTitle(title);
-          if (parsed !== null) actorNickname = parsed;
-        }
-        return {
-          id: row.id,
-          title,
-          createdAt: row.createdAt.toISOString(),
-          href: resolveNotificationHref(row.type, payload),
-          actorNickname,
-          actorProfileImageUrl,
-        };
-      }),
+      data: await buildMeNotificationListItems(rows),
     };
+  }
+
+  @Delete("me/notifications")
+  async deleteAllNotifications(@CurrentUser() me: { id: string }) {
+    await this.usersService.ensureInitialized();
+    await dataSource.getRepository(Notification).softDelete({ recipientUserId: me.id });
+    return { success: true, data: { ok: true } };
+  }
+
+  @Delete("me/notifications/:notificationId")
+  async deleteNotification(
+    @CurrentUser() me: { id: string },
+    @Param("notificationId") notificationId: string,
+  ) {
+    await this.usersService.ensureInitialized();
+    const repo = dataSource.getRepository(Notification);
+    const res = await repo.softDelete({ id: notificationId, recipientUserId: me.id });
+    const affected = res.affected ?? 0;
+    if (affected === 0) {
+      throw new NotFoundException("알림을 찾을 수 없습니다.");
+    }
+    return { success: true, data: { ok: true } };
   }
 
   @Get("me/submissions")
