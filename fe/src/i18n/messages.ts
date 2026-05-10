@@ -602,6 +602,8 @@ export const messages = {
         title: "새 제출",
         subtitle: "200KB 이내의 단일 파일 코드를 등록합니다.",
         fieldTitle: "제목 (선택)",
+        /** 제출 순번 기본 제목. vars: nickname, n */
+        defaultTitle: "{nickname}의 풀이 #{n}",
         fieldTitlePlaceholder: "예: 홍길동의 풀이 #1",
         fieldLang: "언어",
         fieldCode: "코드 (현재 {cur} / {max} 바이트)",
@@ -1243,6 +1245,7 @@ export const messages = {
         title: "New submission",
         subtitle: "Register a single-file submission up to 200KB.",
         fieldTitle: "Title (optional)",
+        defaultTitle: "{nickname}'s Solution #{n}",
         fieldTitlePlaceholder: "Someone's Solution #1",
         fieldLang: "Language",
         fieldCode: "Code (currently {cur} / {max} bytes)",
