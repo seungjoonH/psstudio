@@ -26,6 +26,36 @@
   margin-bottom: 10px;
 }
 
+/* 집단 리포트 본문(설명)·표·코드 블록 폰트 ~80% (MarkdownPreview 기본 15px·코드 13px 대비) */
+.mdBlock :global(.markdown) {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.mdBlock :global(.markdown table) {
+  font-size: 11px;
+}
+
+.mdBlock :global(.markdown-code-block) {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.mdBlock :global(.markdown pre:not(.markdown-code-block pre)) {
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.mdBlock :global(.markdown pre:not(.markdown-code-block pre) code) {
+  font-size: inherit;
+}
+
+/* 칩과 같은 줄에 붙는 짧은 설명도 본문과 동일 비율 */
+.chipInlineParagraph :global(.markdownInlineRoot) {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -75,4 +105,29 @@
 
 .chipAvatar {
   flex-shrink: 0;
+}
+
+/* 제출 칩만 들어가는 list-item: 불릿(•)과 칩이 같은 줄에서 줄바꿈 없이 붙도록 둔다. */
+.chipList {
+  list-style: disc outside;
+  margin: 0 0 0.65em;
+  padding-left: 1.4em;
+}
+
+.chipListItem {
+  margin: 0.18em 0;
+  display: list-item;
+  white-space: nowrap;
+  line-height: 1.45;
+}
+
+.chipListItem .chip {
+  vertical-align: middle;
+}
+
+.chipListTrailing {
+  display: inline;
+  margin-left: 0.4em;
+  white-space: normal;
+  vertical-align: middle;
 }
