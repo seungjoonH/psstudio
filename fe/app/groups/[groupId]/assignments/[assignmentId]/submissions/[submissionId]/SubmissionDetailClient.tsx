@@ -221,8 +221,10 @@ export function SubmissionDetailClient({
         <form
           action={async (formData) => {
             if (!hasCodeChanges) return;
-            setLastSavedDraft(draft);
             await actions.updateCode(formData);
+            setLastSavedDraft(draft);
+            setEditing(false);
+            refresh();
           }}
           className={styles.editForm}
         >
