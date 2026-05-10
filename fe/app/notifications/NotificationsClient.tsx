@@ -2,6 +2,7 @@
 "use client";
 
 import type { HomeRecentNotification } from "../../src/auth/api.server";
+import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "../../src/i18n/I18nProvider";
@@ -61,14 +62,15 @@ export function NotificationsClient({ items }: Props) {
       ) : (
         <ul className={styles.list}>
           {items.map((n) => {
-            const face = (
+            const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+            const face = showActorFace ? (
               <UserAvatar
                 nickname={notificationActorDisplayName(n)}
                 imageUrl={n.actorProfileImageUrl ?? ""}
                 size={40}
                 className={styles.avatar}
               />
-            );
+            ) : null;
             const body = (
               <div className={styles.rowBody}>
                 <span className={styles.title}>{n.title}</span>

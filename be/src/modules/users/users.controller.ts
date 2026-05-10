@@ -149,6 +149,7 @@ function parseActorNameFromNotificationTitle(title: string): string | null {
 async function buildMeNotificationListItems(rows: Notification[]): Promise<
   {
     id: string;
+    type: string;
     title: string;
     createdAt: string;
     href: string | null;
@@ -162,7 +163,7 @@ async function buildMeNotificationListItems(rows: Notification[]): Promise<
   for (const row of rows) {
     const payload = row.payload as Record<string, unknown>;
     const fromPayload = pickStr(payload, "actorUserId");
-    if (fromPayload !== undefined) {
+    if (fromPayload !== undefined && row.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED) {
       actorIds.add(fromPayload);
     } else if (row.type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION) {
       const rid = pickStr(payload, "reviewId");
@@ -238,12 +239,17 @@ async function buildMeNotificationListItems(rows: Notification[]): Promise<
       }
     }
     const title = resolveNotificationTitle(row.type, payload);
-    if (actorNickname === null) {
+    if (actorNickname === null && row.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED) {
       const parsed = parseActorNameFromNotificationTitle(title);
       if (parsed !== null) actorNickname = parsed;
     }
+    if (row.type === NOTIFICATION_TYPES.ASSIGNMENT_CREATED) {
+      actorNickname = null;
+      actorProfileImageUrl = null;
+    }
     return {
       id: row.id,
+      type: row.type,
       title,
       createdAt: row.createdAt.toISOString(),
       href: resolveNotificationHref(row.type, payload),

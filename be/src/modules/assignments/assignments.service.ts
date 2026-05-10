@@ -6,6 +6,7 @@ import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { requestLlmChat } from "../ai/llm-chat-client.js";
 import { CalendarEvent } from "../calendar/calendar-event.entity.js";
+import { Group } from "../groups/group.entity.js";
 import { GroupMember } from "../groups/group-member.entity.js";
 import { Comment } from "../comments/comment.entity.js";
 import { Review } from "../reviews/review.entity.js";
@@ -15,7 +16,6 @@ import { AiAnalysis } from "../submissions/ai-analysis.entity.js";
 import { Submission } from "../submissions/submission.entity.js";
 import { SubmissionDiff } from "../submissions/submission-diff.entity.js";
 import { SubmissionVersion } from "../submissions/submission-version.entity.js";
-import { User } from "../users/user.entity.js";
 import { Assignment } from "./assignment.entity.js";
 import { AssignmentPolicyOverride } from "./assignment-policy-override.entity.js";
 import { ProblemAnalysis, type ProblemMetadata } from "./problem-analysis.entity.js";
@@ -428,11 +428,10 @@ export class AssignmentsService {
     const members = await this.ds.getRepository(GroupMember).find({
       where: { groupId: assignment.groupId, leftAt: IsNull() },
     });
-    const creator = await this.ds
-      .getRepository(User)
-      .findOne({ where: { id: creatorId }, withDeleted: true });
-    const creatorNickname = creator?.nickname ?? "멤버";
+    const group = await this.ds.getRepository(Group).findOne({ where: { id: assignment.groupId } });
+    const groupName = (group?.name ?? "그룹").trim() || "그룹";
     const notifRepo = this.ds.getRepository(Notification);
+    const title = `${groupName} 그룹에서 "${assignment.title}" 과제가 등록되었습니다.`;
     for (const m of members) {
       if (m.userId === creatorId) continue;
       await notifRepo.save(
@@ -440,12 +439,9 @@ export class AssignmentsService {
           recipientUserId: m.userId,
           type: NOTIFICATION_TYPES.ASSIGNMENT_CREATED,
           payload: {
-            title: `${creatorNickname}님이 새 과제「${assignment.title}」를 등록했습니다.`,
+            title,
             groupId: assignment.groupId,
             assignmentId: assignment.id,
-            actorUserId: creatorId,
-            actorNickname: creatorNickname,
-            actorProfileImageUrl: creator?.profileImageUrl ?? "",
           },
         }),
       );

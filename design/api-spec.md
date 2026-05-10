@@ -523,7 +523,7 @@
 
 - `GET /api/v1/users/me/notifications?limit=5`
   - query `limit`: 1~100, 기본 5. 홈은 소량, 알림 목록 페이지는 더 큰 `limit` 사용.
-  - 응답: `[{ id, title, createdAt, href, actorNickname, actorProfileImageUrl }]` 최신순. `href`는 알림 종류·payload에 따라 과제·제출·diff 등으로의 경로 또는 `null`. `actor*`는 행위자 표시용(구 알림은 `null`일 수 있음). payload의 `actorUserId`(또는 `reviewId`/`replyId`로 보강된 작성자 id)로 `users` 행을 찾을 수 있으면 `actorProfileImageUrl`은 **저장 시점 payload가 아니라 조회 시점 DB의 `profile_image_url`**을 사용한다(빈 문자열이면 `null`). `REVIEW_ON_MY_SUBMISSION` 구 저장본의 제목에 `코드 리뷰를 남겼습니다`가 있으면 응답 시 `댓글을 남겼습니다`로 치환한다.
+  - 응답: `[{ id, type, title, createdAt, href, actorNickname, actorProfileImageUrl }]` 최신순. `type`은 `NOTIFICATION_TYPES` 문자열(예: `ASSIGNMENT_CREATED`). `href`는 알림 종류·payload에 따라 과제·제출·diff 등으로의 경로 또는 `null`. `actor*`는 행위자 표시용(구 알림은 `null`일 수 있음). `ASSIGNMENT_CREATED`는 제목이 그룹 기준이며 응답에서 `actor*`는 항상 `null`로 내려간다. 그 외는 payload의 `actorUserId`(또는 `reviewId`/`replyId`로 보강된 작성자 id)로 `users` 행을 찾을 수 있으면 `actorProfileImageUrl`은 **저장 시점 payload가 아니라 조회 시점 DB의 `profile_image_url`**을 사용한다(빈 문자열이면 `null`). `REVIEW_ON_MY_SUBMISSION` 구 저장본의 제목에 `코드 리뷰를 남겼습니다`가 있으면 응답 시 `댓글을 남겼습니다`로 치환한다.
   - 권한: 본인.
 - `DELETE /api/v1/users/me/notifications/:notificationId`
   - 본인 수신 알림 한 건 소프트 삭제. 없거나 권한 없으면 404.

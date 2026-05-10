@@ -28,6 +28,7 @@ export async function fetchMeServer(): Promise<MeResponse | null> {
 
 export type HomeRecentNotification = {
   id: string;
+  type: string;
   title: string;
   createdAt: string;
   href: string | null;
@@ -54,6 +55,7 @@ export async function fetchRecentNotificationsServer(limit = 5): Promise<HomeRec
   const rows = Array.isArray(body.data) ? body.data : [];
   return rows.map((raw: Record<string, unknown>) => ({
     id: String(raw.id ?? ""),
+    type: typeof raw.type === "string" ? raw.type : "",
     title: String(raw.title ?? ""),
     createdAt: String(raw.createdAt ?? ""),
     href: typeof raw.href === "string" && raw.href.length > 0 ? raw.href : null,

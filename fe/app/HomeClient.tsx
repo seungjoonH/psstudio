@@ -2,6 +2,7 @@
 
 // 홈 화면 대시보드. 로그인 상태에 따라 환영 화면 또는 최근 활동 카드를 표시합니다.
 import type { MeResponse } from "@psstudio/shared";
+import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
 import type { HomeRecentNotification } from "../src/auth/api.server";
 import { LoginClient } from "./login/LoginClient";
@@ -191,37 +192,38 @@ export function HomeClient({
               <p className={styles.cardEmpty}>{t("home.recent.notifications.empty")}</p>
             ) : (
               <ul className={styles.list}>
-                {notifications.map((n) => {
-                  const face = (
-                    <UserAvatar
-                      nickname={notificationActorDisplayName(n)}
-                      imageUrl={n.actorProfileImageUrl ?? ""}
-                      size={40}
-                      className={styles.feedAvatar}
-                    />
-                  );
-                  const main = (
-                    <div className={styles.feedMain}>
-                      <span className={styles.notifTitle}>{n.title}</span>
-                      <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
-                    </div>
-                  );
-                  return (
-                    <li key={n.id}>
-                      {n.href !== null ? (
-                        <Link href={n.href} className={styles.feedRow}>
-                          {face}
-                          {main}
-                        </Link>
-                      ) : (
-                        <div className={styles.feedRowStatic}>
-                          {face}
-                          {main}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
+              {notifications.map((n) => {
+                const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+                const face = showActorFace ? (
+                  <UserAvatar
+                    nickname={notificationActorDisplayName(n)}
+                    imageUrl={n.actorProfileImageUrl ?? ""}
+                    size={40}
+                    className={styles.feedAvatar}
+                  />
+                ) : null;
+                const main = (
+                  <div className={styles.feedMain}>
+                    <span className={styles.notifTitle}>{n.title}</span>
+                    <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
+                  </div>
+                );
+                return (
+                  <li key={n.id}>
+                    {n.href !== null ? (
+                      <Link href={n.href} className={styles.feedRow}>
+                        {face}
+                        {main}
+                      </Link>
+                    ) : (
+                      <div className={styles.feedRowStatic}>
+                        {face}
+                        {main}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
               </ul>
             )}
           </div>
