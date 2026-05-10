@@ -2,7 +2,7 @@
 
 // 제출 상세에서 제목 변경/코드 수정/삭제를 다루는 컴포넌트입니다.
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { type FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
   ReactionTargetType,
@@ -106,6 +106,20 @@ export function SubmissionDetailClient({
   };
   const byteLen = new Blob([draft]).size;
   const hasCodeChanges = draft !== lastSavedDraft;
+
+  async function handleSaveNewVersion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!hasCodeChanges || byteLen > MAX_SUBMISSION_CODE_BYTES) return;
+    const formData = new FormData(event.currentTarget);
+    try {
+      await actions.updateCode(formData);
+    } catch {
+      return;
+    }
+    setLastSavedDraft(draft);
+    setEditing(false);
+    refresh();
+  }
   const sortedVersions = [...submission.versions].sort((a, b) => b.versionNo - a.versionNo);
   const latestVersion = sortedVersions[0];
   const pastVersions = sortedVersions.slice(1);
@@ -218,16 +232,7 @@ export function SubmissionDetailClient({
       </section>
 
       {editing ? (
-        <form
-          action={async (formData) => {
-            if (!hasCodeChanges) return;
-            await actions.updateCode(formData);
-            setLastSavedDraft(draft);
-            setEditing(false);
-            refresh();
-          }}
-          className={styles.editForm}
-        >
+        <form onSubmit={handleSaveNewVersion} className={styles.editForm}>
           <input type="hidden" name="language" value={submission.language} />
           <p className={styles.note}>
             {t("submission.detail.langNote", { lang: submission.language })}
