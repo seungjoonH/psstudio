@@ -4,26 +4,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { codeToHtml } from "shiki";
 import type { CohortSubmissionArtifact } from "../../assignments/server";
+import { buildCls } from "../../lib/buildCls";
 import { resolveShikiLanguage } from "../../lib/shikiLanguage";
 import styles from "./CohortCodeColumns.module.css";
 
-/** 줄이 여러 region에 걸치면(모델이 구간을 겹쳐 준 경우) 가장 좁은(구체적인) 구역을 채택합니다. 넓은 구역만 고르면 안쪽 축 색이 바깥으로 덮입니다. */
-function regionAtLinePreferNarrowest(
+/** 줄에 걸친 모든 region을 반환합니다. */
+function regionsAtLine(
   regions: CohortSubmissionArtifact["regions"],
   lineNo: number,
-): CohortSubmissionArtifact["regions"][0] | null {
-  let best: CohortSubmissionArtifact["regions"][0] | null = null;
-  let bestSpan = Infinity;
-  for (const r of regions) {
-    if (lineNo >= r.startLine && lineNo <= r.endLine) {
-      const span = r.endLine - r.startLine + 1;
-      if (span < bestSpan || (span === bestSpan && best !== null && r.startLine > best.startLine)) {
-        bestSpan = span;
-        best = r;
-      }
-    }
+): CohortSubmissionArtifact["regions"] {
+  return regions.filter((r) => lineNo >= r.startLine && lineNo <= r.endLine);
+}
+
+function selectDisplayRegion(
+  overlaps: CohortSubmissionArtifact["regions"],
+  hoveredRoleId: string | null,
+): CohortSubmissionArtifact["regions"][number] | null {
+  if (overlaps.length === 0) return null;
+  if (hoveredRoleId !== null) {
+    const hovered = overlaps.find((r) => r.roleId === hoveredRoleId);
+    if (hovered !== undefined) return hovered;
   }
-  return best;
+  return [...overlaps].sort((a, b) => {
+    const spanA = a.endLine - a.startLine + 1;
+    const spanB = b.endLine - b.startLine + 1;
+    if (spanA !== spanB) return spanA - spanB;
+    return a.startLine - b.startLine;
+  })[0]!;
 }
 
 /** 제출마다 구역의 위·아래 순서가 달라도 같은 roleId는 항상 같은 색(패널 간 정렬). 해시 충돌도 없음. */
@@ -82,6 +89,7 @@ function CodeColumn({ artifact, title, versionNo }: ColumnProps) {
   );
   const [theme, setTheme] = useState<"github-light" | "github-dark">("github-light");
   const [highlightMap, setHighlightMap] = useState<Record<string, string>>({});
+  const [hoveredRoleId, setHoveredRoleId] = useState<string | null>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -136,24 +144,58 @@ function CodeColumn({ artifact, title, versionNo }: ColumnProps) {
         <span className={styles.columnTitle}>{title}</span>
         <span className={styles.columnVer}>v{versionNo}</span>
       </div>
-      <pre className={styles.pre}>
+      <pre className={styles.pre} onMouseLeave={() => setHoveredRoleId(null)}>
         {lines.map((line, idx) => {
           const lineNo = idx + 1;
-          const reg = regionAtLinePreferNarrowest(artifact.regions, lineNo);
+          const overlaps = regionsAtLine(artifact.regions, lineNo);
+          const reg = selectDisplayRegion(overlaps, hoveredRoleId);
+          const displayOverlaps = [...overlaps].sort((a, b) => {
+            const spanA = a.endLine - a.startLine + 1;
+            const spanB = b.endLine - b.startLine + 1;
+            if (spanA !== spanB) return spanA - spanB;
+            return a.startLine - b.startLine;
+          });
           const ri =
             reg !== null ? stableBandIndexForRoleId(artifact.regions, reg.roleId) % BAND_CLASSES.length : null;
-          const showLabel = reg !== null && lineNo === reg.startLine;
+          const showLabel = reg !== null && lineNo === reg.endLine;
+          const isHoveredRegionLine = reg !== null && hoveredRoleId !== null && reg.roleId === hoveredRoleId;
           const bandClass = ri !== null ? BAND_CLASSES[ri] ?? styles.bandNone : styles.bandNone;
           return (
             <div key={lineNo} className={styles.lineRow}>
-              <span className={styles.gutter}>{lineNo}</span>
-              <div className={styles.lineBody}>
-                {showLabel ? (
-                  <div className={styles.roleTag} data-band={ri}>
-                    {reg.roleLabel}
-                  </div>
+              <span className={styles.gutter}>
+                <span className={styles.gutterLineNo}>{lineNo}</span>
+                {displayOverlaps.length > 0 ? (
+                  <span className={styles.gutterLanes} aria-hidden>
+                    {displayOverlaps.map((ov) => {
+                      const laneBand =
+                        stableBandIndexForRoleId(artifact.regions, ov.roleId) % BAND_CLASSES.length;
+                      const isHoveredLane = hoveredRoleId !== null && hoveredRoleId === ov.roleId;
+                      return (
+                        <span
+                          key={`${ov.roleId}:${ov.startLine}-${ov.endLine}`}
+                          className={`${styles.gutterLane} ${isHoveredLane ? styles.gutterLaneHovered : ""}`}
+                          data-band={laneBand}
+                          onMouseEnter={() => setHoveredRoleId(ov.roleId)}
+                        />
+                      );
+                    })}
+                  </span>
                 ) : null}
-                <div className={`${styles.lineBand} ${bandClass}`}>
+              </span>
+              <div className={styles.lineBody}>
+                <div
+                  className={`${styles.lineBand} ${bandClass} ${isHoveredRegionLine ? styles.lineBandHovered : ""}`}
+                  data-band={ri ?? -1}
+                  onMouseEnter={() => setHoveredRoleId(reg?.roleId ?? null)}
+                >
+                  {showLabel ? (
+                    <div
+                      className={`${styles.roleTag} ${isHoveredRegionLine ? styles.roleTagHovered : ""}`}
+                      data-band={ri}
+                    >
+                      {`${reg.roleLabel} (${reg.startLine}~${reg.endLine}줄)`}
+                    </div>
+                  ) : null}
                   <code className={styles.code}>
                     <span
                       className={styles.codeShiki}
@@ -177,9 +219,11 @@ function CodeColumn({ artifact, title, versionNo }: ColumnProps) {
 type Props = {
   submissions: CohortSubmissionArtifact[];
   titlesBySubmissionId: Map<string, { title: string; versionNo: number }>;
+  /** 랜딩: 카드 폭을 줄여 가로 캐러셀이 드러나게 합니다. */
+  layout?: "landingPeek";
 };
 
-export function CohortCodeColumns({ submissions, titlesBySubmissionId }: Props) {
+export function CohortCodeColumns({ submissions, titlesBySubmissionId, layout }: Props) {
   const colRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const scrollToColumn = useCallback((index: number) => {
@@ -188,7 +232,7 @@ export function CohortCodeColumns({ submissions, titlesBySubmissionId }: Props) 
   }, []);
 
   return (
-    <div className={styles.root}>
+    <div className={buildCls(styles.root, layout === "landingPeek" && styles.rootLandingPeek)}>
       <div className={styles.jumpRow}>
         {submissions.map((s, i) => {
           const t = titlesBySubmissionId.get(s.submissionId);

@@ -916,7 +916,11 @@ export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
         <h2 id="landing-cohort-code" className={s.codeSectionTitle}>
           {t("assignment.cohortPage.codeHeading")}
         </h2>
-        <CohortCodeColumns submissions={submissions} titlesBySubmissionId={titlesBySubmissionId} />
+        <CohortCodeColumns
+          submissions={submissions}
+          titlesBySubmissionId={titlesBySubmissionId}
+          layout="landingPeek"
+        />
       </section>
     </div>
   );
