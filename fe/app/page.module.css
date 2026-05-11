@@ -15,7 +15,6 @@
   background:
     radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 38%),
     linear-gradient(135deg, var(--color-surface-paper), var(--color-surface));
-  box-shadow: 0 18px 45px color-mix(in oklab, var(--color-primary) 6%, transparent);
 }
 
 .heroEyebrow {
@@ -124,10 +123,16 @@
   color: var(--color-primary);
   text-decoration: none;
   white-space: nowrap;
+  transition: filter var(--ui-duration) var(--ui-ease);
 }
 
 .viewAllLink:hover {
   text-decoration: underline;
+  filter: brightness(0.94);
+}
+
+.viewAllLink:active {
+  filter: brightness(0.9);
 }
 
 .cardIcon {
@@ -217,9 +222,30 @@
     background-color 0.15s ease;
 }
 
+.feedRowAlignStart {
+  align-items: flex-start;
+}
+
+.feedRowPastDue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface-paper));
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.feedRowPastDue .kanbanItemTitleText {
+  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
+}
+
+.feedRowPastDue .kanbanItemTitleIcon {
+  opacity: 0.82;
+}
+
 .feedRow:hover {
-  border-color: color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
-  background: var(--color-surface);
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.feedRowPastDue.feedRow:hover {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface-paper));
 }
 
 .feedRowStatic {
@@ -268,6 +294,57 @@
   word-break: keep-all;
 }
 
+.notifTitleKanban {
+  flex: 1;
+  min-width: 0;
+}
+
+.kanbanCard {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.kanbanItemTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.kanbanItemTopRight {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.kanbanItemTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.kanbanItemTitleIcon {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+.kanbanItemTitleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .listTitle {
   font-size: 13px;
   font-weight: 600;
@@ -285,21 +362,9 @@
   flex-shrink: 0;
 }
 
-.listLang {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: color-mix(in oklab, var(--color-text) 8%, transparent);
-  color: var(--color-text);
-}
-
 .listTime {
   font-size: 11px;
   color: var(--color-muted);
-}
-
-.duePill {
-  justify-self: start;
 }
 
 @media (min-width: 860px) {

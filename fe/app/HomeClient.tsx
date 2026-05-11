@@ -7,8 +7,12 @@ import Link from "next/link";
 import type { HomeRecentNotification } from "../src/auth/api.server";
 import { LoginClient } from "./login/LoginClient";
 import { useI18n } from "../src/i18n/I18nProvider";
+import { buildCls } from "../src/lib/buildCls";
 import { dueBadgeTone } from "../src/lib/dueBadgeTone";
+import { formatRelativeRecency } from "../src/lib/formatRelativeRecency";
+import { homeNotificationKind } from "../src/lib/homeNotificationKind";
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
+import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
 import { Badge } from "../src/ui/Badge";
 import { Icon } from "../src/ui/Icon";
 import { UserAvatar } from "../src/ui/UserAvatar";
@@ -110,18 +114,31 @@ export function HomeClient({
                 {todoItems.map((item) => {
                   const daysLeft = getDaysLeft(item.dueAt);
                   const isLate = new Date(item.dueAt).getTime() < Date.now();
+                  const dueLabel = isLate ? t("assignment.list.late") : `D-${daysLeft}`;
                   return (
                     <li key={item.id}>
-                      <Link href={item.href} className={styles.feedRow}>
-                        <div className={styles.feedMain}>
-                          <span className={styles.listTitle}>{item.title}</span>
+                      <Link
+                        href={item.href}
+                        className={buildCls(
+                          styles.feedRow,
+                          styles.feedRowAlignStart,
+                          isLate ? styles.feedRowPastDue : undefined,
+                        )}
+                      >
+                        <div className={styles.kanbanCard}>
+                          <div className={styles.kanbanItemTop}>
+                            <span className={styles.kanbanItemTitle}>
+                              <Icon name="book" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
+                              <span className={styles.kanbanItemTitleText}>{item.title}</span>
+                            </span>
+                            <div className={styles.kanbanItemTopRight}>
+                              <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
+                            </div>
+                          </div>
                           <span className={styles.listMeta}>
                             <Badge tone="neutral">{item.groupName}</Badge>
                             <Badge tone="neutral">{item.platform}</Badge>
                           </span>
-                          <Badge tone={dueBadgeTone(isLate, daysLeft)} className={styles.duePill}>
-                            {formatDateTime(item.dueAt, locale)}
-                          </Badge>
                         </div>
                       </Link>
                     </li>
@@ -155,7 +172,7 @@ export function HomeClient({
                       <div className={styles.feedMain}>
                         <span className={styles.listTitle}>{s.title}</span>
                         <span className={styles.listMeta}>
-                          <span className={styles.listLang}>{s.language}</span>
+                          <Badge tone="neutral">{resolveShikiLanguage(s.language)}</Badge>
                           <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
                         </span>
                       </div>
@@ -191,6 +208,9 @@ export function HomeClient({
               <ul className={styles.list}>
               {notifications.map((n) => {
                 const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+                const kindKey = homeNotificationKind(n.type);
+                const kindLabel = t(`home.recent.notifications.kind.${kindKey}`);
+                const recency = formatRelativeRecency(n.createdAt, locale);
                 const face = showActorFace ? (
                   <UserAvatar
                     nickname={notificationActorDisplayName(n)}
@@ -199,23 +219,34 @@ export function HomeClient({
                     className={styles.feedAvatar}
                   />
                 ) : null;
-                const main = (
-                  <div className={styles.feedMain}>
-                    <span className={styles.notifTitle}>{n.title}</span>
-                    <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
+                const card = (
+                  <div className={styles.kanbanCard}>
+                    <div className={styles.kanbanItemTop}>
+                      <span className={buildCls(styles.notifTitle, styles.notifTitleKanban)}>{n.title}</span>
+                      <div className={styles.kanbanItemTopRight}>
+                        <Badge tone="neutral">{recency}</Badge>
+                      </div>
+                    </div>
+                    <span className={styles.listMeta}>
+                      <Badge tone="neutral">{kindLabel}</Badge>
+                      {showActorFace ? (
+                        <Badge tone="neutral">{notificationActorDisplayName(n)}</Badge>
+                      ) : null}
+                    </span>
                   </div>
                 );
+                const rowClass = buildCls(styles.feedRow, styles.feedRowAlignStart);
                 return (
                   <li key={n.id}>
                     {n.href !== null ? (
-                      <Link href={n.href} className={styles.feedRow}>
+                      <Link href={n.href} className={rowClass}>
                         {face}
-                        {main}
+                        {card}
                       </Link>
                     ) : (
-                      <div className={styles.feedRowStatic}>
+                      <div className={buildCls(styles.feedRowStatic, styles.feedRowAlignStart)}>
                         {face}
-                        {main}
+                        {card}
                       </div>
                     )}
                   </li>
