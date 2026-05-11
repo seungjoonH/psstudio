@@ -8,7 +8,7 @@
 - Backend: NestJS API
 - DB: Supabase(PostgreSQL), Redis(캐시/큐/락)
 - Local Infra: Docker Compose(`fe`, `be`, `worker`, `supabase`, `redis`)
-- Deploy Infra: 추후 배포 시 Vercel/GCP/관리형 Supabase 등으로 분리 가능
+- Deploy Infra: GitHub Actions가 `main` 푸시 시 FE·BE·worker 이미지를 GHCR에 푸시하고, GCE 단일 VM에서 `docker-compose.prod.yml`로 `pull`·`up` 한다(`IMAGE_REGISTRY`·`IMAGE_TAG`·`APP_ENV_FILE` 필수)
 - AI: 외부 LLM API(OpenRouter)로 문제 분석, AI 코드 리뷰, 코드 번역을 비동기로 처리하고 토큰 차감 정책을 적용
 - Email: Resend API로 그룹 이메일 초대 메시지 발송(이메일은 그룹 초대 외 용도로 사용하지 않음)
 
@@ -113,6 +113,12 @@ flowchart LR
 - `fe`, `be`, `worker`, `supabase`, `redis` 5개 논리 서비스 유지
 - Worker: AI 분석/재분석, 비동기 알림 후처리
 - 장애 시 재시도/백오프 및 실패 알림 처리
+
+#### 3.4.1 프로덕션(GCE)과 CI
+
+- 트리거는 `.github/workflows/deploy.yml`의 `push` to `main`(수동 `workflow_dispatch`도 가능).
+- 러너에서 GHCR로 `ghcr.io/<GitHub owner>/psstudio-{fe,be,worker}:<commit sha>`를 빌드·푸시한다. FE 빌드 인자 `NEXT_PUBLIC_API_BASE_URL`은 저장소 Secret으로만 넘긴다.
+- VM에는 `/opt/psstudio`에 `docker-compose.prod.yml`과 `Caddyfile`을 두고, `docker compose` 실행 시 환경변수 `IMAGE_REGISTRY`, `IMAGE_TAG`, `APP_ENV_FILE`(예 `/etc/psstudio/.env.production`)을 반드시 넘긴다. 앱 런타임 env는 해당 `env_file`에 둔다.
 
 ## 4. 도메인 모듈 구조 (NestJS)
 

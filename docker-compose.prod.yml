@@ -1,0 +1,73 @@
+name: psstudio
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:?APP_ENV_FILE is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      fe:
+        condition: service_started
+      be:
+        condition: service_started
+
+  fe:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-fe:${IMAGE_TAG:?IMAGE_TAG is required}
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:?APP_ENV_FILE is required}
+    environment:
+      NODE_ENV: production
+    depends_on:
+      be:
+        condition: service_started
+
+  be:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-be:${IMAGE_TAG:?IMAGE_TAG is required}
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:?APP_ENV_FILE is required}
+    environment:
+      NODE_ENV: production
+      BE_PORT: "4000"
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-worker:${IMAGE_TAG:?IMAGE_TAG is required}
+    restart: unless-stopped
+    env_file:
+      - ${APP_ENV_FILE:?APP_ENV_FILE is required}
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  caddy-data:
+  caddy-config:
+  redis-data:
