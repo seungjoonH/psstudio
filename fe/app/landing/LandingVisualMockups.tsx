@@ -421,9 +421,14 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
         {MAY_2026_CAL.map((cell, idx) => (
           <section
             key={`cal-${idx}`}
-            className={buildCls(c.dayCell, cell.today ? c.dayCellToday : "", cell.outside ? c.dayCellMuted : "").trim()}
+            className={buildCls(
+              c.dayCell,
+              styles.landingMiniCalDayCell,
+              cell.today ? c.dayCellToday : "",
+              cell.outside ? c.dayCellMuted : "",
+            ).trim()}
           >
-            <div className={c.dayCellHit}>
+            <div className={buildCls(c.dayCellHit, styles.landingMiniCalDayHit)}>
               <header className={c.dayHead}>
                 <span className={buildCls(c.dayNumber, cell.outside ? c.dayNumberMuted : "").trim()}>{cell.day}</span>
               </header>
