@@ -557,70 +557,72 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
+/** 랜딩 과제 스트립: 오늘 기준 일수 오프셋만 사용해 D-1~D-10·마감 배지가 항상 의도대로 보이게 합니다. */
 const LANDING_ASSIGNMENT_SHOWCASE = [
   {
     titleKey: "landing.mockAssignShow1Title",
     platformKey: "landing.mockAssignShow1Platform",
     difficultyKey: "landing.mockAssignShow1Difficulty",
-    dueIsoKey: "landing.mockAssignShow1DueIso",
+    dueOffsetDays: 10,
     solved: false,
   },
   {
     titleKey: "landing.mockAssignShow2Title",
     platformKey: "landing.mockAssignShow2Platform",
     difficultyKey: "landing.mockAssignShow2Difficulty",
-    dueIsoKey: "landing.mockAssignShow2DueIso",
+    dueOffsetDays: 3,
     solved: true,
   },
   {
     titleKey: "landing.mockAssignShow3Title",
     platformKey: "landing.mockAssignShow3Platform",
     difficultyKey: "landing.mockAssignShow3Difficulty",
-    dueIsoKey: "landing.mockAssignShow3DueIso",
+    dueOffsetDays: 1,
     solved: false,
   },
   {
     titleKey: "landing.mockAssignShow4Title",
     platformKey: "landing.mockAssignShow4Platform",
     difficultyKey: "landing.mockAssignShow4Difficulty",
-    dueIsoKey: "landing.mockAssignShow4DueIso",
-    solved: true,
-  },
-  {
-    titleKey: "landing.mockAssignShow5Title",
-    platformKey: "landing.mockAssignShow5Platform",
-    difficultyKey: "landing.mockAssignShow5Difficulty",
-    dueIsoKey: "landing.mockAssignShow5DueIso",
+    dueOffsetDays: -2,
     solved: false,
   },
 ] as const;
 
 export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const a = assignStyles;
   const assignShowRowsSorted = useMemo(() => {
-    const rows = [...LANDING_ASSIGNMENT_SHOWCASE];
+    const anchor = Date.now();
+    const dayMs = 24 * 3600 * 1000;
+    const rows = LANDING_ASSIGNMENT_SHOWCASE.map((row) => ({
+      ...row,
+      dueAt: new Date(anchor + row.dueOffsetDays * dayMs).toISOString(),
+    }));
     rows.sort((aRow, bRow) => {
       const aSolved = aRow.solved ? 1 : 0;
       const bSolved = bRow.solved ? 1 : 0;
       if (aSolved !== bSolved) return aSolved - bSolved;
-      return new Date(t(aRow.dueIsoKey)).getTime() - new Date(t(bRow.dueIsoKey)).getTime();
+      return new Date(aRow.dueAt).getTime() - new Date(bRow.dueAt).getTime();
     });
     return rows;
-  }, [locale, t]);
+  }, []);
 
   return (
     <div className={styles.landingAssignOuter} role="img" aria-label={ariaLabel}>
       <ul className={a.list}>
         {assignShowRowsSorted.map((row) => {
-          const dueAt = t(row.dueIsoKey);
-          const due = new Date(dueAt);
-          const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
-          const isLate = due.getTime() < Date.now();
+          const due = new Date(row.dueAt);
+          const now = Date.now();
+          const daysLeft = Math.min(10, Math.max(0, Math.ceil((due.getTime() - now) / (24 * 3600 * 1000))));
+          const isLate = due.getTime() < now;
           const dueTone = dueBadgeTone(isLate, daysLeft);
           const platform = t(row.platformKey);
           return (
-            <li key={row.titleKey} className={buildCls(a.row, isLate ? a.rowPastDue : undefined)}>
+            <li
+              key={row.titleKey}
+              className={buildCls(a.row, isLate && a.rowPastDue, isLate && styles.landingAssignPastDue)}
+            >
               <div className={a.link}>
                 <div className={a.head}>
                   <div className={a.headMain}>

@@ -223,6 +223,12 @@
   overflow: hidden;
 }
 
+/* 랜딩 과제 스트립: 마감(기한 경과) 행 음영을 한 단계 강조합니다. */
+.landingAssignPastDue {
+  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface)) !important;
+  border-color: color-mix(in oklab, var(--color-muted) 30%, var(--color-border)) !important;
+}
+
 .landingDiffOuter {
   max-width: 100%;
   overflow: auto;
