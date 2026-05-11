@@ -242,6 +242,8 @@ export const messages = {
       mockNotify3Title: "코드 리뷰 스레드에 답글이 달렸습니다.",
       mockNotify3Actor: "준호",
       mockNotify3AtIso: "2026-05-10T18:40:00.000Z",
+      mockCohortCardTitle: '"네트워크" · 과제 제출 코드 AI 비교 분석',
+      mockCohortCardMeta: "Programmers · Lv.3 · 네트워크",
       mockCohortMarkdown:
         "## 요약\n\n[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]와 [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] 제출을 **큐 구현**과 **방문 처리** 관점에서 비교했습니다.\n\n- 두 풀이 모두 거리 배열을 -1로 초기화합니다.\n- 한쪽은 `deque.popleft`, 다른 쪽은 인덱스로 O(1) dequeue를 구성합니다.\n",
       mockCohortAuthorJs: "민지",
@@ -1066,6 +1068,8 @@ export const messages = {
       mockNotify3Title: "Someone replied on a code review thread.",
       mockNotify3Actor: "Jon",
       mockNotify3AtIso: "2026-05-10T18:40:00.000Z",
+      mockCohortCardTitle: '"Network" — AI cohort comparison of submissions',
+      mockCohortCardMeta: "Programmers · Lv.3 · Network",
       mockCohortMarkdown:
         "## Summary\n\nCompared submissions [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] and [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] on **queue handling** and **visit tracking**.\n\n- Both initialize the distance array to -1.\n- One uses `deque.popleft`, the other an index for O(1) dequeue.\n",
       mockCohortAuthorJs: "Mina",

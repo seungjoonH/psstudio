@@ -841,10 +841,11 @@ export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
 
   return (
     <div className={buildCls(s.root, styles.landingCohortOuter)} role="img" aria-label={ariaLabel}>
-      <section className={s.section} aria-labelledby="landing-cohort-report">
-        <h2 id="landing-cohort-report" className={s.sectionTitle}>
-          {t("assignment.detail.cohort.reportHeading")}
+      <section className={s.codeSection} aria-labelledby="landing-cohort-report">
+        <h2 id="landing-cohort-report" className={s.codeSectionTitle}>
+          {t("landing.mockCohortCardTitle")}
         </h2>
+        <p className={s.sub}>{t("landing.mockCohortCardMeta")}</p>
         <CohortReportBody
           reportMarkdown={reportMarkdown}
           groupId={LANDING_COHORT_IDS.groupId}
