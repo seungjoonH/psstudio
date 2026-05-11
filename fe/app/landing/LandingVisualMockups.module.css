@@ -1,4 +1,4 @@
-/* 랜딩용 정적 UI 더미와 장식 영역 스타일입니다. */
+/* 랜딩 전용 목업·장식 스타일입니다. 앱 라우트 CSS와 분리되며 전역 테마 토큰을 사용합니다. */
 .decorWrap {
   display: flex;
   justify-content: center;
@@ -25,43 +25,10 @@
   letter-spacing: -0.035em;
 }
 
-.landingHomeBoard {
-  grid-template-columns: 1fr !important;
-}
-
-@media (min-width: 720px) {
-  .landingHomeBoard {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (min-width: 1100px) {
-  .landingHomeBoard {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-}
-
-.landingHomeColumn {
-  min-height: 0 !important;
-}
-
-/* 열 카드 테두리만 남기고 행에 또 테두리를 두지 않아 이중 테두리를 없앱니다. */
-.landingHomeColumn :global(.feedRowStatic) {
+/* 칸반 열 안 정적 행: 홈 열 배경과 어울리도록 테두리만 완화합니다. */
+.landingHomeKanbanFeed {
   border: none;
   background: color-mix(in oklab, var(--color-surface-muted) 42%, var(--color-surface-paper));
-}
-
-/* 해야 할 일: 마감(기한 경과) 카드는 열 기본 배경보다 음영을 우선합니다. */
-.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue {
-  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface)) !important;
-}
-
-.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue :global(.kanbanItemTitleText) {
-  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
-}
-
-.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue :global(.kanbanItemTitleIcon) {
-  opacity: 0.82;
 }
 
 .landingFakeLink {
@@ -75,9 +42,9 @@
   font-size: 0.9rem;
 }
 
-/* 행 높이를 고정해 과제 pill 개수와 관계없이 모든 셀 높이를 동일하게 둡니다. */
+/* 월간 6주(42칸): 행 트랙을 6개 모두 동일 높이로 두어 pill 유무와 관계없이 셀 높이를 맞춥니다. */
 .landingMiniCalGrid {
-  grid-template-rows: repeat(4, 104px) !important;
+  grid-template-rows: repeat(6, minmax(104px, 104px)) !important;
   align-items: stretch;
 }
 
@@ -89,7 +56,7 @@
 
 .landingMiniCalWide {
   width: 100%;
-  max-width: min(100%, 880px);
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
 }
@@ -108,19 +75,18 @@
   display: inline-flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .landingMiniCalPeriodLabel {
   box-sizing: border-box;
+  flex: 1 1 auto;
   min-width: 0;
-  max-width: min(200px, 42vw);
-  padding: 0 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: clamp(15px, 2.4vw, 18px);
+  padding: 0 4px;
+  white-space: normal;
+  word-break: keep-all;
+  font-size: clamp(14px, 2.1vw, 17px);
 }
 
 /* 랜딩 미니 캘린더: 셀 안 가로 스크롤(세로 스크롤바 유발) 대신 세로 스택 + 말줄임만 사용합니다. */
@@ -160,6 +126,28 @@
   padding: 4px 6px;
 }
 
+.landingMiniCalTodayBtn {
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* 랜딩 미니캘린더: 필터는 장식만 하고 클릭되지 않습니다. */
+.landingMiniCalFilterFake {
+  pointer-events: none;
+  cursor: default;
+  user-select: none;
+}
+
+/* 랜딩 알림 목록 루트: 바깥 카드는 LandingClient의 notifyShowboard 등 한 겹만 두고 여기서는 테두리 없음 */
+.landingNotifyRoot {
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
 .landingNotifyCompact {
   box-sizing: border-box;
   max-width: 100%;
@@ -169,10 +157,49 @@
   background: transparent;
 }
 
+.landingHeroNotifyRow {
+  box-sizing: border-box;
+  height: 66px;
+  min-height: 66px;
+  padding: 12px 14px;
+  align-items: center;
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+  background: var(--color-surface-paper);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.16s ease,
+    transform 0.12s ease;
+}
+
+.landingHeroNotifyRow:hover {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+  box-shadow: 0 2px 12px color-mix(in oklab, var(--color-text) 7%, transparent);
+}
+
+.landingHeroNotifyRow:active {
+  transform: scale(0.992);
+}
+
+.landingHeroNotifyRow:focus-within {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.landingHeroNotifyRowMain {
+  align-items: center;
+}
+
+.landingHeroNotifyDelete {
+  margin-top: 0;
+  align-self: center;
+}
+
 .mergedReviewRoot {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 12px;
   max-width: 100%;
 }
 
@@ -180,7 +207,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .mergedReviewHint {
@@ -190,44 +217,16 @@
   color: var(--color-muted);
 }
 
-.codeCompareGrid {
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 640px) {
-  .codeCompareGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.codeCompareCol {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.codeCompareLabel {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-muted);
-}
-
-.codeComparePre {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  line-height: 1.45;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .landingGroupsWrap {
@@ -252,7 +251,7 @@
 
 /* 랜딩 과제 스트립: 마감(기한 경과) 행 음영을 한 단계 강조합니다. */
 .landingAssignPastDue {
-  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface)) !important;
+  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface-paper)) !important;
   border-color: color-mix(in oklab, var(--color-muted) 30%, var(--color-border)) !important;
 }
 
@@ -265,29 +264,20 @@
   margin: 0;
 }
 
-.landingNotifyOuter {
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  padding: 10px;
-  max-width: 100%;
-  overflow: hidden;
-}
-
 .aiPanel {
   border-radius: 12px;
   border: 1px solid color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
   background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface-elevated));
-  padding: var(--space-3);
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .aiHead {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   font-size: 12px;
   font-weight: 800;
   color: var(--color-text);
@@ -325,9 +315,9 @@
 .featureBand {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 16px;
   align-items: stretch;
-  padding: var(--space-4);
+  padding: 16px;
   border-radius: 14px;
   border: 1px solid var(--color-border);
   background: var(--color-surface-elevated);
@@ -344,6 +334,30 @@
   }
 }
 
+/* 캘린더 밴드: 설명 열 폭을 고정하고 목 열에 남는 폭을 모두 써 주간 헤더 한 줄을 유지하기 쉽게 합니다. */
+@media (min-width: 720px) {
+  .featureBandCalendarMock.featureBandReverse {
+    display: grid;
+    grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+    flex-direction: unset;
+    align-items: center;
+    column-gap: 16px;
+  }
+
+  .featureBandCalendarMock.featureBandReverse .featureText {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    max-width: none;
+  }
+
+  .featureBandCalendarMock.featureBandReverse .featureMock {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+}
+
 .featureMock {
   flex: 1;
   min-width: 0;
@@ -356,7 +370,7 @@
   max-width: 280px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 @media (min-width: 720px) {
@@ -371,7 +385,7 @@
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 12px;
   justify-content: space-between;
 }
 
@@ -379,8 +393,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-3);
+  gap: 4px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   background: var(--color-surface-elevated);

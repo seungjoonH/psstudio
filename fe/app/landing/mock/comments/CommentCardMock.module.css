@@ -1,0 +1,220 @@
+/* 랜딩 목업 전용 스타일(실제 화면 CSS와 동일 규칙을 복제한 분리본, 앱 라우트 CSS 미사용). */
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-surface-muted);
+}
+
+.avatarFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-primary) 18%, var(--color-surface-muted));
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.headRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.headAction {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.author {
+  font-size: 11px;
+  color: var(--color-text);
+}
+
+.time {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.subHead {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.markdownWrap {
+  font-size: 10px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* MarkdownPreview 내부 .markdown 이 부모보다 큰 글자를 쓰지 않도록 댓글 전용으로 덮어씁니다. */
+.markdownWrap :global(.markdown) {
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.markdownWrap :global(.markdown h1),
+.markdownWrap :global(.markdown h2),
+.markdownWrap :global(.markdown h3),
+.markdownWrap :global(.markdown h4) {
+  margin-bottom: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.markdownWrap :global(.markdown p) {
+  margin-bottom: 8px;
+}
+
+.markdownWrap :global(.markdown ul),
+.markdownWrap :global(.markdown ol) {
+  margin: 0 0 8px 18px;
+}
+
+.markdownWrap :global(.markdown li) {
+  margin: 0 0 4px;
+}
+
+.markdownWrap :global(.markdown code) {
+  font-size: 10px;
+}
+
+.markdownWrap :global(.markdown pre) {
+  margin: 0 0 8px;
+  padding: 8px;
+  font-size: 10px;
+}
+
+.markdownWrap :global(.markdown pre code) {
+  font-size: 10px;
+}
+
+.replies {
+  margin-left: 48px;
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border-muted);
+  padding-top: 12px;
+}
+
+.replyRow {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+}
+
+.replyRow .avatar,
+.replyRow .avatarFallback {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.replyBody {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.replyFooter {
+  margin-left: 48px;
+}
+
+.replyOpenBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.replyOpenBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+  color: var(--color-text);
+}
+
+.replyForm {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.replyTextarea {
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 10px 12px;
+  font-size: 10px;
+  min-height: 60px;
+}
+
+.replyTextarea:focus {
+  outline: none;
+}
+
+.replyActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--color-border-muted);
+  background: var(--color-surface-muted);
+}
+
+.replyCancelBtn,
+.replySubmitBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.replySubmitBtn {
+  background: var(--color-primary);
+  border-color: color-mix(in oklab, var(--color-primary) 60%, var(--color-border));
+  color: var(--color-primary-text);
+}
+
+.replySubmitBtn:disabled,
+.replyCancelBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
