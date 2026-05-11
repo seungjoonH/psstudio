@@ -24,6 +24,12 @@
   grid-template-columns: 1fr !important;
 }
 
+@media (min-width: 640px) {
+  .landingHomeBoard {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 .landingHomeColumn {
   min-height: 0 !important;
 }
@@ -41,6 +47,23 @@
 
 .landingMiniCalGrid {
   grid-template-rows: repeat(4, minmax(56px, auto)) !important;
+}
+
+.landingMiniCalWide {
+  width: 100%;
+  max-width: min(100%, 900px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landingCohortOuter {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.landingCohortOuter :global(.markdown) {
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .landingAssignOuter {
@@ -152,24 +175,6 @@
   .featureText {
     width: 240px;
   }
-}
-
-.heroGrid {
-  display: grid;
-  gap: var(--space-5);
-  align-items: center;
-}
-
-@media (min-width: 720px) {
-  .heroGrid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.heroCopy {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
 }
 
 .flowStrip {

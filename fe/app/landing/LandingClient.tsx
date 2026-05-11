@@ -14,12 +14,12 @@ import {
   MiniAiPanel,
   MiniAssignmentShowcase,
   MiniCalendar,
+  MiniCohortReportShowcase,
   MiniDiffReview,
   MiniHomeKanban,
   MiniNotifyList,
   RoleGlyph,
 } from "./LandingVisualMockups";
-import v from "./LandingVisualMockups.module.css";
 import { ScrollReveal } from "./ScrollReveal";
 
 const LOGIN_HREF = "/login";
@@ -52,7 +52,7 @@ export function LandingClient() {
   const roleCards = [
     { icon: "user" as const, titleKey: "landing.roleOwnerTitle", leadKey: "landing.roleOwnerLead" },
     { icon: "users" as const, titleKey: "landing.roleManagerTitle", leadKey: "landing.roleManagerLead" },
-    { icon: "book" as const, titleKey: "landing.roleMemberTitle", leadKey: "landing.roleMemberLead" },
+    { icon: "compass" as const, titleKey: "landing.roleMemberTitle", leadKey: "landing.roleMemberLead" },
   ];
 
   const featureBands = [
@@ -77,14 +77,14 @@ export function LandingClient() {
     {
       reverse: true,
       mock: <MiniAiPanel ariaLabel={t("landing.mockupAiAria")} />,
-      titleKey: "landing.featureAiTitle",
-      leadKey: "landing.featureAiLead",
+      titleKey: "landing.featureAiFeedbackTitle",
+      leadKey: "landing.featureAiFeedbackLead",
     },
     {
       reverse: false,
-      mock: <MiniNotifyList ariaLabel={t("landing.mockupNotifyAria")} />,
-      titleKey: "landing.featureNotifyTitle",
-      leadKey: "landing.featureNotifyLead",
+      mock: <MiniCohortReportShowcase ariaLabel={t("landing.mockupCohortAria")} />,
+      titleKey: "landing.featureCohortTitle",
+      leadKey: "landing.featureCohortLead",
     },
   ];
 
@@ -101,15 +101,16 @@ export function LandingClient() {
         <div id="landing-main" className={styles.stack}>
           <section className={styles.surface} aria-labelledby="landing-hero-title">
             <ScrollReveal>
-              <div className={v.heroGrid}>
-                <div className={v.heroCopy}>
+              <div className={styles.heroVertical}>
+                <div className={styles.heroIntro}>
                   <p className={styles.eyebrow}>{t("landing.heroEyebrow")}</p>
                   <h2 id="landing-hero-title" className={styles.heroTitle}>
                     {t("landing.heroTitle")}
                   </h2>
                   <p className={styles.lead}>{t("landing.heroLead")}</p>
                 </div>
-                <div className={styles.heroMockStack}>
+                <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
+                <div className={styles.heroDashRow}>
                   <LandingHeroDecor />
                   <MiniHomeKanban ariaLabel={t("landing.mockupHomeKanbanAria")} />
                 </div>

@@ -1,0 +1,220 @@
+/* AppShell 본문 안 랜딩 레이아웃입니다. */
+.skipNav {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skipNav:focus {
+  position: fixed;
+  left: var(--space-4);
+  top: var(--space-4);
+  z-index: 200;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  clip: auto;
+  overflow: visible;
+  white-space: normal;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--color-text);
+  box-shadow: 0 8px 28px color-mix(in oklab, var(--color-text) 14%, transparent);
+}
+
+.topActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: var(--space-6);
+}
+
+.surface {
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.surfaceMuted {
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  color: var(--color-text);
+}
+
+.lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+.leadTight {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+.blockTitle {
+  margin: 0 0 var(--space-1);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.roleGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 720px) {
+  .roleGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.roleCard {
+  margin: 0;
+  padding: var(--space-4);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.roleBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.featureStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cardHeading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.trustLead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.trustBeta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-muted);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 22%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface));
+}
+
+.inlineCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.footerNote {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.heroVertical {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 100%;
+}
+
+.heroIntro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heroDashRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+@media (min-width: 720px) {
+  .heroDashRow {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}

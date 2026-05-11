@@ -6,6 +6,10 @@ import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { buildCls } from "../../src/lib/buildCls";
 import { dueBadgeTone } from "../../src/lib/dueBadgeTone";
+import cohortStyles from "../groups/[groupId]/assignments/[assignmentId]/cohort/CohortAnalysisClient.module.css";
+import calStyles from "../groups/[groupId]/calendar/page.module.css";
+import diffStyles from "../groups/[groupId]/assignments/[assignmentId]/submissions/[submissionId]/diff/DiffViewerClient.module.css";
+import homeStyles from "../page.module.css";
 import ccStyles from "../../src/ui/comments/CommentCard.module.css";
 import { Badge } from "../../src/ui/Badge";
 import { Button } from "../../src/ui/Button";
@@ -13,11 +17,9 @@ import { DifficultyBadge } from "../../src/ui/DifficultyBadge";
 import type { IconName } from "../../src/ui/Icon";
 import { Icon } from "../../src/ui/Icon";
 import { InlineAddButton } from "../../src/ui/InlineAddButton";
+import { MarkdownPreview } from "../../src/ui/MarkdownPreview";
 import { SegmentedControl } from "../../src/ui/SegmentedControl";
 import { UserAvatar } from "../../src/ui/UserAvatar";
-import calStyles from "../groups/[groupId]/calendar/page.module.css";
-import diffStyles from "../groups/[groupId]/assignments/[assignmentId]/submissions/[submissionId]/diff/DiffViewerClient.module.css";
-import homeStyles from "../page.module.css";
 import styles from "./LandingVisualMockups.module.css";
 
 function formatDateTime(value: string, locale: string): string {
@@ -35,36 +37,51 @@ function getDaysLeft(dueAt: string): number {
   return Math.max(0, Math.ceil((due - now) / (24 * 60 * 60 * 1000)));
 }
 
-/** 2026년 5월 월간 그리드용 정적 셀(선행·당월·오늘·과제 칩). */
-const MAY_2026_CAL_CELLS: { day: number; outside: boolean; today: boolean; pillKey?: "a" | "b" }[] = [
+const CAL_PILL_KEYS = [
+  "landing.mockPgCal1",
+  "landing.mockPgCal2",
+  "landing.mockPgCal3",
+  "landing.mockPgCal4",
+  "landing.mockPgCal5",
+  "landing.mockPgCal6",
+  "landing.mockPgCal7",
+  "landing.mockPgCal8",
+  "landing.mockPgCal9",
+  "landing.mockPgCal10",
+  "landing.mockPgCal11",
+  "landing.mockPgCal12",
+] as const;
+
+/** 2026년 5월 월간 그리드. pills는 CAL_PILL_KEYS 인덱스(0부터). */
+const MAY_2026_CAL: { day: number; outside: boolean; today: boolean; pills?: number[] }[] = [
   { day: 26, outside: true, today: false },
   { day: 27, outside: true, today: false },
   { day: 28, outside: true, today: false },
   { day: 29, outside: true, today: false },
   { day: 30, outside: true, today: false },
-  { day: 1, outside: false, today: false },
+  { day: 1, outside: false, today: false, pills: [0] },
   { day: 2, outside: false, today: false },
-  { day: 3, outside: false, today: false },
-  { day: 4, outside: false, today: false },
+  { day: 3, outside: false, today: false, pills: [1, 2] },
+  { day: 4, outside: false, today: false, pills: [3] },
   { day: 5, outside: false, today: false },
-  { day: 6, outside: false, today: false },
+  { day: 6, outside: false, today: false, pills: [4, 5] },
   { day: 7, outside: false, today: false },
-  { day: 8, outside: false, today: false },
-  { day: 9, outside: false, today: false },
-  { day: 10, outside: false, today: false },
+  { day: 8, outside: false, today: false, pills: [6] },
+  { day: 9, outside: false, today: false, pills: [7, 8] },
+  { day: 10, outside: false, today: false, pills: [9] },
   { day: 11, outside: false, today: true },
-  { day: 12, outside: false, today: false },
-  { day: 13, outside: false, today: false },
-  { day: 14, outside: false, today: false },
-  { day: 15, outside: false, today: false },
-  { day: 16, outside: false, today: false, pillKey: "a" },
-  { day: 17, outside: false, today: false, pillKey: "b" },
-  { day: 18, outside: false, today: false },
-  { day: 19, outside: false, today: false },
-  { day: 20, outside: false, today: false },
-  { day: 21, outside: false, today: false },
-  { day: 22, outside: false, today: false },
-  { day: 23, outside: false, today: false },
+  { day: 12, outside: false, today: false, pills: [10] },
+  { day: 13, outside: false, today: false, pills: [0] },
+  { day: 14, outside: false, today: false, pills: [11] },
+  { day: 15, outside: false, today: false, pills: [2] },
+  { day: 16, outside: false, today: false, pills: [4, 11] },
+  { day: 17, outside: false, today: false, pills: [7, 3] },
+  { day: 18, outside: false, today: false, pills: [6] },
+  { day: 19, outside: false, today: false, pills: [2, 5] },
+  { day: 20, outside: false, today: false, pills: [9] },
+  { day: 21, outside: false, today: false, pills: [1] },
+  { day: 22, outside: false, today: false, pills: [10] },
+  { day: 23, outside: false, today: false, pills: [8] },
 ];
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
@@ -77,6 +94,7 @@ export function LandingHeroDecor() {
   );
 }
 
+/** 홈과 동일 CSS. 알림 열 제외(히어로 상단 알림으로 분리). */
 export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
   const { locale, t } = useI18n();
   const h = homeStyles;
@@ -88,23 +106,16 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
   return (
     <div className={styles.landingHomeOuter} role="img" aria-label={ariaLabel}>
       <div className={h.dashboard}>
-        <section className={h.hero} aria-hidden>
-          <div>
-            <p className={h.heroEyebrow}>{t("home.kanban.eyebrow")}</p>
-            <h2 className={h.heroTitle}>{t("home.kanban.title", { nickname: t("landing.mockHomeNickname") })}</h2>
-            <p className={h.heroLead}>{t("home.kanban.lead")}</p>
+        <div className={h.stats} aria-hidden>
+          <div className={h.statCard}>
+            <span className={h.statValue}>{t("landing.mockHomeStatTodo")}</span>
+            <span className={h.statLabel}>{t("home.kanban.todoCount")}</span>
           </div>
-          <div className={h.stats} aria-hidden>
-            <div className={h.statCard}>
-              <span className={h.statValue}>{t("landing.mockHomeStatTodo")}</span>
-              <span className={h.statLabel}>{t("home.kanban.todoCount")}</span>
-            </div>
-            <div className={h.statCard}>
-              <span className={h.statValue}>{t("landing.mockHomeStatDone")}</span>
-              <span className={h.statLabel}>{t("home.kanban.doneCount")}</span>
-            </div>
+          <div className={h.statCard}>
+            <span className={h.statValue}>{t("landing.mockHomeStatDone")}</span>
+            <span className={h.statLabel}>{t("home.kanban.doneCount")}</span>
           </div>
-        </section>
+        </div>
 
         <section className={buildCls(h.board, styles.landingHomeBoard)} aria-hidden>
           <article className={buildCls(h.column, styles.landingHomeColumn)}>
@@ -124,7 +135,6 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                     <div className={h.feedMain}>
                       <span className={h.listTitle}>{t("landing.mockHomeTodoTitle")}</span>
                       <span className={h.listMeta}>
-                        <Badge tone="neutral">{t("landing.mockHomeTodoGroup")}</Badge>
                         <Badge tone="neutral">{t("landing.mockHomeTodoPlatform")}</Badge>
                       </span>
                       <Badge tone={dueBadgeTone(todoLate, todoDays)} className={h.duePill}>
@@ -163,34 +173,6 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               </ul>
             </div>
           </article>
-
-          <article className={buildCls(h.column, styles.landingHomeColumn)}>
-            <header className={h.columnHead}>
-              <span className={buildCls(h.cardIcon, h.noticeIcon)} aria-hidden>
-                <Icon name="mail" size={16} />
-              </span>
-              <div className={h.columnHeadBody}>
-                <div className={h.columnHeadTop}>
-                  <h3 className={h.cardTitle}>{t("home.recent.notifications.title")}</h3>
-                  <span className={buildCls(h.viewAllLink, styles.landingFakeLink)}>{t("home.recent.notifications.viewAll")}</span>
-                </div>
-                <p className={h.cardDesc}>{t("home.kanban.noticeDesc")}</p>
-              </div>
-            </header>
-            <div className={h.columnBody}>
-              <ul className={h.list}>
-                <li>
-                  <div className={h.feedRowStatic}>
-                    <UserAvatar nickname={t("landing.mockNotifyActor")} imageUrl="" size={40} className={h.feedAvatar} />
-                    <div className={h.feedMain}>
-                      <span className={h.notifTitle}>{t("landing.mockNotifyPreviewTitle")}</span>
-                      <span className={h.listTime}>{formatDateTime(t("landing.mockNotifyPreviewAtIso"), locale)}</span>
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </article>
         </section>
       </div>
     </div>
@@ -201,11 +183,8 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   const { t } = useI18n();
   const c = calStyles;
 
-  const pillLabel = (key: "a" | "b") =>
-    key === "a" ? t("landing.mockCalAssignment1") : t("landing.mockCalAssignment2");
-
   return (
-    <div className={buildCls(c.calendarCard, styles.landingMiniCal)} role="img" aria-label={ariaLabel}>
+    <div className={buildCls(c.calendarCard, styles.landingMiniCal, styles.landingMiniCalWide)} role="img" aria-label={ariaLabel}>
       <header className={c.calendarHeader}>
         <div className={c.headerActions}>
           <div className={c.periodNav}>
@@ -249,7 +228,7 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
       </div>
 
       <div className={buildCls(c.monthGrid, styles.landingMiniCalGrid)}>
-        {MAY_2026_CAL_CELLS.map((cell, idx) => (
+        {MAY_2026_CAL.map((cell, idx) => (
           <section
             key={`cal-${idx}`}
             className={buildCls(c.dayCell, cell.today ? c.dayCellToday : "", cell.outside ? c.dayCellMuted : "").trim()}
@@ -259,13 +238,17 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
                 <span className={buildCls(c.dayNumber, cell.outside ? c.dayNumberMuted : "").trim()}>{cell.day}</span>
               </header>
               <ul className={c.assignmentList}>
-                {cell.pillKey ? (
-                  <li className={c.assignmentRow}>
-                    <span className={c.assignmentPill}>
-                      <span className={c.assignmentTitle}>{pillLabel(cell.pillKey)}</span>
-                    </span>
-                  </li>
-                ) : null}
+                {(cell.pills ?? []).map((pillIdx) => {
+                  const key = CAL_PILL_KEYS[pillIdx];
+                  if (key === undefined) return null;
+                  return (
+                    <li key={`${idx}-${pillIdx}`} className={c.assignmentRow}>
+                      <span className={c.assignmentPill}>
+                        <span className={c.assignmentTitle}>{t(key)}</span>
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </section>
@@ -283,6 +266,7 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
   const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
   const isLate = due.getTime() < Date.now();
   const dueTone = dueBadgeTone(isLate, daysLeft);
+  const platform = t("landing.mockAssignmentPlatform");
 
   return (
     <div className={styles.landingAssignOuter} role="img" aria-label={ariaLabel}>
@@ -298,12 +282,9 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
                   </span>
                   <div className={a.titleNear}>
                     <Badge tone="neutral" chipIndex={1}>
-                      {t("landing.mockAssignmentPlatform")}
+                      {platform}
                     </Badge>
-                    <DifficultyBadge platform={t("landing.mockAssignmentPlatform")} difficulty={t("landing.mockAssignmentDifficulty")} />
-                    <Badge tone="neutral" chipIndex={0}>
-                      {t("landing.mockAssignmentGroup")}
-                    </Badge>
+                    <DifficultyBadge platform={platform} difficulty={t("landing.mockAssignmentDifficulty")} />
                   </div>
                 </div>
               </div>
@@ -374,7 +355,7 @@ export function MiniDiffReview({ ariaLabel }: { ariaLabel: string }) {
                         </div>
                         <div className={ccStyles.subHead}>{t("landing.mockDiffLineRef")}</div>
                         <div className={ccStyles.markdownWrap}>
-                          <p className={styles.landingCommentPlain}>{t("landing.mockDiffBody1")}</p>
+                          <MarkdownPreview content={t("landing.mockDiffBody1")} />
                         </div>
                       </div>
                     </div>
@@ -415,21 +396,47 @@ export function MiniAiPanel({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
+export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
+  const { t } = useI18n();
+  const s = cohortStyles;
+
+  return (
+    <div className={buildCls(s.root, styles.landingCohortOuter)} role="img" aria-label={ariaLabel}>
+      <div className={s.section}>
+        <h3 className={s.codeSectionTitle}>{t("landing.mockCohortReportTitle")}</h3>
+        <p className={s.sub}>{t("landing.mockCohortAssignmentLabel")}</p>
+        <div className={s.codeSection}>
+          <MarkdownPreview content={t("landing.mockCohortMarkdown")} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type HeroNotifyKind = "assignment" | "user" | "deadline";
+
 export function MiniNotifyList({ ariaLabel }: { ariaLabel: string }) {
   const { locale, t } = useI18n();
   const h = homeStyles;
-  const items = [
+  const rows: { kind: HeroNotifyKind; title: string; when: string; actor?: string }[] = [
     {
+      kind: "assignment",
+      title: t("landing.mockNotifyAssignCreatedTitle"),
+      when: formatDateTime(t("landing.mockNotifyAssignCreatedAtIso"), locale),
+    },
+    {
+      kind: "user",
       title: t("landing.mockNotify1Title"),
       when: formatDateTime(t("landing.mockNotify1AtIso"), locale),
       actor: t("landing.mockNotify1Actor"),
     },
     {
+      kind: "deadline",
       title: t("landing.mockNotify2Title"),
       when: formatDateTime(t("landing.mockNotify2AtIso"), locale),
-      actor: t("landing.mockNotify2Actor"),
     },
     {
+      kind: "user",
       title: t("landing.mockNotify3Title"),
       when: formatDateTime(t("landing.mockNotify3AtIso"), locale),
       actor: t("landing.mockNotify3Actor"),
@@ -439,10 +446,16 @@ export function MiniNotifyList({ ariaLabel }: { ariaLabel: string }) {
   return (
     <div className={styles.landingNotifyOuter} role="img" aria-label={ariaLabel}>
       <ul className={h.list}>
-        {items.map((item) => (
+        {rows.map((item) => (
           <li key={item.title}>
             <div className={h.feedRowStatic}>
-              <UserAvatar nickname={item.actor} imageUrl="" size={40} className={h.feedAvatar} />
+              {item.kind === "assignment" ? null : item.kind === "deadline" ? (
+                <span className={buildCls(h.feedGlyph, h.noticeGlyph)} aria-hidden>
+                  <Icon name="calendar" size={18} />
+                </span>
+              ) : (
+                <UserAvatar nickname={item.actor ?? ""} imageUrl="" size={40} className={h.feedAvatar} />
+              )}
               <div className={h.feedMain}>
                 <span className={h.notifTitle}>{item.title}</span>
                 <span className={h.listTime}>{item.when}</span>
