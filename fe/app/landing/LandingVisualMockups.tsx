@@ -7,6 +7,7 @@ import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import type { CohortSubmissionArtifact } from "../../src/assignments/server";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { buildCls } from "../../src/lib/buildCls";
+import { resolveShikiLanguage } from "../../src/lib/shikiLanguage";
 import { dueBadgeTone } from "../../src/lib/dueBadgeTone";
 import cohortStyles from "../groups/[groupId]/assignments/[assignmentId]/cohort/CohortAnalysisClient.module.css";
 import calStyles from "../groups/[groupId]/calendar/page.module.css";
@@ -331,7 +332,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                       <div className={h.feedMain}>
                         <span className={buildCls(h.listTitle, styles.psProblemTitle)}>{t(row.titleKey)}</span>
                         <span className={h.listMeta}>
-                          <span className={h.listLang}>{t(row.langKey)}</span>
+                          <Badge tone="neutral">{resolveShikiLanguage(t(row.langKey))}</Badge>
                           <span className={h.listTime}>{formatDateTime(t(row.atIsoKey), locale)}</span>
                         </span>
                       </div>
