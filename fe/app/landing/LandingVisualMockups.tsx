@@ -11,6 +11,7 @@ import calStyles from "../groups/[groupId]/calendar/page.module.css";
 import diffStyles from "../groups/[groupId]/assignments/[assignmentId]/submissions/[submissionId]/diff/DiffViewerClient.module.css";
 import homeStyles from "../page.module.css";
 import ccStyles from "../../src/ui/comments/CommentCard.module.css";
+import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
 import { Badge } from "../../src/ui/Badge";
 import { Button } from "../../src/ui/Button";
 import { DifficultyBadge } from "../../src/ui/DifficultyBadge";
@@ -134,10 +135,8 @@ export function MiniNotifyList({
         {shown.map((item, idx) => (
           <li key={`${idx}-${item.kind}`}>
             <div className={h.feedRowStatic}>
-              {item.kind === "assignment" ? null : item.kind === "deadline" ? (
-                <span className={buildCls(h.feedGlyph, h.noticeGlyph)} aria-hidden>
-                  <Icon name="calendar" size={18} />
-                </span>
+              {item.kind === "assignment" || item.kind === "deadline" ? (
+                <AssignmentNotificationGlyph className={h.feedAvatar} />
               ) : (
                 <UserAvatar nickname={item.actor ?? ""} imageUrl="" size={40} className={h.feedAvatar} />
               )}

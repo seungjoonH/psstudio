@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
+import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
+import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
 import { Button } from "../../src/ui/Button";
 import { UserAvatar } from "../../src/ui/UserAvatar";
 import { deleteAllNotificationsAction, deleteNotificationAction } from "./actions";
@@ -63,7 +65,10 @@ export function NotificationsClient({ items }: Props) {
         <ul className={styles.list}>
           {items.map((n) => {
             const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
-            const face = showActorFace ? (
+            const useAssignmentGlyph = notificationUsesAssignmentGlyph(n.type);
+            const face = useAssignmentGlyph ? (
+              <AssignmentNotificationGlyph className={styles.avatar} />
+            ) : showActorFace ? (
               <UserAvatar
                 nickname={notificationActorDisplayName(n)}
                 imageUrl={n.actorProfileImageUrl ?? ""}

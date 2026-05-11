@@ -13,8 +13,10 @@ import { buildCls } from "../src/lib/buildCls";
 import { dueBadgeTone } from "../src/lib/dueBadgeTone";
 import { formatRelativeRecency } from "../src/lib/formatRelativeRecency";
 import { homeNotificationKind } from "../src/lib/homeNotificationKind";
+import { notificationUsesAssignmentGlyph } from "../src/lib/notificationUsesAssignmentGlyph";
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
 import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
+import { AssignmentNotificationGlyph } from "../src/ui/AssignmentNotificationGlyph";
 import { Badge } from "../src/ui/Badge";
 import { Button } from "../src/ui/Button";
 import { Icon } from "../src/ui/Icon";
@@ -233,10 +235,13 @@ export function HomeClient({
                   <ul className={styles.notifList}>
                     {notifications.map((n) => {
                       const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+                      const useAssignmentGlyph = notificationUsesAssignmentGlyph(n.type);
                       const kindKey = homeNotificationKind(n.type);
                       const kindLabel = t(`home.recent.notifications.kind.${kindKey}`);
                       const recency = formatRelativeRecency(n.createdAt, locale);
-                      const face = showActorFace ? (
+                      const face = useAssignmentGlyph ? (
+                        <AssignmentNotificationGlyph className={styles.feedAvatar} />
+                      ) : showActorFace ? (
                         <UserAvatar
                           nickname={notificationActorDisplayName(n)}
                           imageUrl={n.actorProfileImageUrl ?? ""}
