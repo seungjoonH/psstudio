@@ -1,0 +1,89 @@
+services:
+  fe:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter fe dev"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - pnpm-store:/root/.local/share/pnpm/store
+    depends_on:
+      be:
+        condition: service_started
+
+  be:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter be dev"
+    environment:
+      BE_PORT: 4000
+      LLM_PROVIDER: ${LLM_PROVIDER:-openrouter}
+      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY:-}
+      REQUESTY_API_KEY: ${REQUESTY_API_KEY:-}
+      REQUESTY_BASE_URL: ${REQUESTY_BASE_URL:-https://router.requesty.ai/v1/chat/completions}
+      LLM_MODEL_PROBLEM_ANALYZE: ${LLM_MODEL_PROBLEM_ANALYZE:-openai/gpt-4o-mini}
+      LLM_MODEL_SUBMISSION_REVIEW: ${LLM_MODEL_SUBMISSION_REVIEW:-openai/gpt-4o-mini}
+      DATABASE_URL: postgres://postgres:postgres@supabase:5432/postgres
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - pnpm-store:/root/.local/share/pnpm/store
+    depends_on:
+      supabase:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter worker dev"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@supabase:5432/postgres
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - .:/app
+      - pnpm-store:/root/.local/share/pnpm/store
+    depends_on:
+      supabase:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  supabase:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "54322:5432"
+    volumes:
+      - supabase-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pnpm-store:
+  supabase-data:
+  redis-data:

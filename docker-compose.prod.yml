@@ -20,7 +20,7 @@ services:
         condition: service_started
 
   fe:
-    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-fe:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: "${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-fe:${IMAGE_TAG:?IMAGE_TAG is required}"
     restart: unless-stopped
     env_file:
       - ${APP_ENV_FILE:?APP_ENV_FILE is required}
@@ -31,7 +31,7 @@ services:
         condition: service_started
 
   be:
-    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-be:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: "${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-be:${IMAGE_TAG:?IMAGE_TAG is required}"
     restart: unless-stopped
     env_file:
       - ${APP_ENV_FILE:?APP_ENV_FILE is required}
@@ -44,7 +44,7 @@ services:
         condition: service_healthy
 
   worker:
-    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-worker:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: "${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/psstudio-worker:${IMAGE_TAG:?IMAGE_TAG is required}"
     restart: unless-stopped
     env_file:
       - ${APP_ENV_FILE:?APP_ENV_FILE is required}
