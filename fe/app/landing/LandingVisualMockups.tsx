@@ -449,48 +449,63 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
-const LANDING_GROUP_MOCKS = [
+type LandingGroupMockRow = {
+  nameKey: string;
+  metaTailKey: string;
+  memberCount: number;
+  members: { nickname: string; imageUrl: string }[];
+  descriptionKey?: string;
+};
+
+const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   {
     nameKey: "landing.mockGroup1Name",
-    metaKey: "landing.mockGroup1Meta",
-    memberCount: 12,
+    descriptionKey: "landing.mockGroup1Description",
+    metaTailKey: "landing.mockGroup1MetaTail",
+    memberCount: 4,
     members: [
       { nickname: "윤하", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-0/96/96" },
-      { nickname: "태양", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-1/96/96" },
+      { nickname: "태양", imageUrl: "" },
       { nickname: "서준", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-2/96/96" },
     ],
   },
   {
     nameKey: "landing.mockGroup2Name",
-    metaKey: "landing.mockGroup2Meta",
-    memberCount: 8,
+    metaTailKey: "landing.mockGroup2MetaTail",
+    memberCount: 3,
     members: [
-      { nickname: "하린", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-0/96/96" },
+      { nickname: "하린", imageUrl: "" },
       { nickname: "도윤", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-1/96/96" },
-      { nickname: "채원", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-2/96/96" },
+      { nickname: "채원", imageUrl: "" },
     ],
   },
   {
     nameKey: "landing.mockGroup3Name",
-    metaKey: "landing.mockGroup3Meta",
-    memberCount: 24,
+    descriptionKey: "landing.mockGroup3Description",
+    metaTailKey: "landing.mockGroup3MetaTail",
+    memberCount: 5,
     members: [
-      { nickname: "유진", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-0/96/96" },
+      { nickname: "유진", imageUrl: "" },
       { nickname: "시우", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-1/96/96" },
       { nickname: "다은", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-2/96/96" },
     ],
   },
   {
     nameKey: "landing.mockGroup4Name",
-    metaKey: "landing.mockGroup4Meta",
-    memberCount: 6,
+    metaTailKey: "landing.mockGroup4MetaTail",
+    memberCount: 2,
     members: [
-      { nickname: "준호", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-0/96/96" },
-      { nickname: "수아", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-1/96/96" },
-      { nickname: "현우", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-2/96/96" },
+      { nickname: "준호", imageUrl: "" },
+      { nickname: "수아", imageUrl: "" },
     ],
   },
-] as const;
+  {
+    nameKey: "landing.mockGroup5Name",
+    metaTailKey: "landing.mockGroup5MetaTail",
+    memberCount: 1,
+    members: [{ nickname: "지은", imageUrl: "" }],
+  },
+];
 
 export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
   const { t } = useI18n();
@@ -511,32 +526,40 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
         </Link>
       </div>
       <ul className={gx.grid}>
-        {LANDING_GROUP_MOCKS.map((row) => (
-          <li key={row.nameKey} className={gx.card}>
-            <div className={gx.cardLink}>
-              <strong className={gx.groupName}>
-                <Icon name="users" size={16} className={gx.groupNameIcon} aria-hidden />
-                {t(row.nameKey)}
-              </strong>
-              <p className={gx.groupDescription}>{"\u00a0"}</p>
-              <span className={gx.groupMeta}>{t(row.metaKey)}</span>
-              <div className={gx.avatarStack} aria-hidden>
-                {row.members.map((m) => (
-                  <UserAvatar
-                    key={`${row.nameKey}-${m.nickname}`}
-                    nickname={m.nickname}
-                    imageUrl={m.imageUrl}
-                    size={44}
-                    className={gx.avatar}
-                  />
-                ))}
-                {row.memberCount > 3 ? (
-                  <span className={gx.avatarMore}>+{row.memberCount - 3}</span>
-                ) : null}
+        {LANDING_GROUP_MOCKS.map((row) => {
+          const rawDesc = row.descriptionKey !== undefined ? t(row.descriptionKey).trim() : "";
+          const desc = rawDesc.length > 0 ? rawDesc : null;
+          return (
+            <li key={row.nameKey} className={gx.card}>
+              <div className={gx.cardLink}>
+                <strong className={gx.groupName}>
+                  <Icon name="users" size={16} className={gx.groupNameIcon} aria-hidden />
+                  {t(row.nameKey)}
+                </strong>
+                <p className={gx.groupDescription}>{desc}</p>
+                <span className={gx.groupMeta}>
+                  {t("groups.memberCount", { count: row.memberCount })}
+                  {" · "}
+                  {t(row.metaTailKey)}
+                </span>
+                <div className={gx.avatarStack} aria-hidden>
+                  {row.members.slice(0, 3).map((m) => (
+                    <UserAvatar
+                      key={`${row.nameKey}-${m.nickname}`}
+                      nickname={m.nickname}
+                      imageUrl={m.imageUrl}
+                      size={44}
+                      className={gx.avatar}
+                    />
+                  ))}
+                  {row.memberCount > 3 ? (
+                    <span className={gx.avatarMore}>+{row.memberCount - 3}</span>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
