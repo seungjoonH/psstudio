@@ -4,7 +4,9 @@
 import type { MeResponse } from "@psstudio/shared";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { HomeRecentNotification } from "../src/auth/api.server";
+import { deleteAllNotificationsAction, deleteNotificationAction } from "./notifications/actions";
 import { LoginClient } from "./login/LoginClient";
 import { useI18n } from "../src/i18n/I18nProvider";
 import { buildCls } from "../src/lib/buildCls";
@@ -14,6 +16,7 @@ import { homeNotificationKind } from "../src/lib/homeNotificationKind";
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
 import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
 import { Badge } from "../src/ui/Badge";
+import { Button } from "../src/ui/Button";
 import { Icon } from "../src/ui/Icon";
 import { UserAvatar } from "../src/ui/UserAvatar";
 import styles from "./page.module.css";
@@ -66,6 +69,26 @@ export function HomeClient({
   todoItems = [],
 }: Props) {
   const { locale, t } = useI18n();
+  const router = useRouter();
+
+  async function onDeleteHomeNotification(id: string) {
+    try {
+      await deleteNotificationAction(id);
+      router.refresh();
+    } catch {
+      window.alert(t("notifications.deleteFailed"));
+    }
+  }
+
+  async function onDeleteAllHomeNotifications() {
+    if (!window.confirm(t("notifications.deleteAllConfirm"))) return;
+    try {
+      await deleteAllNotificationsAction();
+      router.refresh();
+    } catch {
+      window.alert(t("notifications.deleteFailed"));
+    }
+  }
 
   if (me === null) {
     return <LoginClient apiBase={loginApiBase} />;
@@ -190,14 +213,9 @@ export function HomeClient({
               <Icon name="mail" size={16} />
             </span>
             <div className={styles.columnHeadBody}>
-              <div className={styles.columnHeadTop}>
-                <h2 id="home-notif-title" className={styles.cardTitle}>
-                  {t("home.recent.notifications.title")}
-                </h2>
-                <Link href="/notifications" className={styles.viewAllLink}>
-                  {t("home.recent.notifications.viewAll")}
-                </Link>
-              </div>
+              <h2 id="home-notif-title" className={styles.cardTitle}>
+                {t("home.recent.notifications.title")}
+              </h2>
               <p className={styles.cardDesc}>{t("home.kanban.noticeDesc")}</p>
             </div>
           </header>
@@ -205,54 +223,72 @@ export function HomeClient({
             {notifications.length === 0 ? (
               <p className={styles.cardEmpty}>{t("home.recent.notifications.empty")}</p>
             ) : (
-              <ul className={styles.list}>
-              {notifications.map((n) => {
-                const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
-                const kindKey = homeNotificationKind(n.type);
-                const kindLabel = t(`home.recent.notifications.kind.${kindKey}`);
-                const recency = formatRelativeRecency(n.createdAt, locale);
-                const face = showActorFace ? (
-                  <UserAvatar
-                    nickname={notificationActorDisplayName(n)}
-                    imageUrl={n.actorProfileImageUrl ?? ""}
-                    size={40}
-                    className={styles.feedAvatar}
-                  />
-                ) : null;
-                const card = (
-                  <div className={styles.kanbanCard}>
-                    <div className={styles.kanbanItemTop}>
-                      <span className={buildCls(styles.notifTitle, styles.notifTitleKanban)}>{n.title}</span>
-                      <div className={styles.kanbanItemTopRight}>
-                        <Badge tone="neutral">{recency}</Badge>
-                      </div>
-                    </div>
-                    <span className={styles.listMeta}>
-                      <Badge tone="neutral">{kindLabel}</Badge>
-                      {showActorFace ? (
-                        <Badge tone="neutral">{notificationActorDisplayName(n)}</Badge>
-                      ) : null}
-                    </span>
-                  </div>
-                );
-                const rowClass = buildCls(styles.feedRow, styles.feedRowAlignStart);
-                return (
-                  <li key={n.id}>
-                    {n.href !== null ? (
-                      <Link href={n.href} className={rowClass}>
-                        {face}
-                        {card}
-                      </Link>
-                    ) : (
-                      <div className={buildCls(styles.feedRowStatic, styles.feedRowAlignStart)}>
-                        {face}
-                        {card}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-              </ul>
+              <>
+                <div className={styles.notifToolbar}>
+                  <Button type="button" variant="danger" onClick={() => void onDeleteAllHomeNotifications()}>
+                    {t("notifications.deleteAll")}
+                  </Button>
+                </div>
+                <div className={styles.notifListCard}>
+                  <ul className={styles.notifList}>
+                    {notifications.map((n) => {
+                      const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+                      const kindKey = homeNotificationKind(n.type);
+                      const kindLabel = t(`home.recent.notifications.kind.${kindKey}`);
+                      const recency = formatRelativeRecency(n.createdAt, locale);
+                      const face = showActorFace ? (
+                        <UserAvatar
+                          nickname={notificationActorDisplayName(n)}
+                          imageUrl={n.actorProfileImageUrl ?? ""}
+                          size={40}
+                          className={styles.feedAvatar}
+                        />
+                      ) : null;
+                      const card = (
+                        <div className={styles.kanbanCard}>
+                          <div className={styles.kanbanItemTop}>
+                            <span className={buildCls(styles.notifTitle, styles.notifTitleKanban)}>{n.title}</span>
+                            <div className={styles.kanbanItemTopRight}>
+                              <Badge tone="neutral">{recency}</Badge>
+                            </div>
+                          </div>
+                          <span className={styles.listMeta}>
+                            <Badge tone="neutral">{kindLabel}</Badge>
+                            {showActorFace ? (
+                              <Badge tone="neutral">{notificationActorDisplayName(n)}</Badge>
+                            ) : null}
+                          </span>
+                        </div>
+                      );
+                      const mainClass = buildCls(styles.notifRowMain, styles.feedRowAlignStart);
+                      return (
+                        <li key={n.id} className={styles.notifListRow}>
+                          {n.href !== null ? (
+                            <Link href={n.href} className={mainClass}>
+                              {face}
+                              {card}
+                            </Link>
+                          ) : (
+                            <div className={mainClass}>
+                              {face}
+                              {card}
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className={styles.notifDeleteBtn}
+                            aria-label={t("notifications.deleteOneAria")}
+                            onClick={() => void onDeleteHomeNotification(n.id)}
+                          >
+                            {t("notifications.deleteOne")}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
             )}
           </div>
         </article>

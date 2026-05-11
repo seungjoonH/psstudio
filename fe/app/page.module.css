@@ -117,6 +117,65 @@
   flex-wrap: wrap;
 }
 
+.notifToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.notifListCard {
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--color-surface-muted) 55%, var(--color-surface));
+}
+
+.notifList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.notifListRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+  background: var(--color-surface-paper);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.notifListRow:has(a.notifRowMain:hover) {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.notifRowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.notifRowMain:hover {
+  color: inherit;
+}
+
+.notifDeleteBtn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .viewAllLink {
   font-size: 12px;
   font-weight: 650;
