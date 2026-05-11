@@ -17,6 +17,7 @@ import { notificationUsesAssignmentGlyph } from "../src/lib/notificationUsesAssi
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
 import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
 import { AssignmentNotificationGlyph } from "../src/ui/AssignmentNotificationGlyph";
+import { DeadlineSoonNotificationGlyph } from "../src/ui/DeadlineSoonNotificationGlyph";
 import { Badge } from "../src/ui/Badge";
 import { Button } from "../src/ui/Button";
 import { Icon } from "../src/ui/Icon";
@@ -234,12 +235,17 @@ export function HomeClient({
                 <div className={styles.notifListCard}>
                   <ul className={styles.notifList}>
                     {notifications.map((n) => {
-                      const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+                      const showActorFace =
+                        n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED &&
+                        n.type !== NOTIFICATION_TYPES.DEADLINE_SOON;
                       const useAssignmentGlyph = notificationUsesAssignmentGlyph(n.type);
                       const kindKey = homeNotificationKind(n.type);
                       const kindLabel = t(`home.recent.notifications.kind.${kindKey}`);
                       const recency = formatRelativeRecency(n.createdAt, locale);
-                      const face = useAssignmentGlyph ? (
+                      const face =
+                        n.type === NOTIFICATION_TYPES.DEADLINE_SOON ? (
+                          <DeadlineSoonNotificationGlyph className={styles.feedAvatar} />
+                        ) : useAssignmentGlyph ? (
                         <AssignmentNotificationGlyph className={styles.feedAvatar} />
                       ) : showActorFace ? (
                         <UserAvatar

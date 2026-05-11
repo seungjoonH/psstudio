@@ -9,6 +9,7 @@ import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
 import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
 import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
+import { DeadlineSoonNotificationGlyph } from "../../src/ui/DeadlineSoonNotificationGlyph";
 import { Button } from "../../src/ui/Button";
 import { UserAvatar } from "../../src/ui/UserAvatar";
 import { deleteAllNotificationsAction, deleteNotificationAction } from "./actions";
@@ -64,9 +65,13 @@ export function NotificationsClient({ items }: Props) {
       ) : (
         <ul className={styles.list}>
           {items.map((n) => {
-            const showActorFace = n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+            const showActorFace =
+              n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED && n.type !== NOTIFICATION_TYPES.DEADLINE_SOON;
             const useAssignmentGlyph = notificationUsesAssignmentGlyph(n.type);
-            const face = useAssignmentGlyph ? (
+            const face =
+              n.type === NOTIFICATION_TYPES.DEADLINE_SOON ? (
+                <DeadlineSoonNotificationGlyph className={styles.avatar} />
+              ) : useAssignmentGlyph ? (
               <AssignmentNotificationGlyph className={styles.avatar} />
             ) : showActorFace ? (
               <UserAvatar
