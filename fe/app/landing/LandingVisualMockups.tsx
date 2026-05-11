@@ -2,6 +2,7 @@
 
 // 랜딩용 예시 UI 더미와 장식 이미지를 렌더링합니다.
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import { useI18n } from "../../src/i18n/I18nProvider";
@@ -222,6 +223,16 @@ const LANDING_DONE_MOCKS = [
 export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
   const { locale, t } = useI18n();
   const h = homeStyles;
+  const todoRowsSorted = useMemo(() => {
+    const rows = [...LANDING_TODO_MOCKS];
+    rows.sort((a, b) => {
+      const aSolved = a.solved ? 1 : 0;
+      const bSolved = b.solved ? 1 : 0;
+      if (aSolved !== bSolved) return aSolved - bSolved;
+      return new Date(t(a.dueIsoKey)).getTime() - new Date(t(b.dueIsoKey)).getTime();
+    });
+    return rows;
+  }, [locale, t]);
 
   return (
     <div className={styles.landingHomeOuter} role="img" aria-label={ariaLabel}>
@@ -250,7 +261,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
             </header>
             <div className={h.columnBody}>
               <ul className={h.list}>
-                {LANDING_TODO_MOCKS.map((row) => {
+                {todoRowsSorted.map((row) => {
                   const dueAt = t(row.dueIsoKey);
                   const todoDays = getDaysLeft(dueAt);
                   const todoLate = new Date(dueAt).getTime() < Date.now();
@@ -546,13 +557,23 @@ const LANDING_ASSIGNMENT_SHOWCASE = [
 ] as const;
 
 export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const a = assignStyles;
+  const assignShowRowsSorted = useMemo(() => {
+    const rows = [...LANDING_ASSIGNMENT_SHOWCASE];
+    rows.sort((aRow, bRow) => {
+      const aSolved = aRow.solved ? 1 : 0;
+      const bSolved = bRow.solved ? 1 : 0;
+      if (aSolved !== bSolved) return aSolved - bSolved;
+      return new Date(t(aRow.dueIsoKey)).getTime() - new Date(t(bRow.dueIsoKey)).getTime();
+    });
+    return rows;
+  }, [locale, t]);
 
   return (
     <div className={styles.landingAssignOuter} role="img" aria-label={ariaLabel}>
       <ul className={a.list}>
-        {LANDING_ASSIGNMENT_SHOWCASE.map((row) => {
+        {assignShowRowsSorted.map((row) => {
           const dueAt = t(row.dueIsoKey);
           const due = new Date(dueAt);
           const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
