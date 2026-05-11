@@ -2,7 +2,7 @@
 
 // 랜딩용 예시 UI 더미와 장식 이미지를 렌더링합니다.
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import type { CohortSubmissionArtifact } from "../../src/assignments/server";
 import { useI18n } from "../../src/i18n/I18nProvider";
@@ -100,6 +100,12 @@ const MAY_2026_CAL: { day: number; outside: boolean; today: boolean; pills?: num
 ];
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+/** 랜딩 2026년 5월 목업 셀 → Date(로컬). */
+function landingMockMayCellToDate(cell: { day: number; outside: boolean }): Date {
+  if (cell.outside && cell.day >= 26) return new Date(2026, 3, cell.day);
+  return new Date(2026, 4, cell.day);
+}
 
 type HeroNotifyKind = "assignment" | "user" | "deadline";
 
@@ -356,6 +362,13 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
 export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   const { t, locale } = useI18n();
   const c = calStyles;
+  const [calView, setCalView] = useState<"month" | "week">("month");
+
+  const weekCells = useMemo(() => {
+    const idx = MAY_2026_CAL.findIndex((cell) => cell.today);
+    const start = idx >= 0 ? Math.floor(idx / 7) * 7 : 0;
+    return MAY_2026_CAL.slice(start, start + 7);
+  }, []);
 
   const yearMonthCaption = useMemo(
     () =>
@@ -366,6 +379,21 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
     [locale],
   );
 
+  const periodCaption = useMemo(() => {
+    const loc = locale === "ko" ? "ko-KR" : "en-US";
+    if (calView === "month") return yearMonthCaption;
+    const a = landingMockMayCellToDate(weekCells[0]!);
+    const b = landingMockMayCellToDate(weekCells[6]!);
+    const dtf = new Intl.DateTimeFormat(loc, { month: "long", day: "numeric", year: "numeric" });
+    return `${dtf.format(a)} – ${dtf.format(b)}`;
+  }, [calView, locale, weekCells, yearMonthCaption]);
+
+  const gridCells = calView === "week" ? weekCells : MAY_2026_CAL;
+  const gridClass =
+    calView === "week"
+      ? buildCls(c.weekGrid, styles.landingMiniCalWeekGrid)
+      : buildCls(c.monthGrid, styles.landingMiniCalGrid);
+
   return (
     <div className={buildCls(c.calendarCard, styles.landingMiniCal, styles.landingMiniCalWide)} role="img" aria-label={ariaLabel}>
       <header className={buildCls(c.calendarHeader, styles.landingMiniCalHeader)}>
@@ -374,7 +402,7 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
             <span className={c.iconNavBtn} aria-hidden>
               <Icon name="chevronRight" size={16} className={c.chevronLeft} />
             </span>
-            <strong className={buildCls(c.periodLabel, styles.landingMiniCalPeriodLabel)}>{yearMonthCaption}</strong>
+            <strong className={buildCls(c.periodLabel, styles.landingMiniCalPeriodLabel)}>{periodCaption}</strong>
             <span className={c.iconNavBtn} aria-hidden>
               <Icon name="chevronRight" size={16} />
             </span>
@@ -385,6 +413,8 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
               <SegmentedControl
                 name="landingCalView"
                 defaultValue="month"
+                value={calView}
+                onValueChange={(v) => setCalView(v === "week" ? "week" : "month")}
                 aria-label={t("groupCalendar.viewAria")}
                 noWrap
                 options={[
@@ -411,10 +441,10 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
         ))}
       </div>
 
-      <div className={buildCls(c.monthGrid, styles.landingMiniCalGrid)}>
-        {MAY_2026_CAL.map((cell, idx) => (
+      <div className={gridClass}>
+        {gridCells.map((cell, idx) => (
           <section
-            key={`cal-${idx}`}
+            key={calView === "week" ? `wk-${cell.day}-${idx}` : `cal-${idx}`}
             className={buildCls(
               c.dayCell,
               styles.landingMiniCalDayCell,

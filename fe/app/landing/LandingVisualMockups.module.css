@@ -68,6 +68,12 @@
   align-items: stretch;
 }
 
+/* 주간 뷰: 7열 한 행, 셀을 높여 과제 pill을 월간보다 넉넉히 둡니다. */
+.landingMiniCalWeekGrid {
+  grid-template-rows: minmax(220px, 320px) !important;
+  align-items: stretch;
+}
+
 .landingMiniCalWide {
   width: 100%;
   max-width: min(100%, 880px);
