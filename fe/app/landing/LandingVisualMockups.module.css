@@ -45,6 +45,12 @@
   min-height: 0 !important;
 }
 
+/* 열 카드 테두리만 남기고 행에 또 테두리를 두지 않아 이중 테두리를 없앱니다. */
+.landingHomeColumn :global(.feedRowStatic) {
+  border: none;
+  background: color-mix(in oklab, var(--color-surface-muted) 42%, var(--color-surface-paper));
+}
+
 .landingFakeLink {
   cursor: default;
   pointer-events: none;
@@ -129,6 +135,9 @@
 }
 
 .landingNotifyCompact {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
   padding: 0;
   border: none;
   background: transparent;

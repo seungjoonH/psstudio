@@ -142,7 +142,7 @@ export function MiniNotifyList({
 
   return (
     <div
-      className={buildCls(styles.landingNotifyOuter, compact ? styles.landingNotifyCompact : "")}
+      className={compact ? styles.landingNotifyCompact : styles.landingNotifyOuter}
       {...(compact ? { "aria-hidden": true } : { role: "img", "aria-label": ariaLabel })}
     >
       <ul className={h.list}>
@@ -178,22 +178,6 @@ export function LandingHeroDecor() {
 
 const LANDING_TODO_MOCKS = [
   {
-    titleKey: "landing.mockKanbanTodo1Title",
-    groupKey: "landing.mockKanbanTodo1Group",
-    platformKey: "landing.mockKanbanTodo1Platform",
-    algoKey: "landing.mockKanbanTodo1Algo",
-    dueIsoKey: "landing.mockKanbanTodo1DueIso",
-    solved: false,
-  },
-  {
-    titleKey: "landing.mockKanbanTodo2Title",
-    groupKey: "landing.mockKanbanTodo2Group",
-    platformKey: "landing.mockKanbanTodo2Platform",
-    algoKey: "landing.mockKanbanTodo2Algo",
-    dueIsoKey: "landing.mockKanbanTodo2DueIso",
-    solved: true,
-  },
-  {
     titleKey: "landing.mockKanbanTodo3Title",
     groupKey: "landing.mockKanbanTodo3Group",
     platformKey: "landing.mockKanbanTodo3Platform",
@@ -210,12 +194,12 @@ const LANDING_TODO_MOCKS = [
     solved: false,
   },
   {
-    titleKey: "landing.mockKanbanTodo5Title",
-    groupKey: "landing.mockKanbanTodo5Group",
-    platformKey: "landing.mockKanbanTodo5Platform",
-    algoKey: "landing.mockKanbanTodo5Algo",
-    dueIsoKey: "landing.mockKanbanTodo5DueIso",
-    solved: true,
+    titleKey: "landing.mockKanbanTodo1Title",
+    groupKey: "landing.mockKanbanTodo1Group",
+    platformKey: "landing.mockKanbanTodo1Platform",
+    algoKey: "landing.mockKanbanTodo1Algo",
+    dueIsoKey: "landing.mockKanbanTodo1DueIso",
+    solved: false,
   },
 ] as const;
 
@@ -229,6 +213,16 @@ const LANDING_DONE_MOCKS = [
     titleKey: "landing.mockHomeDone2Title",
     langKey: "landing.mockHomeDone2Lang",
     atIsoKey: "landing.mockHomeDone2AtIso",
+  },
+  {
+    titleKey: "landing.mockHomeDone3Title",
+    langKey: "landing.mockHomeDone3Lang",
+    atIsoKey: "landing.mockHomeDone3AtIso",
+  },
+  {
+    titleKey: "landing.mockHomeDone4Title",
+    langKey: "landing.mockHomeDone4Lang",
+    atIsoKey: "landing.mockHomeDone4AtIso",
   },
 ] as const;
 
@@ -350,7 +344,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               </div>
             </header>
             <div className={h.columnBody}>
-              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} maxItems={1} compact />
+              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} maxItems={3} compact />
             </div>
           </article>
         </section>
