@@ -461,7 +461,7 @@ export function MiniNotifyList({
       <div className={landingPageStyles.notifyShowcaseListPack} {...rootProps}>
         <div className={landingPageStyles.heroNotifyHead}>
           <h2 id={heroTitleId} className={landingPageStyles.heroNotifyTitle}>
-            {t("home.recent.notifications.title")}
+            {t("landing.mockNotificationsListTitle")}
           </h2>
           {heroRows.length > 0 ? (
             <Button type="button" variant="danger" onClick={onHeroDeleteAll}>
@@ -667,7 +667,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               </span>
               <div className={h.columnHeadBody}>
                 <div className={h.columnHeadTop}>
-                  <h3 className={h.cardTitle}>{t("home.recent.notifications.title")}</h3>
+                  <h3 className={h.cardTitle}>{t("landing.mockNotificationsListTitle")}</h3>
                   <span className={buildCls(h.viewAllLink, styles.landingFakeLink)} tabIndex={-1} aria-hidden>
                     {t("home.recent.notifications.viewAll")}
                   </span>

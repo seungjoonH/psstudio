@@ -144,6 +144,7 @@ export const messages = {
       mockupCohortAria: "과제 제출 코드 AI 비교 분석 리포트 예시",
       mockupHeroNotifyAria: "최근 알림 예시",
       mockupNotifyPreviewAria: "최근 알림 미리보기 예시",
+      mockNotificationsListTitle: "알림 목록",
       mockupGroupsAria: "여러 그룹 소속 예시 카드",
       mockHomeNickname: "민수",
       mockHomeStatTodo: "3",
@@ -231,6 +232,15 @@ export const messages = {
       mockDiffBody1:
         "`return`을 블록으로 묶은 변경이 의도대로인지 확인해 보세요. 같은 값이 연속될 때는 **경계**에서 루프가 어떻게 빠져나오는지도 함께 살보면 좋습니다.\n\n- `return`이 연속 중복 구간에서 한 번만 실행되는지\n- `lo`와 `hi`를 갱신할 때 인덱스가 배열 밖으로 나가지 않는지\n- 다음 분기(`else if` / `else`)로 넘어갈 때 `mid`가 아직 유효한지",
       mockCommentReplyCta: "답글 달기",
+      mockYourNickname: "나",
+      mockYourAvatarLetter: "나",
+      mockCommentDraftPlaceholder: "댓글을 입력하세요",
+      mockCommentSubmit: "댓글 달기",
+      mockCommentCancel: "취소",
+      mockAiReviewLoading: "생성 중…",
+      mockGutterAria: "플러스를 누른 채 위아래로 드래그하면 댓글 줄 범위를 선택합니다. 플러스를 한 번 클릭하면 해당 줄만 선택됩니다.",
+      mockCalFilterTitle: "필터",
+      mockCalFilterCompact: "날짜당 첫 과제만 표시",
       mockAiFeedback1: "· `mid`가 배열 범위 안인지, 빈 구간에서 루프가 멈추는지 점검합니다.",
       mockAiFeedback2: "· `target`과 비교한 뒤 `lo`/`hi`를 어떤 규칙으로 움직이는지 한 줄로 적어 보세요.",
       mockAiFeedback3: "· 오버플로우가 걱정되면 `lo + Math.floor((hi - lo) / 2)` 형태를 권장합니다.",
@@ -261,8 +271,6 @@ export const messages = {
       mockAiReviewButton: "AI 피드백 받기",
       mockAiReviewHint:
         "버튼을 누르면 제출 코드를 바탕으로 AI가 짧은 리뷰 코멘트를 생성합니다. 실제 기능은 로그인 후 과제·제출 화면에서 제공됩니다.",
-      mockCompareLeftTitle: "민지 제출 (Python)",
-      mockCompareRightTitle: "준호 제출 (TypeScript)",
       mockCompareLeftCode:
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
@@ -973,6 +981,7 @@ export const messages = {
       mockupCohortAria: "Sample cohort comparison report",
       mockupHeroNotifyAria: "Sample recent notifications",
       mockupNotifyPreviewAria: "Sample recent notification preview",
+      mockNotificationsListTitle: "Notification list",
       mockupGroupsAria: "Sample multi-group membership cards",
       mockHomeNickname: "Alex",
       mockHomeStatTodo: "3",
@@ -1060,6 +1069,15 @@ export const messages = {
       mockDiffBody1:
         "Check that wrapping `return` in a block matches your intent. When duplicates cluster, also trace how the loop exits at **boundaries**.\n\n- Does `return` run exactly once in a run of equal values?\n- When updating `lo` and `hi`, do indices ever walk past valid range?\n- After this branch, is `mid` still meaningful for the next `else if` / `else`?",
       mockCommentReplyCta: "Reply",
+      mockYourNickname: "You",
+      mockYourAvatarLetter: "Y",
+      mockCommentDraftPlaceholder: "Write a comment",
+      mockCommentSubmit: "Post comment",
+      mockCommentCancel: "Cancel",
+      mockAiReviewLoading: "Generating…",
+      mockGutterAria: "Hold + and drag vertically to select a line range for a comment. Click + once for a single line.",
+      mockCalFilterTitle: "Filter",
+      mockCalFilterCompact: "Show only the first item per day",
       mockAiFeedback1: "· Verify `mid` stays in range and the loop exits on empty slices.",
       mockAiFeedback2: "· Write one line explaining how you move `lo`/`hi` after comparing to `target`.",
       mockAiFeedback3: "· Prefer `lo + Math.floor((hi - lo) / 2)` if overflow is a concern.",
@@ -1090,8 +1108,6 @@ export const messages = {
       mockAiReviewButton: "Get AI feedback",
       mockAiReviewHint:
         "This button requests a short AI review from your submission code. The live feature is available after sign-in on assignment and submission pages.",
-      mockCompareLeftTitle: "Mina's submission (Python)",
-      mockCompareRightTitle: "Jon's submission (TypeScript)",
       mockCompareLeftCode:
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
