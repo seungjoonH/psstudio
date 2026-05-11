@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { buildCls } from "../../lib/buildCls";
 import { MarkdownPreview } from "../MarkdownPreview";
 import { UserAvatar } from "../UserAvatar";
 import styles from "./CohortReportBody.module.css";
@@ -99,6 +100,8 @@ type Props = {
   groupId: string;
   assignmentId: string;
   included: CohortIncludedLite[];
+  /** false면 제출 칩은 링크가 아니며(랜딩 목업 등), 호버·눌림 피드백만 동일하게 둡니다. */
+  submissionLinks?: boolean;
 };
 
 function metaById(rows: CohortIncludedLite[]): Map<string, CohortIncludedLite> {
@@ -158,7 +161,13 @@ function splitLeadingInlinePrefix(text: string): { inlinePrefix: string; blockRe
 }
 
 type Part = { kind: "md"; text: string } | { kind: "chip"; id: string };
-export function CohortReportBody({ reportMarkdown, groupId, assignmentId, included }: Props) {
+export function CohortReportBody({
+  reportMarkdown,
+  groupId,
+  assignmentId,
+  included,
+  submissionLinks = true,
+}: Props) {
   const meta = metaById(included);
   const tableExtracted = extractHtmlTablesForChipSplit(reportMarkdown);
   const bulletExtracted = extractChipBulletBlocks(tableExtracted.text);
@@ -189,8 +198,8 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
     const canonicalId = row?.submissionId ?? p.id;
     const href = `/groups/${groupId}/assignments/${assignmentId}/submissions/${canonicalId}`;
     const nick = row?.authorNickname ?? "?";
-    return (
-      <Link key={key} href={href} className={styles.chip}>
+    const inner = (
+      <>
         <UserAvatar nickname={nick} imageUrl={row?.authorProfileImageUrl} size={18} className={styles.chipAvatar} />
         <span className={styles.chipLabel}>
           {row !== undefined ? (
@@ -202,6 +211,18 @@ export function CohortReportBody({ reportMarkdown, groupId, assignmentId, includ
             canonicalId
           )}
         </span>
+      </>
+    );
+    if (!submissionLinks) {
+      return (
+        <span key={key} className={buildCls(styles.chip, styles.chipStatic)}>
+          {inner}
+        </span>
+      );
+    }
+    return (
+      <Link key={key} href={href} className={styles.chip}>
+        {inner}
       </Link>
     );
   }
