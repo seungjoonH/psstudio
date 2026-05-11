@@ -195,10 +195,6 @@
   word-break: break-word;
 }
 
-.mergedAiThread {
-  margin-top: var(--space-1);
-}
-
 .mergedAiAvatar {
   display: inline-flex;
   align-items: center;

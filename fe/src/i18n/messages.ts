@@ -226,6 +226,7 @@ export const messages = {
       mockDiffCtx: "  const mid = lo + Math.floor((hi - lo) / 2);",
       mockDiffOld: "  if (arr[mid] === target) return mid;",
       mockDiffNew: "  if (arr[mid] === target) { return mid; }",
+      mockDiffPostCtx: "  else if (arr[mid] < target) lo = mid + 1;",
       mockDiffLineRef: "라인 7",
       mockDiffCommentAtIso: "2026-05-10T09:30:00.000Z",
       mockDiffAvatarLetter: "민",
@@ -246,10 +247,10 @@ export const messages = {
       mockNotify3Title: "코드 리뷰 스레드에 답글이 달렸습니다.",
       mockNotify3Actor: "준호",
       mockNotify3AtIso: "2026-05-10T18:40:00.000Z",
-      mockCohortCardTitle: '"네트워크" · 과제 제출 코드 AI 비교 분석',
+      mockCohortCardTitle: '네트워크',
       mockCohortCardMeta: "Programmers · Lv.3 · 네트워크",
       mockCohortMarkdown:
-        "## 요약\n\n[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]와 [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] 제출을 **큐 구현**과 **방문 처리** 관점에서 비교했습니다.\n\n- 두 풀이 모두 거리 배열을 -1로 초기화합니다.\n- 한쪽은 `deque.popleft`, 다른 쪽은 인덱스로 O(1) dequeue를 구성합니다.\n",
+        "## 요약\n\n[[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]]와 [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] 제출을 **큐 구현**과 **방문 처리** 관점에서 비교했습니다.\n\n- 두 풀이 모두 거리 배열을 `-1` 로 초기화합니다.\n- 한쪽은 `deque.popleft`, 다른 쪽은 인덱스로 \$O(1)\$ dequeue를 구성합니다.\n",
       mockCohortAuthorJs: "민지",
       mockCohortAuthorPy: "준호",
       mockCohortSubJsTitle: "TypeScript BFS",
@@ -266,9 +267,9 @@ export const messages = {
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
         "function bfs(adj: number[][], start: number): number[] {\n  const dist = Array(adj.length).fill(-1);\n  const q: number[] = [start];\n  dist[start] = 0;\n  let head = 0;\n  while (head < q.length) {\n    const v = q[head++]!;\n    for (const u of adj[v]!) {\n      if (dist[u] === -1) {\n        dist[u] = dist[v]! + 1;\n        q.push(u);\n      }\n    }\n  }\n  return dist;\n}",
-      mockAiCommentAuthor: "PS Studio AI",
+      mockAiCommentAuthor: "튜터 AI",
       mockAiCommentAtIso: "2026-05-10T09:35:00.000Z",
-      mockAiCommentLineRef: "라인 7",
+      mockAiCommentLineRef: "라인 8",
       mockAiCommentBody:
         "중복 값에서 **한 번만** `return`되는지, `lo`/`hi` 갱신 순서가 일관적인지 확인해 보세요. `mid` 계산은 `lo + Math.floor((hi - lo) / 2)` 형태를 권장합니다.",
       mockNotifyDisclaimer:
@@ -1056,6 +1057,7 @@ export const messages = {
       mockDiffCtx: "  const mid = lo + Math.floor((hi - lo) / 2);",
       mockDiffOld: "  if (arr[mid] === target) return mid;",
       mockDiffNew: "  if (arr[mid] === target) { return mid; }",
+      mockDiffPostCtx: "  else if (arr[mid] < target) lo = mid + 1;",
       mockDiffLineRef: "Line 7",
       mockDiffCommentAtIso: "2026-05-10T09:30:00.000Z",
       mockDiffAvatarLetter: "M",
@@ -1076,10 +1078,10 @@ export const messages = {
       mockNotify3Title: "Someone replied on a code review thread.",
       mockNotify3Actor: "Jon",
       mockNotify3AtIso: "2026-05-10T18:40:00.000Z",
-      mockCohortCardTitle: '"Network" — AI cohort comparison of submissions',
+      mockCohortCardTitle: 'Network',
       mockCohortCardMeta: "Programmers · Lv.3 · Network",
       mockCohortMarkdown:
-        "## Summary\n\nCompared submissions [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] and [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] on **queue handling** and **visit tracking**.\n\n- Both initialize the distance array to -1.\n- One uses `deque.popleft`, the other an index for O(1) dequeue.\n",
+        "## Summary\n\nCompared submissions [[SUBMISSION:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa]] and [[SUBMISSION:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb]] on **queue handling** and **visit tracking**.\n\n- Both initialize the distance array to `-1`.\n- One uses `deque.popleft`, the other an index for \$O(1)\$ dequeue.\n",
       mockCohortAuthorJs: "Mina",
       mockCohortAuthorPy: "Jon",
       mockCohortSubJsTitle: "TypeScript BFS",
@@ -1096,9 +1098,9 @@ export const messages = {
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
         "function bfs(adj: number[][], start: number): number[] {\n  const dist = Array(adj.length).fill(-1);\n  const q: number[] = [start];\n  dist[start] = 0;\n  let head = 0;\n  while (head < q.length) {\n    const v = q[head++]!;\n    for (const u of adj[v]!) {\n      if (dist[u] === -1) {\n        dist[u] = dist[v]! + 1;\n        q.push(u);\n      }\n    }\n  }\n  return dist;\n}",
-      mockAiCommentAuthor: "PS Studio AI",
+      mockAiCommentAuthor: "Tutor AI",
       mockAiCommentAtIso: "2026-05-10T09:35:00.000Z",
-      mockAiCommentLineRef: "Line 7",
+      mockAiCommentLineRef: "Line 8",
       mockAiCommentBody:
         "Check that `return` runs **exactly once** when duplicates cluster, and that `lo`/`hi` updates stay consistent. Prefer `lo + Math.floor((hi - lo) / 2)` for `mid`.",
       mockNotifyDisclaimer:

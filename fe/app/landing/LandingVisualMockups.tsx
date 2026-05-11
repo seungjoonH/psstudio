@@ -655,7 +655,49 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
-export function MiniDiffReview({ ariaLabel, embedded }: { ariaLabel: string; embedded?: boolean }) {
+function MiniDiffReviewCommentCard(props: {
+  avatar: ReactNode;
+  author: string;
+  atIso: string;
+  lineRef: string;
+  markdown: string;
+  replyCta: string;
+}) {
+  const { locale } = useI18n();
+  return (
+    <article className={ccStyles.card}>
+      <div className={ccStyles.row}>
+        {props.avatar}
+        <div className={ccStyles.body}>
+          <div className={ccStyles.headRow}>
+            <strong className={ccStyles.author}>{props.author}</strong>
+            <span className={ccStyles.time}>{formatDateTime(props.atIso, locale)}</span>
+          </div>
+          <div className={ccStyles.subHead}>{props.lineRef}</div>
+          <div className={ccStyles.markdownWrap}>
+            <MarkdownPreview content={props.markdown} />
+          </div>
+        </div>
+      </div>
+      <div className={ccStyles.replyFooter}>
+        <button type="button" className={ccStyles.replyOpenBtn} tabIndex={-1}>
+          {props.replyCta}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+export function MiniDiffReview({
+  ariaLabel,
+  embedded,
+  withAiFollowUp,
+}: {
+  ariaLabel: string;
+  embedded?: boolean;
+  /** true면 AI 댓글을 민지 댓글과 동일하게 diff 테이블 안에 이어 붙입니다. */
+  withAiFollowUp?: boolean;
+}) {
   const { locale, t } = useI18n();
   const d = diffStyles;
 
@@ -681,7 +723,7 @@ export function MiniDiffReview({ ariaLabel, embedded }: { ariaLabel: string; emb
               <span className={d.codeTokens}>{t("landing.mockDiffOld")}</span>
             </td>
           </tr>
-          <tr className={buildCls(d.diffRow, d.addRow)}>
+          <tr className={buildCls(d.diffRow, d.addRow, d.reviewSpanSingle)}>
             <td className={d.iconCell}>
               <InlineAddButton className={d.inlineAddBtn} tabIndex={-1} aria-hidden />
             </td>
@@ -695,31 +737,52 @@ export function MiniDiffReview({ ariaLabel, embedded }: { ariaLabel: string; emb
           <tr className={d.reviewRow}>
             <td colSpan={4} className={d.reviewCell}>
               <div className={d.reviewBox}>
-                <article className={ccStyles.card}>
-                  <div className={ccStyles.row}>
+                <MiniDiffReviewCommentCard
+                  avatar={
                     <div className={ccStyles.avatarFallback} aria-hidden>
                       {t("landing.mockDiffAvatarLetter")}
                     </div>
-                    <div className={ccStyles.body}>
-                      <div className={ccStyles.headRow}>
-                        <strong className={ccStyles.author}>{t("landing.mockDiffAuthor1")}</strong>
-                        <span className={ccStyles.time}>{formatDateTime(t("landing.mockDiffCommentAtIso"), locale)}</span>
-                      </div>
-                      <div className={ccStyles.subHead}>{t("landing.mockDiffLineRef")}</div>
-                      <div className={ccStyles.markdownWrap}>
-                        <MarkdownPreview content={t("landing.mockDiffBody1")} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className={ccStyles.replyFooter}>
-                    <button type="button" className={ccStyles.replyOpenBtn} tabIndex={-1}>
-                      {t("landing.mockCommentReplyCta")}
-                    </button>
-                  </div>
-                </article>
+                  }
+                  author={t("landing.mockDiffAuthor1")}
+                  atIso={t("landing.mockDiffCommentAtIso")}
+                  lineRef={t("landing.mockDiffLineRef")}
+                  markdown={t("landing.mockDiffBody1")}
+                  replyCta={t("landing.mockCommentReplyCta")}
+                />
               </div>
             </td>
           </tr>
+          {withAiFollowUp ? (
+            <>
+              <tr className={buildCls(d.diffRow, d.contextRow, d.reviewSpanSingle)}>
+                <td className={d.iconCell} />
+                <td className={d.lineCell}>8</td>
+                <td className={d.lineCell}>8</td>
+                <td className={d.codeCell}>
+                  <span className={d.codeSign}> </span>
+                  <span className={d.codeTokens}>{t("landing.mockDiffPostCtx")}</span>
+                </td>
+              </tr>
+              <tr className={d.reviewRow}>
+                <td colSpan={4} className={d.reviewCell}>
+                  <div className={d.reviewBox}>
+                    <MiniDiffReviewCommentCard
+                      avatar={
+                        <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
+                          <Icon name="bot" size={16} />
+                        </div>
+                      }
+                      author={t("landing.mockAiCommentAuthor")}
+                      atIso={t("landing.mockAiCommentAtIso")}
+                      lineRef={t("landing.mockAiCommentLineRef")}
+                      markdown={t("landing.mockAiCommentBody")}
+                      replyCta={t("landing.mockCommentReplyCta")}
+                    />
+                  </div>
+                </td>
+              </tr>
+            </>
+          ) : null}
         </tbody>
       </table>
     </div>
@@ -737,7 +800,7 @@ export function MiniDiffReview({ ariaLabel, embedded }: { ariaLabel: string; emb
 }
 
 export function MiniMergedCodeReviewAi({ ariaLabel }: { ariaLabel: string }) {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
 
   return (
     <div className={styles.mergedReviewRoot} role="img" aria-label={ariaLabel}>
@@ -757,26 +820,7 @@ export function MiniMergedCodeReviewAi({ ariaLabel }: { ariaLabel: string }) {
           <pre className={styles.codeComparePre}>{t("landing.mockCompareRightCode")}</pre>
         </div>
       </div>
-      <MiniDiffReview ariaLabel={t("landing.mockupReviewAria")} embedded />
-      <div className={styles.mergedAiThread}>
-        <article className={ccStyles.card}>
-          <div className={ccStyles.row}>
-            <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
-              <Icon name="sparkles" size={16} />
-            </div>
-            <div className={ccStyles.body}>
-              <div className={ccStyles.headRow}>
-                <strong className={ccStyles.author}>{t("landing.mockAiCommentAuthor")}</strong>
-                <span className={ccStyles.time}>{formatDateTime(t("landing.mockAiCommentAtIso"), locale)}</span>
-              </div>
-              <div className={ccStyles.subHead}>{t("landing.mockAiCommentLineRef")}</div>
-              <div className={ccStyles.markdownWrap}>
-                <MarkdownPreview content={t("landing.mockAiCommentBody")} />
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
+      <MiniDiffReview ariaLabel={t("landing.mockupReviewAria")} embedded withAiFollowUp />
     </div>
   );
 }
