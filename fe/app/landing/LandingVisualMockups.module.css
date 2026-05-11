@@ -56,17 +56,12 @@
   background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface)) !important;
 }
 
-.landingTodoTitleRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-width: 0;
-  width: 100%;
+.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue :global(.kanbanItemTitleText) {
+  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
 }
 
-.landingTodoTitleText {
-  min-width: 0;
+.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue :global(.kanbanItemTitleIcon) {
+  opacity: 0.82;
 }
 
 .landingFakeLink {

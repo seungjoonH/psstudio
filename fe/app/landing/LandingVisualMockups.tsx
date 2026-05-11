@@ -188,6 +188,7 @@ const LANDING_TODO_MOCKS = [
     titleKey: "landing.mockKanbanTodo3Title",
     groupKey: "landing.mockKanbanTodo3Group",
     platformKey: "landing.mockKanbanTodo3Platform",
+    difficultyKey: "landing.mockKanbanTodo3Difficulty",
     algoKey: "landing.mockKanbanTodo3Algo",
     dueIsoKey: "landing.mockKanbanTodo3DueIso",
     solved: false,
@@ -196,6 +197,7 @@ const LANDING_TODO_MOCKS = [
     titleKey: "landing.mockKanbanTodo4Title",
     groupKey: "landing.mockKanbanTodo4Group",
     platformKey: "landing.mockKanbanTodo4Platform",
+    difficultyKey: "landing.mockKanbanTodo4Difficulty",
     algoKey: "landing.mockKanbanTodo4Algo",
     dueIsoKey: "landing.mockKanbanTodo4DueIso",
     solved: false,
@@ -204,6 +206,7 @@ const LANDING_TODO_MOCKS = [
     titleKey: "landing.mockKanbanTodo1Title",
     groupKey: "landing.mockKanbanTodo1Group",
     platformKey: "landing.mockKanbanTodo1Platform",
+    difficultyKey: "landing.mockKanbanTodo1Difficulty",
     algoKey: "landing.mockKanbanTodo1Algo",
     dueIsoKey: "landing.mockKanbanTodo1DueIso",
     solved: false,
@@ -283,6 +286,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                   const rawDaysLeft = Math.max(0, Math.ceil((dueMs - now) / (24 * 60 * 60 * 1000)));
                   const displayDays = Math.min(10, rawDaysLeft);
                   const dueTone = dueBadgeTone(todoLate, displayDays);
+                  const platformLabel = t(row.platformKey);
                   return (
                     <li key={row.titleKey}>
                       <div
@@ -291,20 +295,30 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                           todoLate && styles.landingTodoPastDue,
                         )}
                       >
-                        <div className={h.feedMain}>
-                          <div className={styles.landingTodoTitleRow}>
-                            <span className={buildCls(h.listTitle, styles.psProblemTitle, styles.landingTodoTitleText)}>
-                              {t(row.titleKey)}
-                            </span>
-                            <Badge tone={dueTone} className={h.duePill}>
-                              {todoLate ? t("assignment.list.late") : `D-${displayDays}`}
-                            </Badge>
+                        <div className={h.todoCardRow}>
+                          <div className={h.todoCardMain}>
+                            <div className={h.todoTitleStrip}>
+                              <span className={buildCls(h.kanbanItemTitle, styles.psProblemTitle)}>
+                                <Icon name="book" size={14} className={h.kanbanItemTitleIcon} aria-hidden />
+                                <span className={h.kanbanItemTitleText}>{t(row.titleKey)}</span>
+                              </span>
+                              <span className={h.todoTitleNear}>
+                                <Badge tone="neutral" chipIndex={1}>
+                                  {platformLabel}
+                                </Badge>
+                                <DifficultyBadge platform={platformLabel} difficulty={t(row.difficultyKey)} />
+                                <Badge tone="neutral" chipIndex={0}>
+                                  {t(row.groupKey)}
+                                </Badge>
+                              </span>
+                            </div>
+                            <div className={h.todoMetaRow}>
+                              <Badge tone="neutral">{t(row.algoKey)}</Badge>
+                            </div>
                           </div>
-                          <span className={h.listMeta}>
-                            <Badge tone="neutral">{t(row.groupKey)}</Badge>
-                            <Badge tone="neutral">{t(row.platformKey)}</Badge>
-                            <Badge tone="neutral">{t(row.algoKey)}</Badge>
-                          </span>
+                          <div className={h.todoCardActions}>
+                            <Badge tone={dueTone}>{todoLate ? t("assignment.list.late") : `D-${displayDays}`}</Badge>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -488,7 +502,8 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
 
 type LandingGroupMockRow = {
   nameKey: string;
-  metaTailKey: string;
+  /** `/groups` 목록의 `myPendingAssignmentCount`와 동일 의미(미제출 활성 과제 수) */
+  myPendingAssignmentCount: number;
   memberCount: number;
   members: { nickname: string; imageUrl: string }[];
   descriptionKey?: string;
@@ -498,7 +513,7 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   {
     nameKey: "landing.mockGroup1Name",
     descriptionKey: "landing.mockGroup1Description",
-    metaTailKey: "landing.mockGroup1MetaTail",
+    myPendingAssignmentCount: 2,
     memberCount: 4,
     members: [
       { nickname: "윤하", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-0/96/96" },
@@ -508,7 +523,7 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   },
   {
     nameKey: "landing.mockGroup2Name",
-    metaTailKey: "landing.mockGroup2MetaTail",
+    myPendingAssignmentCount: 1,
     memberCount: 3,
     members: [
       { nickname: "하린", imageUrl: "" },
@@ -519,7 +534,7 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   {
     nameKey: "landing.mockGroup3Name",
     descriptionKey: "landing.mockGroup3Description",
-    metaTailKey: "landing.mockGroup3MetaTail",
+    myPendingAssignmentCount: 1,
     memberCount: 5,
     members: [
       { nickname: "유진", imageUrl: "" },
@@ -529,7 +544,7 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   },
   {
     nameKey: "landing.mockGroup4Name",
-    metaTailKey: "landing.mockGroup4MetaTail",
+    myPendingAssignmentCount: 0,
     memberCount: 2,
     members: [
       { nickname: "준호", imageUrl: "" },
@@ -538,7 +553,7 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
   },
   {
     nameKey: "landing.mockGroup5Name",
-    metaTailKey: "landing.mockGroup5MetaTail",
+    myPendingAssignmentCount: 0,
     memberCount: 1,
     members: [{ nickname: "지은", imageUrl: "" }],
   },
@@ -565,7 +580,7 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
                 <span className={gx.groupMeta}>
                   {t("groups.memberCount", { count: row.memberCount })}
                   {" · "}
-                  {t(row.metaTailKey)}
+                  {t("groupsExplore.pendingTodos", { count: row.myPendingAssignmentCount })}
                 </span>
                 <div className={gx.avatarStack} aria-hidden>
                   {row.members.slice(0, 3).map((m) => (

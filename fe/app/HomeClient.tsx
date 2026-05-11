@@ -16,10 +16,12 @@ import { homeNotificationKind } from "../src/lib/homeNotificationKind";
 import { notificationUsesAssignmentGlyph } from "../src/lib/notificationUsesAssignmentGlyph";
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
 import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
+import { formatAssignmentAlgorithmLabel } from "../src/assignments/algorithmLabels";
 import { AssignmentNotificationGlyph } from "../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../src/ui/DeadlineSoonNotificationGlyph";
 import { Badge } from "../src/ui/Badge";
 import { Button } from "../src/ui/Button";
+import { DifficultyBadge } from "../src/ui/DifficultyBadge";
 import { Icon } from "../src/ui/Icon";
 import { UserAvatar } from "../src/ui/UserAvatar";
 import styles from "./page.module.css";
@@ -37,6 +39,9 @@ type HomeTodoItem = {
   title: string;
   groupName: string;
   platform: string;
+  difficulty: string | null;
+  algorithms: string[];
+  algorithmsHiddenUntilSubmit?: boolean;
   dueAt: string;
   href: string;
 };
@@ -141,30 +146,47 @@ export function HomeClient({
                   const daysLeft = getDaysLeft(item.dueAt);
                   const isLate = new Date(item.dueAt).getTime() < Date.now();
                   const dueLabel = isLate ? t("assignment.list.late") : `D-${daysLeft}`;
+                  const algorithms = item.algorithms ?? [];
+                  /* 이 열은 미제출 과제만 포함하므로, 과제 목록과 동일 정책이면 `algorithmsHiddenUntilSubmit`이 true일 때 알고리즘 행을 숨깁니다. */
+                  const showAlgoRow =
+                    algorithms.length > 0 && !(item.algorithmsHiddenUntilSubmit ?? true);
                   return (
                     <li key={item.id}>
                       <Link
                         href={item.href}
-                        className={buildCls(
-                          styles.feedRow,
-                          styles.feedRowAlignStart,
-                          isLate ? styles.feedRowPastDue : undefined,
-                        )}
+                        className={buildCls(styles.feedRow, isLate ? styles.feedRowPastDue : undefined)}
                       >
-                        <div className={styles.kanbanCard}>
-                          <div className={styles.kanbanItemTop}>
-                            <span className={styles.kanbanItemTitle}>
-                              <Icon name="book" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
-                              <span className={styles.kanbanItemTitleText}>{item.title}</span>
-                            </span>
-                            <div className={styles.kanbanItemTopRight}>
-                              <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
+                        <div className={styles.todoCardRow}>
+                          <div className={styles.todoCardMain}>
+                            <div className={styles.todoTitleStrip}>
+                              <span className={styles.kanbanItemTitle}>
+                                <Icon name="book" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
+                                <span className={styles.kanbanItemTitleText}>{item.title}</span>
+                              </span>
+                              <span className={styles.todoTitleNear}>
+                                <Badge tone="neutral" chipIndex={1}>
+                                  {item.platform}
+                                </Badge>
+                                <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
+                                <Badge tone="neutral" chipIndex={0}>
+                                  {item.groupName}
+                                </Badge>
+                              </span>
                             </div>
+                            {showAlgoRow ? (
+                              <div className={styles.todoMetaRow}>
+                                {algorithms.map((tag, index) => (
+                                  <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
+                                    {formatAssignmentAlgorithmLabel(locale, tag)}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
-                          <span className={styles.listMeta}>
-                            <Badge tone="neutral">{item.groupName}</Badge>
-                            <Badge tone="neutral">{item.platform}</Badge>
-                          </span>
+                          <div className={styles.todoCardActions}>
+                            <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
+                            <Badge tone="danger">{t("assignment.list.unsolved")}</Badge>
+                          </div>
                         </div>
                       </Link>
                     </li>

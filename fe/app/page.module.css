@@ -381,6 +381,53 @@ a.notifRowMain:hover {
   gap: 6px;
 }
 
+/* 홈·랜딩 칸반 「해야 할 일」: 과제 목록과 동일 역할(제목+플랫폼·난이도·그룹 / 알고리즘 / 우측 마감·상태). */
+.todoCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  width: 100%;
+}
+
+.todoCardMain {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.todoTitleStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.todoTitleNear {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.todoMetaRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.todoCardActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .kanbanItemTitle {
   display: inline-flex;
   align-items: center;
