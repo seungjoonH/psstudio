@@ -122,12 +122,8 @@ export function LandingClient() {
             </ScrollReveal>
           </section>
 
-          <section className={styles.surface} aria-labelledby="landing-groups-title">
+          <section className={styles.surface} aria-label={t("landing.mockupGroupsAria")}>
             <ScrollReveal delayMs={40}>
-              <h2 id="landing-groups-title" className={styles.blockTitle}>
-                {t("landing.groupsShowcaseTitle")}
-              </h2>
-              <p className={styles.muted}>{t("landing.groupsShowcaseLead")}</p>
               <MiniGroupsStrip ariaLabel={t("landing.mockupGroupsAria")} />
             </ScrollReveal>
           </section>

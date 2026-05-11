@@ -3,7 +3,6 @@
 // 랜딩용 예시 UI 더미와 장식 이미지를 렌더링합니다.
 import type { ReactNode } from "react";
 import { useMemo } from "react";
-import Link from "next/link";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import type { CohortSubmissionArtifact } from "../../src/assignments/server";
 import { useI18n } from "../../src/i18n/I18nProvider";
@@ -513,18 +512,6 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
 
   return (
     <div className={buildCls(gx.layout, styles.landingGroupsWrap)} role="img" aria-label={ariaLabel}>
-      <div className={gx.actions}>
-        <Link href="/groups/new">
-          <Button type="button" variant="primary">
-            {t("groupsAdd.createTitle")}
-          </Button>
-        </Link>
-        <Link href="/join-by-code">
-          <Button type="button" variant="secondary">
-            {t("groupsAdd.joinTitle")}
-          </Button>
-        </Link>
-      </div>
       <ul className={gx.grid}>
         {LANDING_GROUP_MOCKS.map((row) => {
           const rawDesc = row.descriptionKey !== undefined ? t(row.descriptionKey).trim() : "";
