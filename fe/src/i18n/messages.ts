@@ -264,9 +264,9 @@ export const messages = {
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
         "function bfs(adj: number[][], start: number): number[] {\n  const dist = Array(adj.length).fill(-1);\n  const q: number[] = [start];\n  dist[start] = 0;\n  let head = 0;\n  while (head < q.length) {\n    const v = q[head++]!;\n    for (const u of adj[v]!) {\n      if (dist[u] === -1) {\n        dist[u] = dist[v]! + 1;\n        q.push(u);\n      }\n    }\n  }\n  return dist;\n}",
-      mockAiCommentAuthor: "튜터 AI",
+      mockAiCommentAuthor: "AI 튜터",
+      mockAiCommentSubhead: "코드 리뷰 · 라인 17",
       mockAiCommentAtIso: "2026-05-10T09:35:00.000Z",
-      mockAiCommentLineRef: "라인 17",
       mockAiCommentBody:
         "`else if` 분기에서 좁히는 구간이 `[lo, hi]` 전체 규칙과 맞는지 점검해 보세요. 루프가 끝난 뒤 `lo`가 가리키는 위치가 하한(lower bound)인지도 확인할 수 있습니다.\n\n- `mid` 계산은 `lo + ((hi - lo) >> 1)` 또는 `lo + Math.floor((hi - lo) / 2)`처럼 오버플로우를 피하는 형태를 권장합니다.\n- `arr[mid] < target`일 때 `lo = mid + 1`이 **단조**로 진행되는지 한 줄로 적어 보세요.",
       notifyShowcaseWhen:
@@ -1092,9 +1092,9 @@ export const messages = {
         "from collections import deque\n\ndef bfs(adj, start):\n    dist = [-1] * len(adj)\n    q = deque([start])\n    dist[start] = 0\n    while q:\n        v = q.popleft()\n        for u in adj[v]:\n            if dist[u] == -1:\n                dist[u] = dist[v] + 1\n                q.append(u)\n    return dist",
       mockCompareRightCode:
         "function bfs(adj: number[][], start: number): number[] {\n  const dist = Array(adj.length).fill(-1);\n  const q: number[] = [start];\n  dist[start] = 0;\n  let head = 0;\n  while (head < q.length) {\n    const v = q[head++]!;\n    for (const u of adj[v]!) {\n      if (dist[u] === -1) {\n        dist[u] = dist[v]! + 1;\n        q.push(u);\n      }\n    }\n  }\n  return dist;\n}",
-      mockAiCommentAuthor: "Tutor AI",
+      mockAiCommentAuthor: "AI Tutor",
+      mockAiCommentSubhead: "Code review · line 17",
       mockAiCommentAtIso: "2026-05-10T09:35:00.000Z",
-      mockAiCommentLineRef: "Line 17",
       mockAiCommentBody:
         "Verify the `else if` branch narrows `[lo, hi]` consistently with your overall rules. After the loop ends, `lo` should be the lower-bound insertion point.\n\n- Prefer overflow-safe `mid` such as `lo + ((hi - lo) >> 1)` or `lo + Math.floor((hi - lo) / 2)`.\n- When `arr[mid] < target`, write one line explaining why `lo = mid + 1` stays **monotone**.",
       notifyShowcaseWhen:

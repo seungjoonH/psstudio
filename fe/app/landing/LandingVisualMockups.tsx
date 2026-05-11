@@ -694,10 +694,16 @@ function MiniDiffReviewCommentCard(props: {
   author: string;
   atIso: string;
   lineRef: string;
+  /** 있으면 `lineRef` 대신 이 한 줄만 보조 제목으로 씁니다(AI 튜터 행). */
+  subHeadOverride?: string;
   markdown: string;
   replyCta: string;
 }) {
   const { locale } = useI18n();
+  const sub =
+    props.subHeadOverride !== undefined && props.subHeadOverride.trim().length > 0
+      ? props.subHeadOverride.trim()
+      : props.lineRef;
   return (
     <article className={ccStyles.card}>
       <div className={ccStyles.row}>
@@ -707,7 +713,7 @@ function MiniDiffReviewCommentCard(props: {
             <strong className={ccStyles.author}>{props.author}</strong>
             <span className={ccStyles.time}>{formatDateTime(props.atIso, locale)}</span>
           </div>
-          <div className={ccStyles.subHead}>{props.lineRef}</div>
+          <div className={ccStyles.subHead}>{sub}</div>
           <div className={ccStyles.markdownWrap}>
             <MarkdownPreview content={props.markdown} />
           </div>
@@ -828,13 +834,14 @@ export function MiniDiffReview({
                 <div className={d.reviewBox}>
                   <MiniDiffReviewCommentCard
                     avatar={
-                      <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
+                      <div className={styles.mergedAiAvatar} aria-hidden>
                         <Icon name="bot" size={16} />
                       </div>
                     }
                     author={t("landing.mockAiCommentAuthor")}
                     atIso={t("landing.mockAiCommentAtIso")}
-                    lineRef={t("landing.mockAiCommentLineRef")}
+                    lineRef=""
+                    subHeadOverride={t("landing.mockAiCommentSubhead")}
                     markdown={t("landing.mockAiCommentBody")}
                     replyCta={t("landing.mockCommentReplyCta")}
                   />
