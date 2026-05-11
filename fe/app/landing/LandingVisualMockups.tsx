@@ -879,7 +879,7 @@ export function FeatureBand({
 }: {
   reverse?: boolean;
   mock: ReactNode;
-  title: string;
+  title: ReactNode;
   lead: string;
 }) {
   return (

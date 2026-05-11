@@ -15,7 +15,7 @@ psstudio 는 알고리즘 문제 풀이를 그룹 단위로 운영하면서, 과
 
 ## 1.2 공개 랜딩
 
-- `/landing`은 인증 없이 접근 가능한 제품 소개 페이지입니다. 본문은 로그인 화면과 동일한 `AppShell`(사이드바·상단 타이틀 바)과 카드형 서피스로 구성합니다. 히어로는 제목 바로 아래에 최근 알림 더미를 두고, 그 아래에 홈 보드(할 일·한 일)·장식을 세로·가로 혼합 배치합니다. 기능 섹션에는 과제·캘린더·diff·**AI 피드백**·**과제 제출 코드 AI 비교 분석(beta)** 예시가 `AssignmentList`·그룹 캘린더·`DiffViewerClient`·`CohortAnalysisClient` 등과 같은 CSS 모듈을 씁니다. `/public/landing/hero-mesh.svg` 장식으로 시각 비중을 둡니다. `IntersectionObserver`로 뷰포트 진입 시 블록별 페이드인·살짝 상승(`ScrollReveal`)하며, `prefers-reduced-motion`이면 전환을 끕니다. 검색·소셜 공유를 위해 서버에서 `title`·`description`·canonical·Open Graph·Twitter 카드·JSON-LD(WebPage·WebSite·SoftwareApplication) 메타데이터를 구성합니다. 본문 카피는 i18n(`landing.*`)으로 한국어·영어를 제공합니다.
+- `/landing`은 인증 없이 접근 가능한 제품 소개 페이지입니다. 본문은 로그인 화면과 동일한 `AppShell`(사이드바·상단 타이틀 바)과 카드형 서피스로 구성합니다. 히어로는 제목 바로 아래에 최근 알림 더미를 두고, 그 아래에 홈 보드(할 일·한 일)·장식을 세로·가로 혼합 배치합니다. 기능 섹션에는 과제·캘린더·diff·**AI 피드백**·**과제 제출 코드 AI 비교 분석**(베타는 둥근 직사각형 라벨) 예시가 `AssignmentList`·그룹 캘린더·`DiffViewerClient`·`CohortAnalysisClient` 등과 같은 CSS 모듈을 씁니다. `/public/landing/hero-mesh.svg` 장식으로 시각 비중을 둡니다. `IntersectionObserver`로 뷰포트 진입 시 블록별 페이드인·살짝 상승(`ScrollReveal`)하며, `prefers-reduced-motion`이면 전환을 끕니다. 검색·소셜 공유를 위해 서버에서 `title`·`description`·canonical·Open Graph·Twitter 카드·JSON-LD(WebPage·WebSite·SoftwareApplication) 메타데이터를 구성합니다. 본문 카피는 i18n(`landing.*`)으로 한국어·영어를 제공합니다.
 
 ## 2. 핵심 사용자
 

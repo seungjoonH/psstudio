@@ -17,6 +17,7 @@ export const messages = {
       delete: "삭제",
       confirmDelete: "정말 삭제",
       or: "또는",
+      betaTag: "베타",
     },
     home: {
       title: "PS Studio",
@@ -129,7 +130,7 @@ export const messages = {
       featureCalendarLead: "마감과 제출을 한눈에",
       featureReviewAiTitle: "코드 리뷰와 AI 피드백",
       featureReviewAiLead: "",
-      featureCohortTitle: "과제 제출 코드 AI 비교 분석 (beta)",
+      featureCohortTitle: "과제 제출 코드 AI 비교 분석",
       featureCohortLead: "같은 과제에 올라온 풀이들을 묶어 차이를 요약합니다.",
       groupsShowcaseTitle: "여러 그룹에 함께 참여할 수 있습니다",
       groupsShowcaseLead: "스터디마다 그룹을 나눠 두어도 한 계정에서 과제와 알림을 모아 봅니다.",
@@ -840,6 +841,7 @@ export const messages = {
       delete: "Delete",
       confirmDelete: "Delete",
       or: "or",
+      betaTag: "Beta",
     },
     home: {
       title: "PS Studio",
@@ -952,7 +954,7 @@ export const messages = {
       featureCalendarLead: "Deadlines and submissions at a glance",
       featureReviewAiTitle: "Code review and AI feedback",
       featureReviewAiLead: "",
-      featureCohortTitle: "AI cohort comparison of submissions (beta)",
+      featureCohortTitle: "AI cohort comparison of submissions",
       featureCohortLead: "Compare solutions on the same assignment in one report.",
       groupsShowcaseTitle: "Join multiple groups at once",
       groupsShowcaseLead: "Keep assignments and alerts in one account even when each study runs its own group.",

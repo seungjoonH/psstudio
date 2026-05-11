@@ -1,10 +1,12 @@
 "use client";
 
 // AppShell 안에서 짧은 카피, 예시 UI 더미, 스크롤 리빌을 구성합니다.
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { buildCls } from "../../src/lib/buildCls";
 import { AppShell } from "../../src/shell/AppShell";
+import { BetaTag } from "../../src/ui/BetaTag";
 import btnStyles from "../../src/ui/Button.module.css";
 import styles from "./landing.module.css";
 import {
@@ -38,30 +40,45 @@ export function LandingClient() {
     </div>
   );
 
-  const featureBands = [
+  const featureBands: Array<{
+    key: string;
+    reverse?: boolean;
+    mock: ReactNode;
+    title: ReactNode;
+    lead: string;
+  }> = [
     {
-      reverse: false as boolean | undefined,
+      key: "assignments",
+      reverse: false,
       mock: <MiniAssignmentShowcase ariaLabel={t("landing.mockupAssignmentsAria")} />,
-      titleKey: "landing.featureAssignmentTitle",
-      leadKey: "landing.featureAssignmentLead",
+      title: t("landing.featureAssignmentTitle"),
+      lead: t("landing.featureAssignmentLead"),
     },
     {
+      key: "calendar",
       reverse: true,
       mock: <MiniCalendar ariaLabel={t("landing.mockupCalendarAria")} />,
-      titleKey: "landing.featureCalendarTitle",
-      leadKey: "landing.featureCalendarLead",
+      title: t("landing.featureCalendarTitle"),
+      lead: t("landing.featureCalendarLead"),
     },
     {
+      key: "review-ai",
       reverse: false,
       mock: <MiniMergedCodeReviewAi ariaLabel={t("landing.mockupReviewAiAria")} />,
-      titleKey: "landing.featureReviewAiTitle",
-      leadKey: "landing.featureReviewAiLead",
+      title: t("landing.featureReviewAiTitle"),
+      lead: t("landing.featureReviewAiLead"),
     },
     {
+      key: "cohort",
       reverse: true,
       mock: <MiniCohortReportShowcase ariaLabel={t("landing.mockupCohortAria")} />,
-      titleKey: "landing.featureCohortTitle",
-      leadKey: "landing.featureCohortLead",
+      title: (
+        <>
+          {t("landing.featureCohortTitle")}{" "}
+          <BetaTag label={t("common.betaTag")} />
+        </>
+      ),
+      lead: t("landing.featureCohortLead"),
     },
   ];
 
@@ -123,13 +140,8 @@ export function LandingClient() {
             </ScrollReveal>
             <div className={styles.featureStack}>
               {featureBands.map((band, i) => (
-                <ScrollReveal key={band.titleKey} delayMs={i * FEATURE_STAGGER_MS}>
-                  <FeatureBand
-                    reverse={band.reverse}
-                    mock={band.mock}
-                    title={t(band.titleKey)}
-                    lead={t(band.leadKey)}
-                  />
+                <ScrollReveal key={band.key} delayMs={i * FEATURE_STAGGER_MS}>
+                  <FeatureBand reverse={band.reverse} mock={band.mock} title={band.title} lead={band.lead} />
                 </ScrollReveal>
               ))}
             </div>
