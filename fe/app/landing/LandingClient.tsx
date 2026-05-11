@@ -113,6 +113,24 @@ export function LandingClient() {
             </ScrollReveal>
           </section>
 
+          <section className={styles.surface} aria-labelledby="landing-notify-title">
+            <ScrollReveal delayMs={40}>
+              <div className={styles.notifyShowcase}>
+                <div className={styles.notifyShowcaseListPack}>
+                  <div className={styles.heroNotifyHead}>
+                    <h2 id="landing-notify-title" className={styles.heroNotifyTitle}>
+                      {t("home.recent.notifications.title")}
+                    </h2>
+                    <span className={styles.heroNotifyViewAll} tabIndex={-1} aria-hidden>
+                      {t("home.recent.notifications.viewAll")}
+                    </span>
+                  </div>
+                  <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
+                </div>
+              </div>
+            </ScrollReveal>
+          </section>
+
           <section className={styles.surface} aria-labelledby="landing-groups-title">
             <ScrollReveal delayMs={40}>
               <div className={styles.groupsShowcase}>
@@ -145,34 +163,6 @@ export function LandingClient() {
                     />
                   </ScrollReveal>,
                 ];
-                if (band.key === "review-ai") {
-                  nodes.push(
-                    <ScrollReveal key="landing-notify-showcase" delayMs={delayMs + FEATURE_STAGGER_MS}>
-                      <section
-                        className={styles.notifyShowcase}
-                        aria-labelledby="landing-notify-showcase-brand"
-                      >
-                        <div className={styles.notifyShowcaseIntro}>
-                          <h3 id="landing-notify-showcase-brand" className={styles.notifyShowcaseBrand}>
-                            {t("landing.heroEyebrow")}
-                          </h3>
-                          <p className={styles.notifyShowcaseTagline}>{t("landing.heroTitle")}</p>
-                          <p className={styles.notifyShowcaseLead}>{t("landing.heroLead")}</p>
-                          <p className={styles.notifyShowcaseWhen}>{t("landing.notifyShowcaseWhen")}</p>
-                        </div>
-                        <div className={styles.notifyShowcaseListPack}>
-                          <div className={styles.heroNotifyHead}>
-                            <h4 className={styles.heroNotifyTitle}>{t("home.recent.notifications.title")}</h4>
-                            <span className={styles.heroNotifyViewAll} tabIndex={-1} aria-hidden>
-                              {t("home.recent.notifications.viewAll")}
-                            </span>
-                          </div>
-                          <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
-                        </div>
-                      </section>
-                    </ScrollReveal>,
-                  );
-                }
                 return nodes;
               })}
             </div>
