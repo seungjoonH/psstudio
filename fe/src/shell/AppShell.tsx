@@ -37,6 +37,7 @@ function AppShellBrandMark() {
 }
 
 type Vars = Record<string, string | number>;
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION;
 
 type AppShellProps = {
   children: ReactNode;
@@ -81,7 +82,10 @@ export function AppShell({
       <aside className={styles.sidebar} aria-label={t("shell.sidebarAria")}>
         <div className={styles.brand}>
           <AppShellBrandMark />
-          <span className={styles.brandName}>{t("common.appName")}</span>
+          <div className={styles.brandText}>
+            <span className={styles.brandName}>{t("common.appName")}</span>
+            {APP_VERSION !== undefined ? <span className={styles.brandVersion}>v{APP_VERSION}</span> : null}
+          </div>
         </div>
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => {
@@ -143,7 +147,10 @@ export function AppShell({
         <div className={styles.drawerHeader}>
           <div className={styles.brand}>
             <AppShellBrandMark />
-            <span className={styles.brandName}>{t("common.appName")}</span>
+            <div className={styles.brandText}>
+              <span className={styles.brandName}>{t("common.appName")}</span>
+              {APP_VERSION !== undefined ? <span className={styles.brandVersion}>v{APP_VERSION}</span> : null}
+            </div>
           </div>
           <Button
             variant="ghost"

@@ -22,6 +22,13 @@
   gap: var(--space-3);
 }
 
+.brandText {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .brandMarkWrap {
   width: 36px;
   height: 36px;
@@ -51,6 +58,14 @@
 .brandName {
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.brandVersion {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .nav {
