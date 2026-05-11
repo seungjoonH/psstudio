@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useMemo } from "react";
 import Link from "next/link";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
+import type { CohortSubmissionArtifact } from "../../src/assignments/server";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { buildCls } from "../../src/lib/buildCls";
 import { dueBadgeTone } from "../../src/lib/dueBadgeTone";
@@ -21,10 +22,20 @@ import { DifficultyBadge } from "../../src/ui/DifficultyBadge";
 import type { IconName } from "../../src/ui/Icon";
 import { Icon } from "../../src/ui/Icon";
 import { InlineAddButton } from "../../src/ui/InlineAddButton";
+import { CohortCodeColumns } from "../../src/ui/cohort/CohortCodeColumns";
+import { CohortReportBody } from "../../src/ui/cohort/CohortReportBody";
 import { MarkdownPreview } from "../../src/ui/MarkdownPreview";
 import { SegmentedControl } from "../../src/ui/SegmentedControl";
 import { UserAvatar } from "../../src/ui/UserAvatar";
 import styles from "./LandingVisualMockups.module.css";
+
+/** 랜딩 집단 분석 목업에서 리포트 칩·코드 열에 쓰는 고정 ID입니다. */
+const LANDING_COHORT_IDS = {
+  groupId: "00000000-0000-4000-8000-00000000c0a1",
+  assignmentId: "00000000-0000-4000-8000-00000000c0a2",
+  js: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  py: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+} as const;
 
 function formatDateTime(value: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -777,15 +788,77 @@ export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
   const { t } = useI18n();
   const s = cohortStyles;
 
+  const { included, submissions, titlesBySubmissionId, reportMarkdown } = useMemo(() => {
+    const { js, py } = LANDING_COHORT_IDS;
+    const included = [
+      {
+        submissionId: js,
+        versionNo: 4,
+        authorUserId: "landing-mock-user-js",
+        authorNickname: t("landing.mockCohortAuthorJs"),
+        title: t("landing.mockCohortSubJsTitle"),
+        authorProfileImageUrl: "https://picsum.photos/seed/psstudio-cohort-js/96/96",
+      },
+      {
+        submissionId: py,
+        versionNo: 7,
+        authorUserId: "landing-mock-user-py",
+        authorNickname: t("landing.mockCohortAuthorPy"),
+        title: t("landing.mockCohortSubPyTitle"),
+        authorProfileImageUrl: "https://picsum.photos/seed/psstudio-cohort-py/96/96",
+      },
+    ];
+    const setup = t("landing.mockCohortRoleSetup");
+    const bfs = t("landing.mockCohortRoleBfs");
+    const ret = t("landing.mockCohortRoleReturn");
+    const submissions: CohortSubmissionArtifact[] = [
+      {
+        submissionId: js,
+        code: t("landing.mockCompareRightCode"),
+        language: "typescript",
+        regions: [
+          { roleId: "cohort-setup", roleLabel: setup, startLine: 1, endLine: 4 },
+          { roleId: "cohort-bfs", roleLabel: bfs, startLine: 5, endLine: 14 },
+          { roleId: "cohort-return", roleLabel: ret, startLine: 15, endLine: 16 },
+        ],
+      },
+      {
+        submissionId: py,
+        code: t("landing.mockCompareLeftCode"),
+        language: "python",
+        regions: [
+          { roleId: "cohort-setup", roleLabel: setup, startLine: 1, endLine: 4 },
+          { roleId: "cohort-bfs", roleLabel: bfs, startLine: 5, endLine: 12 },
+          { roleId: "cohort-return", roleLabel: ret, startLine: 13, endLine: 13 },
+        ],
+      },
+    ];
+    const titlesBySubmissionId = new Map(
+      included.map((row) => [row.submissionId, { title: row.title, versionNo: row.versionNo }]),
+    );
+    return { included, submissions, titlesBySubmissionId, reportMarkdown: t("landing.mockCohortMarkdown") };
+  }, [t]);
+
   return (
     <div className={buildCls(s.root, styles.landingCohortOuter)} role="img" aria-label={ariaLabel}>
-      <div className={s.section}>
-        <h3 className={s.codeSectionTitle}>{t("landing.mockCohortReportTitle")}</h3>
-        <p className={s.sub}>{t("landing.mockCohortAssignmentLabel")}</p>
-        <div className={s.codeSection}>
-          <MarkdownPreview content={t("landing.mockCohortMarkdown")} />
-        </div>
-      </div>
+      <section className={s.section} aria-labelledby="landing-cohort-report">
+        <h2 id="landing-cohort-report" className={s.sectionTitle}>
+          {t("assignment.detail.cohort.reportHeading")}
+        </h2>
+        <CohortReportBody
+          reportMarkdown={reportMarkdown}
+          groupId={LANDING_COHORT_IDS.groupId}
+          assignmentId={LANDING_COHORT_IDS.assignmentId}
+          included={included}
+        />
+      </section>
+
+      <section className={s.codeSection} aria-labelledby="landing-cohort-code">
+        <h2 id="landing-cohort-code" className={s.codeSectionTitle}>
+          {t("assignment.cohortPage.codeHeading")}
+        </h2>
+        <CohortCodeColumns submissions={submissions} titlesBySubmissionId={titlesBySubmissionId} />
+      </section>
     </div>
   );
 }
