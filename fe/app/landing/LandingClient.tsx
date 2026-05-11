@@ -109,18 +109,6 @@ export function LandingClient() {
                 <div className={styles.heroKanbanWrap}>
                   <MiniHomeKanban ariaLabel={t("landing.mockupHomeKanbanAria")} />
                 </div>
-                <div className={styles.heroNotifyFull} aria-labelledby="landing-notify-full-title">
-                  <div className={styles.heroNotifyHead}>
-                    <h3 id="landing-notify-full-title" className={styles.heroNotifyTitle}>
-                      {t("home.recent.notifications.title")}
-                    </h3>
-                    <span className={styles.heroNotifyViewAll} tabIndex={-1} aria-hidden>
-                      {t("home.recent.notifications.viewAll")}
-                    </span>
-                  </div>
-                  <p className={styles.mockDisclaimer}>{t("landing.mockNotifyDisclaimer")}</p>
-                  <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
-                </div>
               </div>
             </ScrollReveal>
           </section>
@@ -138,17 +126,49 @@ export function LandingClient() {
               </h2>
             </ScrollReveal>
             <div className={styles.featureStack}>
-              {featureBands.map((band, i) => (
-                <ScrollReveal key={band.key} delayMs={i * FEATURE_STAGGER_MS}>
-                  <FeatureBand
-                    reverse={band.reverse}
-                    mock={band.mock}
-                    title={band.title}
-                    lead={band.lead}
-                    textFooter={band.textFooter}
-                  />
-                </ScrollReveal>
-              ))}
+              {featureBands.flatMap((band, i) => {
+                const delayMs = i * FEATURE_STAGGER_MS;
+                const nodes = [
+                  <ScrollReveal key={band.key} delayMs={delayMs}>
+                    <FeatureBand
+                      reverse={band.reverse}
+                      mock={band.mock}
+                      title={band.title}
+                      lead={band.lead}
+                      textFooter={band.textFooter}
+                    />
+                  </ScrollReveal>,
+                ];
+                if (band.key === "review-ai") {
+                  nodes.push(
+                    <ScrollReveal key="landing-notify-showcase" delayMs={delayMs + FEATURE_STAGGER_MS}>
+                      <section
+                        className={styles.notifyShowcase}
+                        aria-labelledby="landing-notify-showcase-brand"
+                      >
+                        <div className={styles.notifyShowcaseIntro}>
+                          <h3 id="landing-notify-showcase-brand" className={styles.notifyShowcaseBrand}>
+                            {t("landing.heroEyebrow")}
+                          </h3>
+                          <p className={styles.notifyShowcaseTagline}>{t("landing.heroTitle")}</p>
+                          <p className={styles.notifyShowcaseLead}>{t("landing.heroLead")}</p>
+                          <p className={styles.notifyShowcaseWhen}>{t("landing.notifyShowcaseWhen")}</p>
+                        </div>
+                        <div className={styles.notifyShowcaseListPack}>
+                          <div className={styles.heroNotifyHead}>
+                            <h4 className={styles.heroNotifyTitle}>{t("home.recent.notifications.title")}</h4>
+                            <span className={styles.heroNotifyViewAll} tabIndex={-1} aria-hidden>
+                              {t("home.recent.notifications.viewAll")}
+                            </span>
+                          </div>
+                          <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
+                        </div>
+                      </section>
+                    </ScrollReveal>,
+                  );
+                }
+                return nodes;
+              })}
             </div>
           </section>
 

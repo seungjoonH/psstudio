@@ -269,8 +269,8 @@ export const messages = {
       mockAiCommentLineRef: "라인 17",
       mockAiCommentBody:
         "`else if` 분기에서 좁히는 구간이 `[lo, hi]` 전체 규칙과 맞는지 점검해 보세요. 루프가 끝난 뒤 `lo`가 가리키는 위치가 하한(lower bound)인지도 확인할 수 있습니다.\n\n- `mid` 계산은 `lo + ((hi - lo) >> 1)` 또는 `lo + Math.floor((hi - lo) / 2)`처럼 오버플로우를 피하는 형태를 권장합니다.\n- `arr[mid] < target`일 때 `lo = mid + 1`이 **단조**로 진행되는지 한 줄로 적어 보세요.",
-      mockNotifyDisclaimer:
-        "아래 알림 문구는 랜딩용 예시입니다. 실제 서비스에서는 그룹·과제 설정과 본인 활동에 맞는 알림만 전달됩니다.",
+      notifyShowcaseWhen:
+        "과제가 새로 생기거나, 내 제출에 리뷰가 달리거나, 마감이 다가오면 알려드려요.",
       bottomCtaTitle: "지금 시작해 보세요",
       bottomCtaSubtitle: "로그인 후 그룹과 과제를 만듭니다.",
       footerNote: "© PS Studio",
@@ -1097,8 +1097,8 @@ export const messages = {
       mockAiCommentLineRef: "Line 17",
       mockAiCommentBody:
         "Verify the `else if` branch narrows `[lo, hi]` consistently with your overall rules. After the loop ends, `lo` should be the lower-bound insertion point.\n\n- Prefer overflow-safe `mid` such as `lo + ((hi - lo) >> 1)` or `lo + Math.floor((hi - lo) / 2)`.\n- When `arr[mid] < target`, write one line explaining why `lo = mid + 1` stays **monotone**.",
-      mockNotifyDisclaimer:
-        "The notifications below are landing-page samples. In the real product you only receive alerts that match your groups, assignments, and activity.",
+      notifyShowcaseWhen:
+        "You get updates when new assignments appear, someone reviews your submission, or a due date is near.",
       bottomCtaTitle: "Start now",
       bottomCtaSubtitle: "Sign in to create groups and assignments.",
       footerNote: "© PS Studio",
