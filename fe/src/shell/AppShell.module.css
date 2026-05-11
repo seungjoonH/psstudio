@@ -22,11 +22,30 @@
   gap: var(--space-3);
 }
 
+.brandMarkWrap {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  position: relative;
+}
+
 .brandMark {
   width: 36px;
   height: 36px;
   display: block;
-  flex: 0 0 36px;
+  object-fit: contain;
+}
+
+.brandMarkDark {
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .brandMarkLight {
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .brandMarkDark {
+  display: block;
 }
 
 .brandName {
@@ -45,6 +64,7 @@
   gap: var(--space-3);
   padding: 10px 10px;
   border-radius: 12px;
+  border: 1px solid transparent;
   color: var(--color-muted);
   text-decoration: none;
   font-weight: 650;
@@ -56,12 +76,13 @@
 }
 
 .navLink:active {
-  transform: scale(0.99);
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
   opacity: 1;
 }
 
 .navLink:hover {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
   color: var(--color-text);
 }
 
@@ -192,7 +213,6 @@
     transition: transform 0.18s ease;
     padding: var(--space-4);
     gap: var(--space-4);
-    box-shadow: 8px 0 24px -12px rgba(0, 0, 0, 0.45);
   }
 
   .drawerOpen {

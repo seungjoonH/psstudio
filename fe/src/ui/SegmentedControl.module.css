@@ -56,16 +56,27 @@
   transition:
     transform var(--ui-duration) var(--ui-ease),
     background 0.12s ease,
-    color 0.12s ease;
+    color 0.12s ease,
+    filter 0.12s ease;
   white-space: nowrap;
 }
 
-.segment:hover .face {
+.segment:hover .radio:not(:checked) + .face {
   color: var(--color-text);
+  background: var(--ui-hover-fill-muted);
 }
 
-.segment:active .face {
-  transform: scale(0.96);
+.segment:hover .radio:checked + .face {
+  filter: brightness(0.96);
+}
+
+.segment:active .radio:not(:checked) + .face {
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
+}
+
+.segment:active .radio:checked + .face {
+  filter: brightness(0.94);
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
 }
 
 .radio:checked + .face {

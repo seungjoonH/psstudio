@@ -52,10 +52,12 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--color-muted);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  /* 설명 없음일 때도 1줄 높이를 유지해 카드 간 메타·아바타 정렬을 맞춥니다 */
+  min-height: calc(12px * 1.45);
+  min-height: 1lh;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .groupMeta {

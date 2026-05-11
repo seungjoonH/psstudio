@@ -127,11 +127,33 @@
   text-align: center;
 }
 
-/* 랜딩 미니캘린더: 필터는 장식만 하고 클릭되지 않습니다. */
-.landingMiniCalFilterFake {
-  pointer-events: none;
-  cursor: default;
+/* 랜딩 미니캘린더: 필터 목업 버튼 호버·눌림·선택(pressed) 피드백 */
+.landingMiniCalFilterBtn {
+  margin: 0;
+  appearance: none;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
   user-select: none;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.landingMiniCalFilterBtn:active:not(:disabled) {
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landingMiniCalFilterBtn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+.landingMiniCalFilterBtnPressed {
+  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 38%, var(--color-border));
 }
 
 /* 랜딩 알림 목록 루트: 섹션 surface가 유일한 카드 테두리이며 여기서는 테두리 없음 */
@@ -162,14 +184,12 @@
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,
-    box-shadow 0.16s ease,
     transform 0.12s ease;
 }
 
 .landingHeroNotifyRow:hover {
   border-color: var(--ui-hover-border);
   background: var(--ui-hover-bg);
-  box-shadow: 0 2px 12px color-mix(in oklab, var(--color-text) 7%, transparent);
 }
 
 .landingHeroNotifyRow:active {

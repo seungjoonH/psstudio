@@ -21,12 +21,12 @@ function splitFenceGluedToProse(line: string): string[] {
 
 /**
  * 모델이 프롬프트대로 `<br />`를 쓰면서도 ATX 제목·펜스 블록이 깨지는 경우를 줄입니다.
- * - `<br />` → 실제 줄바꿈(블록 경계 가능)
+ * - `<br />` → GFM/CommonMark **하드 줄바꿈**(`  \n`, 줄 끝 공백 두 칸 + 줄바꿈)으로 바꿔 같은 문단 안에서도 `<br>` 렌더가 나오게 함(단일 `\n`만 두면 소프트 브레이크로 공백 처리되는 경우가 많음)
  * - 본문과 같은 줄의 ``` 펜스 시작 → 앞 문장과 분리
  */
 export function normalizeLlmMarkdown(source: string): string {
   let s = source.replace(/\r\n/g, "\n");
-  s = s.replace(/<br\s*\/?>/gi, "\n");
+  s = s.replace(/<br\s*\/?>/gi, "  \n");
 
   const lines = s.split("\n");
   const out: string[] = [];

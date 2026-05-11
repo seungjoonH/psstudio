@@ -1,0 +1,202 @@
+.root {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.generic {
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.bojBronze {
+  background: color-mix(in oklab, #ad5600 16%, var(--color-surface));
+  color: #ad5600;
+  border-color: color-mix(in oklab, #ad5600 38%, var(--color-border));
+}
+
+.bojSilver {
+  background: color-mix(in oklab, #435f7a 16%, var(--color-surface));
+  color: #435f7a;
+  border-color: color-mix(in oklab, #435f7a 38%, var(--color-border));
+}
+
+.bojGold {
+  background: color-mix(in oklab, #ec9a00 16%, var(--color-surface));
+  color: #ec9a00;
+  border-color: color-mix(in oklab, #ec9a00 38%, var(--color-border));
+}
+
+.bojPlatinum {
+  background: color-mix(in oklab, #27d6a8 16%, var(--color-surface));
+  color: #27b58d;
+  border-color: color-mix(in oklab, #27d6a8 38%, var(--color-border));
+}
+
+.bojDiamond {
+  background: color-mix(in oklab, #00b4fc 16%, var(--color-surface));
+  color: #1791cb;
+  border-color: color-mix(in oklab, #00b4fc 38%, var(--color-border));
+}
+
+.bojRuby {
+  background: color-mix(in oklab, #ff0062 14%, var(--color-surface));
+  color: #d7095e;
+  border-color: color-mix(in oklab, #ff0062 34%, var(--color-border));
+}
+
+.pgLv0 {
+  background: color-mix(in oklab, #2f7de9 16%, var(--color-surface));
+  color: #2f7de9;
+  border-color: color-mix(in oklab, #2f7de9 38%, var(--color-border));
+}
+
+.pgLv1 {
+  background: color-mix(in oklab, #25abef 16%, var(--color-surface));
+  color: #25abef;
+  border-color: color-mix(in oklab, #25abef 38%, var(--color-border));
+}
+
+.pgLv2 {
+  background: color-mix(in oklab, #41cc9a 16%, var(--color-surface));
+  color: #32b182;
+  border-color: color-mix(in oklab, #41cc9a 38%, var(--color-border));
+}
+
+.pgLv3 {
+  background: color-mix(in oklab, #d99800 16%, var(--color-surface));
+  color: #cc8f02;
+  border-color: color-mix(in oklab, #d99800 38%, var(--color-border));
+}
+
+.pgLv4 {
+  background: color-mix(in oklab, #4e667f 16%, var(--color-surface));
+  color: #4e667f;
+  border-color: color-mix(in oklab, #4e667f 38%, var(--color-border));
+}
+
+.pgLv5 {
+  background: color-mix(in oklab, #b567d3 16%, var(--color-surface));
+  color: #a757c8;
+  border-color: color-mix(in oklab, #b567d3 38%, var(--color-border));
+}
+
+.lcEasy {
+  background: color-mix(in oklab, #00b8a3 16%, var(--color-surface));
+  color: #00a896;
+  border-color: color-mix(in oklab, #00b8a3 38%, var(--color-border));
+}
+
+.lcMedium {
+  background: color-mix(in oklab, #f5a623 16%, var(--color-surface));
+  color: #de8f12;
+  border-color: color-mix(in oklab, #f5a623 38%, var(--color-border));
+}
+
+.lcHard {
+  background: color-mix(in oklab, #ff375f 14%, var(--color-surface));
+  color: #e2264f;
+  border-color: color-mix(in oklab, #ff375f 34%, var(--color-border));
+}
+
+/* 다크: 난이도 pill도 surface 틴트 위에서 전경이 묻히지 않게 명도를 올립니다. */
+:global(html[data-theme="dark"]) .bojBronze {
+  background: color-mix(in oklab, rgb(217 119 6) 28%, var(--color-surface));
+  color: #fde68a;
+  border-color: color-mix(in oklab, rgb(217 119 6) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .bojSilver {
+  background: color-mix(in oklab, rgb(148 163 184) 30%, var(--color-surface));
+  color: #e2e8f0;
+  border-color: color-mix(in oklab, rgb(148 163 184) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .bojGold {
+  background: color-mix(in oklab, rgb(250 204 21) 26%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(250 204 21) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .bojPlatinum {
+  background: color-mix(in oklab, rgb(45 212 191) 26%, var(--color-surface));
+  color: #ccfbf1;
+  border-color: color-mix(in oklab, rgb(45 212 191) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .bojDiamond {
+  background: color-mix(in oklab, rgb(56 189 248) 28%, var(--color-surface));
+  color: #e0f2fe;
+  border-color: color-mix(in oklab, rgb(56 189 248) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .bojRuby {
+  background: color-mix(in oklab, rgb(251 113 133) 26%, var(--color-surface));
+  color: #ffe4e6;
+  border-color: color-mix(in oklab, rgb(251 113 133) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv0 {
+  background: color-mix(in oklab, rgb(96 165 250) 30%, var(--color-surface));
+  color: #dbeafe;
+  border-color: color-mix(in oklab, rgb(96 165 250) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv1 {
+  background: color-mix(in oklab, rgb(56 189 248) 30%, var(--color-surface));
+  color: #e0f2fe;
+  border-color: color-mix(in oklab, rgb(56 189 248) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv2 {
+  background: color-mix(in oklab, rgb(52 211 153) 28%, var(--color-surface));
+  color: #d1fae5;
+  border-color: color-mix(in oklab, rgb(52 211 153) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv3 {
+  background: color-mix(in oklab, rgb(250 204 21) 26%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(250 204 21) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv4 {
+  background: color-mix(in oklab, rgb(148 163 184) 30%, var(--color-surface));
+  color: #e2e8f0;
+  border-color: color-mix(in oklab, rgb(148 163 184) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .pgLv5 {
+  background: color-mix(in oklab, rgb(192 132 252) 28%, var(--color-surface));
+  color: #f3e8ff;
+  border-color: color-mix(in oklab, rgb(192 132 252) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .lcEasy {
+  background: color-mix(in oklab, rgb(45 212 191) 28%, var(--color-surface));
+  color: #ccfbf1;
+  border-color: color-mix(in oklab, rgb(45 212 191) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .lcMedium {
+  background: color-mix(in oklab, rgb(251 191 36) 26%, var(--color-surface));
+  color: #fef3c7;
+  border-color: color-mix(in oklab, rgb(251 191 36) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .lcHard {
+  background: color-mix(in oklab, rgb(251 113 133) 26%, var(--color-surface));
+  color: #ffe4e6;
+  border-color: color-mix(in oklab, rgb(251 113 133) 42%, var(--color-border));
+}

@@ -19,19 +19,19 @@
 }
 
 .root:hover {
-  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .root:active {
-  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
-  transform: translateY(var(--ui-press-y)) scale(0.97);
+  background: var(--ui-hover-bg-strong);
+  border-color: var(--ui-hover-border);
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
 }
 
 .root:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--color-primary) 65%, var(--color-border));
-  outline-offset: 1px;
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 
 .icon {

@@ -119,8 +119,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: 12px;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
@@ -129,8 +130,14 @@
 .memberInfo {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.memberInfo > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .avatar {
@@ -141,18 +148,50 @@
 .nameRow {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .nickname {
   font-weight: 700;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameRow > span:not(.nickname) {
+  flex-shrink: 0;
 }
 
 .memberActions {
   display: inline-flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+/* 모바일에서 액션이 넓을 때 한 줄 유지(세로 래핑 대신 가로 스크롤) */
+@media (max-width: 979px) {
+  .memberActions {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0;
+    margin: -2px 0;
+  }
+}
+
+/* Button 기본(40px)보다 낮은 구성원·가입 요청 행 액션 */
+.memberActions .memberActionBtn {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .subSection {
@@ -220,8 +259,8 @@
 
 .linkCopyBtn:hover {
   color: var(--color-text);
-  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 32%, var(--color-border));
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .rowMeta {
@@ -265,7 +304,7 @@
 
 @media (min-width: 900px) {
   .basicJoinRow {
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
     align-items: stretch;
   }
 
@@ -282,63 +321,6 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-surface);
-}
-
-.codeSection {
-  padding: 12px 16px;
-  gap: 8px;
-}
-
-.codeSectionToolbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.codeCards {
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 980px) {
-  .codeCards {
-    /* 왼쪽(그룹 코드)은 좁게, 초대 링크가 긴 URL을 수용하도록 넓게 */
-    grid-template-columns: minmax(0, 0.38fr) minmax(0, 1fr);
-  }
-}
-
-.codeCardItem {
-  display: grid;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-  min-width: 0;
-}
-
-/* 그룹 코드: 본문 블록과 복사 버튼을 나란히, 버튼은 카드 세로 중앙 */
-.codeCardWithSideCopy {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-
-.codeCardWithSideCopy .codeCardMain {
-  flex: 1;
-  min-width: 0;
-}
-
-.codeCardMain {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.codeCardMain .settingsTitle ~ * {
-  margin-top: 0;
 }
 
 .settingsTitle {
@@ -416,6 +398,74 @@
   grid-template-columns: 1fr;
 }
 
+/* 가입 방법 스위치 + 복사 버튼 한 줄 */
+.joinMethodRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.joinMethodRow > :first-child {
+  min-width: 0;
+}
+
+.joinSectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.joinSectionHead .settingsTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.joinMethodBlock {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.joinMethodValue {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  min-width: 0;
+}
+
+.joinValueLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.joinMethodValue .code {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.joinLinkUrlList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.joinLinkUrlItem {
+  min-width: 0;
+}
+
 .rulesGrid {
   display: grid;
   gap: var(--space-3);
@@ -481,34 +531,6 @@
   font-weight: 700;
 }
 
-.inlineLinkList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.inlineLinkRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.inlineLinkCode {
-  font-family: ui-monospace, monospace;
-  font-size: 12px;
-  color: var(--color-text);
-  min-width: 0;
-  flex: 1;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  white-space: normal;
-  line-height: 1.45;
-}
-
 .copyBtn {
   width: 30px;
   height: 30px;
@@ -529,10 +551,15 @@
     color var(--ui-duration) var(--ui-ease);
 }
 
-.copyBtn:hover {
+.copyBtn:hover:not(:disabled) {
   color: var(--color-text);
-  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 32%, var(--color-border));
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.copyBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .settingDesc {

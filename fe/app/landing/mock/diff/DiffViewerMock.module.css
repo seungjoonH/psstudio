@@ -172,19 +172,19 @@
 }
 
 .addRow {
-  background: color-mix(in oklab, #bbf7d0 64%, var(--color-surface));
+  background: var(--diff-add-row-bg);
 }
 
 .removeRow {
-  background: color-mix(in oklab, #fecdd3 60%, var(--color-surface));
+  background: var(--diff-remove-row-bg);
 }
 
 .addRow .lineCell {
-  background: color-mix(in oklab, #86efac 58%, var(--color-surface));
+  background: var(--diff-add-line-bg);
 }
 
 .removeRow .lineCell {
-  background: color-mix(in oklab, #fda4af 56%, var(--color-surface));
+  background: var(--diff-remove-line-bg);
 }
 
 .metaRow {
@@ -206,20 +206,20 @@
 }
 
 .rangeRow {
-  background: color-mix(in oklab, #fef3c7 56%, var(--color-surface)) !important;
+  background: var(--diff-range-row-bg) !important;
 }
 
 .rangeRow .lineCell {
-  background: color-mix(in oklab, #fde68a 60%, var(--color-surface)) !important;
+  background: var(--diff-range-line-bg) !important;
 }
 
 /* rangeRow가 모든 셀 배경을 덮어 노란색이 reviewSpan 색보다 우선되게 합니다. */
 .diffRow.rangeRow > td {
-  background-color: color-mix(in oklab, #fef3c7 56%, var(--color-surface)) !important;
+  background-color: var(--diff-range-row-bg) !important;
 }
 
 .diffRow.rangeRow > td.lineCell {
-  background-color: color-mix(in oklab, #fde68a 60%, var(--color-surface)) !important;
+  background-color: var(--diff-range-line-bg) !important;
 }
 
 .dragging {
@@ -239,48 +239,73 @@
   opacity: 1;
 }
 
-/* 범위 하이라이트: diff 종류(add/remove/context)별로 기존 배경과 섞습니다. */
+/* 리뷰(코멘트) 앵커 줄: primary 틴트 + 행 왼쪽 세로 막대(아이콘 열) */
+.diffRow.reviewSpanStart.addRow > td:first-child,
+.diffRow.reviewSpanMiddle.addRow > td:first-child,
+.diffRow.reviewSpanEnd.addRow > td:first-child,
+.diffRow.reviewSpanSingle.addRow > td:first-child,
+.diffRow.reviewSpanStart.removeRow > td:first-child,
+.diffRow.reviewSpanMiddle.removeRow > td:first-child,
+.diffRow.reviewSpanEnd.removeRow > td:first-child,
+.diffRow.reviewSpanSingle.removeRow > td:first-child,
+.diffRow.reviewSpanStart.contextRow > td:first-child,
+.diffRow.reviewSpanMiddle.contextRow > td:first-child,
+.diffRow.reviewSpanEnd.contextRow > td:first-child,
+.diffRow.reviewSpanSingle.contextRow > td:first-child,
+.diffRow.reviewSpanStart.metaRow > td:first-child,
+.diffRow.reviewSpanMiddle.metaRow > td:first-child,
+.diffRow.reviewSpanEnd.metaRow > td:first-child,
+.diffRow.reviewSpanSingle.metaRow > td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--color-primary);
+}
+
 .diffRow.reviewSpanStart.addRow > td,
 .diffRow.reviewSpanMiddle.addRow > td,
 .diffRow.reviewSpanEnd.addRow > td,
 .diffRow.reviewSpanSingle.addRow > td {
-  background-color: color-mix(
-    in oklab,
-    var(--color-primary) 18%,
-    color-mix(in oklab, #bbf7d0 56%, var(--color-surface))
-  );
+  background-color: var(--diff-review-on-add-bg);
+}
+
+.diffRow.reviewSpanStart.addRow > td.lineCell,
+.diffRow.reviewSpanMiddle.addRow > td.lineCell,
+.diffRow.reviewSpanEnd.addRow > td.lineCell,
+.diffRow.reviewSpanSingle.addRow > td.lineCell {
+  background-color: var(--diff-review-on-add-line-bg);
 }
 
 .diffRow.reviewSpanStart.removeRow > td,
 .diffRow.reviewSpanMiddle.removeRow > td,
 .diffRow.reviewSpanEnd.removeRow > td,
 .diffRow.reviewSpanSingle.removeRow > td {
-  background-color: color-mix(
-    in oklab,
-    var(--color-primary) 18%,
-    color-mix(in oklab, #fecdd3 54%, var(--color-surface))
-  );
+  background-color: var(--diff-review-on-remove-bg);
+}
+
+.diffRow.reviewSpanStart.removeRow > td.lineCell,
+.diffRow.reviewSpanMiddle.removeRow > td.lineCell,
+.diffRow.reviewSpanEnd.removeRow > td.lineCell,
+.diffRow.reviewSpanSingle.removeRow > td.lineCell {
+  background-color: var(--diff-review-on-remove-line-bg);
 }
 
 .diffRow.reviewSpanStart.contextRow > td,
 .diffRow.reviewSpanMiddle.contextRow > td,
 .diffRow.reviewSpanEnd.contextRow > td,
 .diffRow.reviewSpanSingle.contextRow > td {
-  background-color: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
+  background-color: var(--diff-review-on-context-bg);
 }
 
 .diffRow.reviewSpanStart.contextRow > td.lineCell,
 .diffRow.reviewSpanMiddle.contextRow > td.lineCell,
 .diffRow.reviewSpanEnd.contextRow > td.lineCell,
 .diffRow.reviewSpanSingle.contextRow > td.lineCell {
-  background-color: color-mix(in oklab, var(--color-primary) 24%, var(--color-surface));
+  background-color: var(--diff-review-on-context-line-bg);
 }
 
 .diffRow.reviewSpanStart.metaRow > td,
 .diffRow.reviewSpanMiddle.metaRow > td,
 .diffRow.reviewSpanEnd.metaRow > td,
 .diffRow.reviewSpanSingle.metaRow > td {
-  background-color: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface-muted));
+  background-color: var(--diff-review-on-meta-bg);
 }
 
 .reviewRow {

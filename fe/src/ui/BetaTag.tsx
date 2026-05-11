@@ -8,5 +8,5 @@ type Props = {
 };
 
 export function BetaTag({ label, className }: Props) {
-  return <span className={buildCls(styles.root, className)}>{label}</span>;
+  return <span className={buildCls(styles.root, className, styles.beta)}>{label}</span>;
 }

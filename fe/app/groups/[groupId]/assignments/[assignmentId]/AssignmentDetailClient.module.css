@@ -533,6 +533,10 @@
 }
 
 .cohortTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 18px;
   font-weight: 800;

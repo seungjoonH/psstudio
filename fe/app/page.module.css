@@ -1,6 +1,6 @@
 /* 홈 화면 레이아웃 스타일입니다. */
 .dashboard {
-  --home-list-item-height: 96px;
+  --home-list-item-height: 120px;
   display: grid;
   gap: var(--space-5);
 }
@@ -71,22 +71,47 @@
   color: var(--color-muted);
 }
 
+/* 해야 할 일 · 한 일 · 최근 알림 동일 너비(1:1:1). */
 .board {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(0, 3fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
   align-items: stretch;
+}
+
+/* 칸반 열만: pill(Badge·난이도) 높이를 서로 맞춘 채로 살짝 낮춤 */
+.board :global(span[class*="Badge_root"]),
+.board :global(span[class*="DifficultyBadge_root"]) {
+  height: 20px;
+  min-height: 20px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+/* 세 열 리스트 카드 동일 높이 + 내용 세로 중앙 */
+.board .feedRow,
+.board .feedRowStatic {
+  box-sizing: border-box;
+  height: var(--home-list-item-height);
+  min-height: var(--home-list-item-height);
+  align-items: center;
+}
+
+.board .cardEmpty {
+  box-sizing: border-box;
+  height: var(--home-list-item-height);
+  min-height: var(--home-list-item-height);
 }
 
 .column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 18px;
+  gap: 10px;
+  padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: 18px;
   background: var(--color-surface);
-  min-height: 280px;
+  min-height: 258px;
   min-width: 0;
 }
 
@@ -101,7 +126,7 @@
 .columnHead {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .columnHeadBody {
@@ -115,65 +140,6 @@
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.notifToolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-
-.notifListCard {
-  box-sizing: border-box;
-  padding: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: color-mix(in oklab, var(--color-surface-muted) 55%, var(--color-surface));
-}
-
-.notifList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.notifListRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
-  background: var(--color-surface-paper);
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.notifListRow:has(a.notifRowMain:hover) {
-  border-color: var(--ui-hover-border);
-  background: var(--ui-hover-bg);
-}
-
-.notifRowMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  color: inherit;
-  text-decoration: none;
-}
-
-a.notifRowMain:hover {
-  color: inherit;
-}
-
-.notifDeleteBtn {
-  flex-shrink: 0;
-  margin-top: 2px;
 }
 
 .viewAllLink {
@@ -233,7 +199,7 @@ a.notifRowMain:hover {
 }
 
 .cardDesc {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--color-muted);
@@ -243,7 +209,7 @@ a.notifRowMain:hover {
   margin: 0;
   box-sizing: border-box;
   min-height: var(--home-list-item-height);
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px dashed color-mix(in oklab, var(--color-border) 65%, transparent);
   border-radius: 12px;
   font-size: 13px;
@@ -260,7 +226,7 @@ a.notifRowMain:hover {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .feedRow,
@@ -268,9 +234,10 @@ a.notifRowMain:hover {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: var(--home-list-item-height);
-  padding: 12px 14px;
+  gap: 10px;
+  height: 100px;
+  min-height: 100px;
+  padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
   background: var(--color-surface-paper);
@@ -279,10 +246,6 @@ a.notifRowMain:hover {
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease;
-}
-
-.feedRowAlignStart {
-  align-items: flex-start;
 }
 
 .feedRowPastDue {
@@ -304,6 +267,15 @@ a.notifRowMain:hover {
 }
 
 .feedRowPastDue.feedRow:hover {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface-paper));
+}
+
+.feedRowStatic:hover {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.feedRowPastDue.feedRowStatic:hover {
   background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface-paper));
 }
 
@@ -339,7 +311,7 @@ a.notifRowMain:hover {
 
 .feedMain {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
   flex: 1;
 }
@@ -351,41 +323,12 @@ a.notifRowMain:hover {
   color: var(--color-text);
   white-space: normal;
   word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
-.notifTitleKanban {
-  flex: 1;
-  min-width: 0;
-}
-
-.kanbanCard {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.kanbanItemTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  min-width: 0;
-  width: 100%;
-}
-
-.kanbanItemTopRight {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 홈·랜딩 칸반 「해야 할 일」: 과제 목록과 동일 역할(제목+플랫폼·난이도·그룹 / 알고리즘 / 우측 마감·상태). */
 .todoCardRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   min-width: 0;
   flex: 1;
@@ -395,23 +338,31 @@ a.notifRowMain:hover {
 .todoCardMain {
   flex: 1;
   min-width: 0;
+  width: 100%;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .todoTitleStrip {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
   gap: var(--space-2);
   min-width: 0;
+  width: 100%;
 }
 
-.todoTitleNear {
+.todoTitleLeft {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.todoTitleDue {
+  flex-shrink: 0;
 }
 
 .todoMetaRow {
@@ -421,19 +372,13 @@ a.notifRowMain:hover {
   flex-wrap: wrap;
 }
 
-.todoCardActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
 .kanbanItemTitle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
+  max-width: 100%;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text);

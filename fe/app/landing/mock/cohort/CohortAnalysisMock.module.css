@@ -83,6 +83,15 @@
   color: var(--color-text);
 }
 
+/* 집단 리포트 목업: 본문 아래 생략 표기 */
+.reportFootnote {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-muted);
+}
+
 .actionRow {
   display: inline-flex;
   align-items: center;

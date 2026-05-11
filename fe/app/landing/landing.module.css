@@ -11,6 +11,18 @@
   border: 0;
 }
 
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .skipNav:focus {
   position: fixed;
   left: 16px;
@@ -66,6 +78,11 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* 하단 CTA 블록과 전역 푸터 사이 여백 */
+.bottomCtaBeforeFooter {
+  margin-bottom: clamp(20px, 4vw, 40px);
 }
 
 .eyebrow {
@@ -190,28 +207,170 @@
   margin-top: 8px;
 }
 
-.footerNote {
+/* 소개: 상단 셸과 맞물리는 큰 카피 영역.
+   hero가 첫 화면(viewport)에 정확히 맞물리도록 차감값을 산정합니다.
+   차감 148px = app-root 상단 패딩 24 + AppShell topbar 108 + main grid gap 16.
+   아래 두 번째 섹션은 viewport 밖에 위치하므로, "둘러보기" 클릭 시
+   ScrollReveal이 진입 시점에 fade-in을 트리거합니다. */
+.introSurface {
+  padding: clamp(26px, 4.5vw, 44px);
+  min-height: max(360px, calc(100vh - 180px));
+  gap: clamp(12px, 2vw, 18px);
+  justify-content: center;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: clamp(8px, 1.6vw, 16px);
+}
+
+.introHeadline {
   margin: 0;
-  text-align: center;
-  font-size: 12px;
+  font-size: clamp(1.45rem, 3.1vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.28;
+  color: var(--color-text);
+}
+
+.heroTitleSegment {
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+
+/* 과제: 따뜻한 앰버 계열 그라데이션 + 천천히 이동하는 하이라이트 */
+.heroGlowAssign {
+  position: relative;
+  display: inline;
+  padding: 0 0.04em;
+  margin: 0 -0.04em;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  background-image: linear-gradient(
+    118deg,
+    #b45309 0%,
+    #ea580c 28%,
+    #f59e0b 52%,
+    #fbbf24 78%,
+    #ea580c 100%
+  );
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: landingHeroGradWarm 5.5s ease-in-out infinite;
+}
+
+/* 리뷰: 시안–바이올렛 계열, 위상과 다른 주기로 미세 움직임 */
+.heroGlowReview {
+  position: relative;
+  display: inline;
+  padding: 0 0.04em;
+  margin: 0 -0.04em;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  background-image: linear-gradient(
+    122deg,
+    #0369a1 0%,
+    #2563eb 32%,
+    #4f46e5 58%,
+    #0ea5e9 82%,
+    #6366f1 100%
+  );
+  background-size: 240% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: landingHeroGradCool 6.8s ease-in-out infinite;
+  animation-delay: -1.8s;
+}
+
+[data-theme="dark"] .heroGlowAssign {
+  background-image: linear-gradient(
+    118deg,
+    #fb923c 0%,
+    #fdba74 30%,
+    #f59e0b 55%,
+    #fcd34d 80%,
+    #fb923c 100%
+  );
+}
+
+[data-theme="dark"] .heroGlowReview {
+  background-image: linear-gradient(
+    122deg,
+    #38bdf8 0%,
+    #60a5fa 35%,
+    #818cf8 62%,
+    #22d3ee 88%,
+    #a5b4fc 100%
+  );
+}
+
+@keyframes landingHeroGradWarm {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes landingHeroGradCool {
+  0%,
+  100% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroGlowAssign,
+  .heroGlowReview {
+    animation: none;
+    background-position: 0% 50%;
+  }
+}
+
+.introLead {
+  margin: 0;
+  max-width: min(52ch, 100%);
+  font-size: clamp(14px, 1.85vw, 16px);
+  line-height: 1.65;
   color: var(--color-muted);
+  white-space: pre-line;
 }
 
-.heroVertical {
+/* 홈 칸반 목업: 본문 표면과 분리된 단일 카드.
+   hero(첫 화면)와의 시각 분리를 위해 stack gap에 추가 여백을 더합니다. */
+.kanbanSection {
+  padding: 0;
+  margin: clamp(20px, 3vw, 40px) 0 0 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 100%;
+  gap: 0;
 }
 
-.heroIntro {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.heroKanbanWrap {
+.kanbanCard {
+  box-sizing: border-box;
   width: 100%;
+  padding: clamp(16px, 2.5vw, 22px);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  box-shadow: 0 2px 14px color-mix(in oklab, var(--color-text) 7%, transparent);
+  max-width: 100%;
+  overflow: auto;
 }
 
 .heroNotifyHead {

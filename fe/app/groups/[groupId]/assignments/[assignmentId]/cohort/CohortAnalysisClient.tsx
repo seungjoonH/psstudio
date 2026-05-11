@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CohortAnalysisDto, CohortSubmissionArtifact } from "../../../../../../src/assignments/server";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
-import { sanitizeCohortReportMarkdown } from "../../../../../../src/lib/cohortReportMarkdown";
+import { BetaTag } from "../../../../../../src/ui/BetaTag";
 import { CohortCodeColumns } from "../../../../../../src/ui/cohort/CohortCodeColumns";
 import { CohortReportBody } from "../../../../../../src/ui/cohort/CohortReportBody";
 import { getCohortAnalysisStateAction, startCohortAnalysisAction } from "../../actions";
@@ -81,13 +81,7 @@ export function CohortAnalysisClient({
   const included = cohort.includedSubmissions ?? [];
   const titlesMap = new Map(included.map((r) => [r.submissionId, { title: r.title, versionNo: r.versionNo }]));
   const submissions = cohortSubmissions(cohort.artifacts);
-  const reportMarkdownSanitized =
-    cohort.reportMarkdown !== null && cohort.reportMarkdown !== undefined
-      ? sanitizeCohortReportMarkdown(
-          cohort.reportMarkdown,
-          included.map((r) => r.submissionId),
-        )
-      : "";
+  const reportMarkdownSanitized = cohort.reportMarkdown ?? "";
 
   return (
     <div className={styles.root}>
@@ -97,7 +91,10 @@ export function CohortAnalysisClient({
         </Link>
       </div>
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>{t("assignment.cohortPage.heading")}</h1>
+        <h1 className={styles.title}>
+          {t("assignment.cohortPage.heading")}{" "}
+          <BetaTag label={t("common.betaTag")} />
+        </h1>
         {canStartCohort && (cohort.status === "DONE" || cohort.status === "FAILED") ? (
           <button
             type="button"

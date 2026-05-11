@@ -30,7 +30,7 @@
 
 .tab:hover:not(.tabActive) {
   color: var(--color-text);
-  background: color-mix(in oklab, var(--color-muted) 10%, transparent);
+  background: var(--ui-hover-fill-muted);
 }
 
 .tabActive {

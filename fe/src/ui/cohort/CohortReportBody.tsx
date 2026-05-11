@@ -102,6 +102,8 @@ type Props = {
   included: CohortIncludedLite[];
   /** false면 제출 칩은 링크가 아니며(랜딩 목업 등), 호버·눌림 피드백만 동일하게 둡니다. */
   submissionLinks?: boolean;
+  /** false면 칩에서 `v{version}`을 숨깁니다(제목에 # 등으로 이미 표기할 때). */
+  showSubmissionVersionOnChips?: boolean;
 };
 
 function metaById(rows: CohortIncludedLite[]): Map<string, CohortIncludedLite> {
@@ -167,6 +169,7 @@ export function CohortReportBody({
   assignmentId,
   included,
   submissionLinks = true,
+  showSubmissionVersionOnChips = true,
 }: Props) {
   const meta = metaById(included);
   const tableExtracted = extractHtmlTablesForChipSplit(reportMarkdown);
@@ -205,7 +208,9 @@ export function CohortReportBody({
           {row !== undefined ? (
             <>
               <span className={styles.chipTitle}>{row.title}</span>
-              <span className={styles.chipVer}>v{row.versionNo}</span>
+              {showSubmissionVersionOnChips ? (
+                <span className={styles.chipVer}>v{row.versionNo}</span>
+              ) : null}
             </>
           ) : (
             canonicalId

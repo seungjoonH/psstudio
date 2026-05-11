@@ -7,9 +7,9 @@ describe("normalizeLlmMarkdown", () => {
     expect(out).toBe("패치 예시:\n\n```javascript\nconst x = 1;\n```");
   });
 
-  it("<br />를 줄바꿈으로 바꾼다", () => {
-    expect(normalizeLlmMarkdown("a<br />b")).toBe("a\nb");
-    expect(normalizeLlmMarkdown("a<BR/>b")).toBe("a\nb");
+  it("<br />를 GFM 하드 줄바꿈으로 바꾼다", () => {
+    expect(normalizeLlmMarkdown("a<br />b")).toBe("a  \nb");
+    expect(normalizeLlmMarkdown("a<BR/>b")).toBe("a  \nb");
   });
 
   it("펜스만 있는 줄은 건드리지 않는다", () => {

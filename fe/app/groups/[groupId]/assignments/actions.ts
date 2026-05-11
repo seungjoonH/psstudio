@@ -1,7 +1,6 @@
 "use server";
 
 // 과제 관련 서버 액션입니다.
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -13,6 +12,11 @@ import {
   updateAssignment,
   updateAssignmentMetadata,
 } from "../../../../src/assignments/server";
+import { LOCALES, type Locale } from "../../../../src/i18n/messages";
+
+function coerceUiLocale(value: string): Locale {
+  return LOCALES.includes(value as Locale) ? (value as Locale) : "ko";
+}
 
 export async function createAssignmentAction(groupId: string, formData: FormData): Promise<void> {
   const title = String(formData.get("title") ?? "").trim();
@@ -145,10 +149,18 @@ export async function getCohortAnalysisStateAction(assignmentId: string) {
   return getCohortAnalysis(assignmentId);
 }
 
-export async function startCohortAnalysisAction(groupId: string, assignmentId: string) {
-  const h = await headers();
-  const acceptLanguage = h.get("accept-language") ?? "ko";
-  const data = await startCohortAnalysis(assignmentId, { acceptLanguage });
+export async function startCohortAnalysisAction(
+  groupId: string,
+  assignmentId: string,
+  uiLocale: string,
+  options?: { rerun?: boolean },
+) {
+  const locale = coerceUiLocale(uiLocale);
+  const acceptLanguage = locale === "ko" ? "ko-KR,ko;q=0.95,en;q=0.4" : "en-US,en;q=0.95,ko;q=0.4";
+  const data = await startCohortAnalysis(assignmentId, {
+    acceptLanguage,
+    rerun: options?.rerun === true,
+  });
   revalidatePath(`/groups/${groupId}/assignments/${assignmentId}`);
   revalidatePath(`/groups/${groupId}/assignments/${assignmentId}/cohort`);
   return data;

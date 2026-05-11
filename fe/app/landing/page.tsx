@@ -2,6 +2,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { DEFAULT_LOCALE, LOCALES, messages, type Locale } from "../../src/i18n/messages";
+import { fetchMeServer } from "../../src/auth/api.server";
+import { UI_PREFS_LOCALE_COOKIE } from "../../src/lib/uiPrefsStorage";
 import { LandingClient } from "./LandingClient";
 import { resolveSiteOrigin } from "./resolve-site-origin";
 
@@ -13,7 +15,7 @@ function isLocale(value: string | undefined): value is Locale {
 
 async function landingLocaleFromCookie(): Promise<Locale> {
   const jar = await cookies();
-  const raw = jar.get("psstudio.locale")?.value;
+  const raw = jar.get(UI_PREFS_LOCALE_COOKIE)?.value;
   return isLocale(raw) ? raw : DEFAULT_LOCALE;
 }
 
@@ -65,6 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
+  const me = await fetchMeServer();
   const locale = await landingLocaleFromCookie();
   const origin = await resolveSiteOrigin();
   const seo = landingSeoStrings(locale);
@@ -102,7 +105,7 @@ export default async function LandingPage() {
         // eslint-disable-next-line react/no-danger -- 구조화 데이터(JSON-LD)는 표준 삽입 방식입니다.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LandingClient />
+      <LandingClient isLoggedIn={me !== null} />
     </>
   );
 }

@@ -1,0 +1,376 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.heroCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: grid;
+  gap: 10px;
+}
+
+.heroTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.titleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.titleEditForm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleInput {
+  height: 38px;
+  min-width: min(520px, 64vw);
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.heroActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.aiButtonIcon {
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.iconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.heroMeta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heroDate {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.editForm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.textarea {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.byteLine {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.versionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.versionSection {
+  display: grid;
+  gap: 8px;
+}
+
+.versionRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.versionHistoryWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.historyToggleBtn {
+  justify-self: start;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.historyToggleBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.versionHistoryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.noteSection {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.noteHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.noteTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.notePreview {
+  font-size: 14px;
+}
+
+.noteForm {
+  display: grid;
+  gap: 8px;
+}
+
+.noteTextarea {
+  min-height: 180px;
+  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.noteActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.commentSection {
+  display: grid;
+  gap: var(--space-2);
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.commentTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.commentForm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.commentBox {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.commentTabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.commentTab,
+.commentTabActive {
+  border: 0;
+  background: transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  min-width: 88px;
+  text-align: center;
+}
+
+.commentTabActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.commentSubmitRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.commentActionRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.commentList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.commentItem {
+  display: block;
+}
+
+.commentMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commentAvatar {
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.commentAvatarFallback {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.commentMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.commentBody {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.previewArea {
+  min-height: 180px;
+  padding: 16px;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.commentBox .textarea {
+  width: 100%;
+  min-height: 180px;
+  border: 0;
+  border-radius: 0;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.commentBox .textarea:focus {
+  outline: none;
+}

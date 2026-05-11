@@ -46,9 +46,9 @@ export function GroupsExploreView({ groups }: Props) {
                     <Icon name="users" size={16} className={styles.groupNameIcon} />
                     {group.name}
                   </strong>
-                  {group.description.trim().length > 0 ? (
-                    <p className={styles.groupDescription}>{group.description.trim()}</p>
-                  ) : null}
+                  <p className={styles.groupDescription}>
+                    {group.description.trim().length > 0 ? group.description.trim() : null}
+                  </p>
                   <span className={styles.groupMeta}>
                     {t("groups.memberCount", { count: group.memberCount })}
                     {" · "}

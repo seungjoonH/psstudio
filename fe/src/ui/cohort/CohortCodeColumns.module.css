@@ -140,7 +140,7 @@
 }
 
 .gutter {
-  flex: 0 0 48px;
+  flex: 0 0 40px;
   display: inline-flex;
   align-items: stretch;
   justify-content: flex-end;
@@ -157,18 +157,15 @@
   line-height: 1.35;
 }
 
+/* 줄마다 짧은 캡슐을 그리면 구간 세로선이 끊겨 보임 — 역할 띠는 .lineBand border-left로 이어짐 */
 .gutterLanes {
-  display: inline-flex;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 2px;
-  min-height: 100%;
+  display: none;
 }
 
 .gutterLane {
   width: 2px;
   min-height: 100%;
-  border-radius: 999px;
+  border-radius: 0;
   opacity: 0.72;
   transition:
     background-color 160ms ease,
@@ -277,8 +274,9 @@
   border-radius: 6px;
   pointer-events: none;
   line-height: 1.2;
-  backdrop-filter: blur(1px);
+  /* backdrop-filter는 줄바꿈 시 줄마다 뒤가 달라져 음영이 갈라져 보임(코드 토큰 vs 띠 배경) */
   /* 라벨이 길면 코드 위로 길게 깔리지 않도록 가로 폭을 제한하고 최대 두 줄까지 줄바꿈(비율·px 상한을 낮춰 더 일찍 2행으로 분할) */
+  width: fit-content;
   max-width: min(38%, 168px);
   white-space: normal;
   text-align: right;
@@ -296,40 +294,40 @@
 }
 
 .roleTag[data-band="0"] {
-  background: color-mix(in oklab, #60a5fa 13%, transparent);
+  background: color-mix(in oklab, #60a5fa 22%, var(--color-surface));
 }
 .roleTag[data-band="1"] {
-  background: color-mix(in oklab, #34d399 13%, transparent);
+  background: color-mix(in oklab, #34d399 22%, var(--color-surface));
 }
 .roleTag[data-band="2"] {
-  background: color-mix(in oklab, #fbbf24 14%, transparent);
+  background: color-mix(in oklab, #fbbf24 24%, var(--color-surface));
 }
 .roleTag[data-band="3"] {
-  background: color-mix(in oklab, #f472b6 13%, transparent);
+  background: color-mix(in oklab, #f472b6 22%, var(--color-surface));
 }
 .roleTag[data-band="4"] {
-  background: color-mix(in oklab, #a78bfa 13%, transparent);
+  background: color-mix(in oklab, #a78bfa 22%, var(--color-surface));
 }
 .roleTag[data-band="5"] {
-  background: color-mix(in oklab, #2dd4bf 13%, transparent);
+  background: color-mix(in oklab, #2dd4bf 22%, var(--color-surface));
 }
 .roleTag[data-band="6"] {
-  background: color-mix(in oklab, #fb923c 13%, transparent);
+  background: color-mix(in oklab, #fb923c 22%, var(--color-surface));
 }
 .roleTag[data-band="7"] {
-  background: color-mix(in oklab, #4ade80 11%, transparent);
+  background: color-mix(in oklab, #4ade80 20%, var(--color-surface));
 }
 .roleTag[data-band="8"] {
-  background: color-mix(in oklab, #f87171 12%, transparent);
+  background: color-mix(in oklab, #f87171 21%, var(--color-surface));
 }
 .roleTag[data-band="9"] {
-  background: color-mix(in oklab, #22d3ee 12%, transparent);
+  background: color-mix(in oklab, #22d3ee 21%, var(--color-surface));
 }
 .roleTag[data-band="10"] {
-  background: color-mix(in oklab, #e879f9 12%, transparent);
+  background: color-mix(in oklab, #e879f9 21%, var(--color-surface));
 }
 .roleTag[data-band="11"] {
-  background: color-mix(in oklab, #93c5fd 12%, transparent);
+  background: color-mix(in oklab, #93c5fd 21%, var(--color-surface));
 }
 
 /* region 음영: 빈 줄도 최소 한 줄 박스 높이를 유지하고, 행 높이만큼 채움 */
@@ -340,7 +338,11 @@
   min-height: 1.45em;
   display: flex;
   flex-direction: column;
-  transition: background-color 160ms ease, filter 160ms ease;
+  box-sizing: border-box;
+  transition:
+    background-color 160ms ease,
+    filter 160ms ease,
+    border-color 160ms ease;
 }
 
 .lineBandHovered {
@@ -384,6 +386,43 @@
   background: color-mix(in oklab, #5eead4 22%, transparent);
 }
 
+.lineBandHovered.band0 {
+  border-left-color: color-mix(in oklab, #60a5fa 78%, var(--color-border));
+}
+.lineBandHovered.band1 {
+  border-left-color: color-mix(in oklab, #34d399 78%, var(--color-border));
+}
+.lineBandHovered.band2 {
+  border-left-color: color-mix(in oklab, #fbbf24 82%, var(--color-border));
+}
+.lineBandHovered.band3 {
+  border-left-color: color-mix(in oklab, #f472b6 78%, var(--color-border));
+}
+.lineBandHovered.band4 {
+  border-left-color: color-mix(in oklab, #a78bfa 78%, var(--color-border));
+}
+.lineBandHovered.band5 {
+  border-left-color: color-mix(in oklab, #2dd4bf 78%, var(--color-border));
+}
+.lineBandHovered.band6 {
+  border-left-color: color-mix(in oklab, #fb923c 78%, var(--color-border));
+}
+.lineBandHovered.band7 {
+  border-left-color: color-mix(in oklab, #4ade80 76%, var(--color-border));
+}
+.lineBandHovered.band8 {
+  border-left-color: color-mix(in oklab, #93c5fd 78%, var(--color-border));
+}
+.lineBandHovered.band9 {
+  border-left-color: color-mix(in oklab, #fcd34d 84%, var(--color-border));
+}
+.lineBandHovered.band10 {
+  border-left-color: color-mix(in oklab, #c4b5fd 78%, var(--color-border));
+}
+.lineBandHovered.band11 {
+  border-left-color: color-mix(in oklab, #5eead4 76%, var(--color-border));
+}
+
 .code {
   display: block;
   flex: 1 1 auto;
@@ -413,54 +452,67 @@
 .band0 {
   composes: bandPad;
   background: color-mix(in oklab, #60a5fa 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #60a5fa 58%, var(--color-border));
 }
 .band1 {
   composes: bandPad;
   background: color-mix(in oklab, #34d399 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #34d399 58%, var(--color-border));
 }
 .band2 {
   composes: bandPad;
   background: color-mix(in oklab, #fbbf24 14%, transparent);
+  border-left: 3px solid color-mix(in oklab, #fbbf24 62%, var(--color-border));
 }
 .band3 {
   composes: bandPad;
   background: color-mix(in oklab, #f472b6 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #f472b6 58%, var(--color-border));
 }
 .band4 {
   composes: bandPad;
   background: color-mix(in oklab, #a78bfa 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #a78bfa 58%, var(--color-border));
 }
 .band5 {
   composes: bandPad;
   background: color-mix(in oklab, #2dd4bf 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #2dd4bf 58%, var(--color-border));
 }
 .band6 {
   composes: bandPad;
   background: color-mix(in oklab, #fb923c 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #fb923c 58%, var(--color-border));
 }
 .band7 {
   composes: bandPad;
   background: color-mix(in oklab, #4ade80 11%, transparent);
+  border-left: 3px solid color-mix(in oklab, #4ade80 56%, var(--color-border));
 }
 .band8 {
   composes: bandPad;
   background: color-mix(in oklab, #93c5fd 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #93c5fd 58%, var(--color-border));
 }
 .band9 {
   composes: bandPad;
   background: color-mix(in oklab, #fcd34d 15%, transparent);
+  border-left: 3px solid color-mix(in oklab, #fcd34d 64%, var(--color-border));
 }
 .band10 {
   composes: bandPad;
   background: color-mix(in oklab, #c4b5fd 13%, transparent);
+  border-left: 3px solid color-mix(in oklab, #c4b5fd 58%, var(--color-border));
 }
 .band11 {
   composes: bandPad;
   background: color-mix(in oklab, #5eead4 12%, transparent);
+  border-left: 3px solid color-mix(in oklab, #5eead4 56%, var(--color-border));
 }
 
 .bandNone {
   composes: bandPad;
+  border-left: 3px solid transparent;
 }
 
 /* 랜딩 집단 분석 목업: 슬라이드 폭을 줄이고 트랙 테두리를 없애 옆 카드가 비치며 이중 테두리가 나지 않게 합니다. */

@@ -69,52 +69,8 @@
 }
 
 .markdownWrap {
-  font-size: 10px;
+  min-width: 0;
   color: var(--color-text);
-  line-height: 1.5;
-}
-
-/* MarkdownPreview 내부 .markdown 이 부모보다 큰 글자를 쓰지 않도록 댓글 전용으로 덮어씁니다. */
-.markdownWrap :global(.markdown) {
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.markdownWrap :global(.markdown h1),
-.markdownWrap :global(.markdown h2),
-.markdownWrap :global(.markdown h3),
-.markdownWrap :global(.markdown h4) {
-  margin-bottom: 8px;
-  font-size: 11px;
-  line-height: 1.35;
-  font-weight: 700;
-}
-
-.markdownWrap :global(.markdown p) {
-  margin-bottom: 8px;
-}
-
-.markdownWrap :global(.markdown ul),
-.markdownWrap :global(.markdown ol) {
-  margin: 0 0 8px 18px;
-}
-
-.markdownWrap :global(.markdown li) {
-  margin: 0 0 4px;
-}
-
-.markdownWrap :global(.markdown code) {
-  font-size: 10px;
-}
-
-.markdownWrap :global(.markdown pre) {
-  margin: 0 0 8px;
-  padding: 8px;
-  font-size: 10px;
-}
-
-.markdownWrap :global(.markdown pre code) {
-  font-size: 10px;
 }
 
 .replies {
@@ -179,7 +135,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   padding: 10px 12px;
-  font-size: 10px;
+  font-size: 9px;
   min-height: 60px;
 }
 

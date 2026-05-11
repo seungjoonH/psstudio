@@ -33,8 +33,6 @@ export type GroupDetail = {
   joinMethods: {
     code: boolean;
     link: boolean;
-    request: boolean;
-    email: boolean;
   };
   rules: {
     useDeadline: boolean;
@@ -60,8 +58,6 @@ export type CreateGroupPayload = {
   maxMembers?: number;
   joinByCodeEnabled?: boolean;
   joinByLinkEnabled?: boolean;
-  joinByRequestEnabled?: boolean;
-  joinByEmailEnabled?: boolean;
   ruleUseDeadline?: boolean;
   ruleDefaultDeadlineTime?: string;
   ruleAllowLateSubmission?: boolean;

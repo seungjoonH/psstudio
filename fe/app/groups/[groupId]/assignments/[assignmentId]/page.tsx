@@ -46,7 +46,6 @@ export default async function AssignmentDetailPage({ params, searchParams }: Pro
         meId={me.id}
         submissions={submissions}
         submissionSort={submissionSort}
-        translationLanguage={group.rules.translationLanguage}
         cohortInitial={cohortInitial}
       />
     );

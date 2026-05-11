@@ -1,0 +1,35 @@
+/* 마크다운 안 코드블럭의 shiki 출력 컨테이너 스타일입니다. */
+.root {
+  margin: 0 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.root :global(pre) {
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  border: none;
+  border-radius: 0;
+  background: var(--color-surface-muted) !important;
+  font-family: var(--font-mono, monospace);
+}
+
+.root :global(pre code) {
+  background: transparent;
+  font-family: var(--font-mono, monospace);
+}
+
+/* 테두리는 .root 한 겹만 — .markdown :global(pre)와 중복되지 않음 */
+.fallbackPre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  background: var(--color-surface-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.5;
+}

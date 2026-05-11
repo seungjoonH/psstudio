@@ -12,6 +12,7 @@
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
+  text-decoration: none;
   transition:
     transform var(--ui-duration) var(--ui-ease),
     background-color 0.15s ease,
@@ -61,7 +62,11 @@
 }
 
 .primary:hover:not(:disabled) {
-  filter: brightness(0.95);
+  filter: brightness(0.94);
+}
+
+.primary:active:not(:disabled) {
+  filter: brightness(0.9);
 }
 
 .secondary {
@@ -71,7 +76,8 @@
 }
 
 .secondary:hover:not(:disabled) {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .ghost {
@@ -80,7 +86,8 @@
 }
 
 .ghost:hover:not(:disabled) {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .danger {
@@ -91,4 +98,8 @@
 
 .danger:hover:not(:disabled) {
   background: color-mix(in oklab, #ef4444 22%, var(--color-surface));
+}
+
+.danger:active:not(:disabled) {
+  filter: brightness(0.96);
 }

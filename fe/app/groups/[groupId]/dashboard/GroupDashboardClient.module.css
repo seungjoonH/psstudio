@@ -195,7 +195,6 @@
   color: var(--color-text);
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-text) 12%, transparent);
   z-index: 2;
 }
 

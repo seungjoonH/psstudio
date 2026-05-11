@@ -1,6 +1,14 @@
 /* Markdown 프리뷰의 타이포그래피와 코드블록 스타일을 정의합니다. */
 .markdown {
   color: var(--color-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-size: 15px;
   line-height: 1.6;
   white-space: normal;
@@ -12,6 +20,14 @@
 .markdownInlineRoot {
   display: inline;
   color: var(--color-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-size: inherit;
   line-height: inherit;
   vertical-align: baseline;
@@ -103,12 +119,63 @@
   margin: 0 0 6px;
 }
 
-.markdown :global(code) {
-  padding: 2px 5px;
-  border-radius: 6px;
-  background: color-mix(in oklab, var(--color-border) 22%, var(--color-surface));
+/* 집단 리포트 등에서 LLM이 낸 원시 HTML 표 */
+.markdown :global(table) {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.markdown :global(th),
+.markdown :global(td) {
+  border: 1px solid var(--color-border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown :global(th) {
+  background: color-mix(in oklab, var(--color-surface-muted) 85%, var(--color-surface));
+  font-weight: 600;
+}
+
+/* 표 셀·헤더 안 코드 블록: 루트(.markdown)의 white-space: normal 상속으로 줄바꿈이 죽는 것 방지 */
+.markdown :global(td pre),
+.markdown :global(th pre),
+.markdown :global(td .markdown-code-block pre),
+.markdown :global(th .markdown-code-block pre) {
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.markdown :global(td .markdown-code-block),
+.markdown :global(th .markdown-code-block) {
+  margin-bottom: 0;
+  max-width: 100%;
+}
+
+/* 인라인 코드 — 둥근 배경만 강조 */
+.markdown :global(:not(pre) > code),
+.markdownInlineRoot :global(:not(pre) > code) {
+  padding: 0.25em 0.5em;
+  margin: 0 0.15em;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--color-border) 14%, var(--color-surface-muted));
+  border: 1px solid transparent;
   font-family: var(--font-mono, monospace);
-  font-size: 13px;
+  font-size: 0.88em;
+  line-height: 1.45;
+  vertical-align: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+/* 다크: surface·muted·border 톤이 비슷해 color-mix만으로는 칩이 사라짐 — 본문색을 섞고 테두리로 구분 */
+:global(html[data-theme="dark"]) .markdown :global(:not(pre) > code),
+:global(html[data-theme="dark"]) .markdownInlineRoot :global(:not(pre) > code) {
+  background: color-mix(in oklab, var(--color-text) 12%, var(--color-surface-muted));
+  border-color: color-mix(in oklab, var(--color-border) 75%, var(--color-surface));
 }
 
 .markdown :global(pre) {
@@ -118,6 +185,8 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface-muted);
   overflow: auto;
+  white-space: pre;
+  font-family: var(--font-mono, monospace);
 }
 
 /* MarkdownCodeBlock(shiki) 래퍼는 바깥에서만 테두리 — 안쪽 pre에 마크다운 pre 스타일이 합쳐지면 이중 테두리 */
@@ -128,8 +197,28 @@
   border-radius: 0;
 }
 
-.markdown :global(pre code) {
+.markdown :global(pre code),
+.markdownInlineRoot :global(pre code) {
   padding: 0;
   border-radius: 0;
   background: transparent;
+  border: none;
+  box-shadow: none;
+  vertical-align: baseline;
+  font-size: inherit;
+  white-space: pre;
+}
+
+/* 댓글·랜딩 diff 목업 등: 루트는 CSS Modules 클래스라 부모의 :global(.markdown)로는 덮어쓸 수 없음 */
+.markdown.markdownCompact {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.markdown.markdownCompact :global(table) {
+  font-size: 11px;
+}
+
+.markdown.markdownCompact :global(pre) {
+  padding: 10px;
 }

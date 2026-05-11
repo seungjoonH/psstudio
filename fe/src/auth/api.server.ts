@@ -91,14 +91,21 @@ export async function deleteAllNotificationsServer(): Promise<void> {
   if (!res.ok) throw new Error("알림 삭제에 실패했습니다.");
 }
 
-export async function fetchRecentSubmissionsServer(limit = 5): Promise<HomeRecentSubmission[]> {
-  const res = await fetch(
-    `${apiBase()}/api/v1/users/me/submissions?limit=${limit}&sort=createdAtDesc`,
-    {
-      cache: "no-store",
-      headers: { cookie: await buildCookieHeader() },
-    },
-  );
+export async function fetchRecentSubmissionsServer(
+  limit = 5,
+  opts?: { createdAfter?: string },
+): Promise<HomeRecentSubmission[]> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    sort: "createdAtDesc",
+  });
+  if (opts?.createdAfter !== undefined && opts.createdAfter.length > 0) {
+    params.set("createdAfter", opts.createdAfter);
+  }
+  const res = await fetch(`${apiBase()}/api/v1/users/me/submissions?${params.toString()}`, {
+    cache: "no-store",
+    headers: { cookie: await buildCookieHeader() },
+  });
   if (res.status === 401) return [];
   if (!res.ok) return [];
   const body = (await res.json()) as { success: boolean; data: HomeRecentSubmission[] };

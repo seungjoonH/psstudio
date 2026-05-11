@@ -22,13 +22,23 @@
   font-weight: 600;
   color: var(--color-primary);
   text-decoration: none;
+  transition: filter var(--ui-duration) var(--ui-ease);
 }
 
 .back:hover {
   text-decoration: underline;
+  filter: brightness(0.94);
+}
+
+.back:active {
+  filter: brightness(0.9);
 }
 
 .title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   flex: 1;
   min-width: 0;
@@ -99,6 +109,14 @@
   color: var(--color-primary-text);
 }
 
+.primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.primary:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+
 .primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -122,7 +140,8 @@
 }
 
 .secondary:hover:not(:disabled) {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .secondary:disabled {

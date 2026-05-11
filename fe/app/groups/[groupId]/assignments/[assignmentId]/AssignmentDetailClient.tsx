@@ -10,6 +10,7 @@ import type { AssignmentDto, CohortAnalysisDto } from "../../../../../src/assign
 import type { SubmissionListItemDto } from "../../../../../src/submissions/server";
 import { AppShell } from "../../../../../src/shell/AppShell";
 import { Badge } from "../../../../../src/ui/Badge";
+import { BetaTag } from "../../../../../src/ui/BetaTag";
 import { DifficultyBadge } from "../../../../../src/ui/DifficultyBadge";
 import { Icon } from "../../../../../src/ui/Icon";
 import { UserAvatar } from "../../../../../src/ui/UserAvatar";
@@ -109,8 +110,10 @@ export function AssignmentDetailClient({
   const showSidebarDeadlineCountdown =
     a.allowLateSubmission && onDueLocalDay && msUntilDue > 0;
   const submitSidebarBlocked = !a.allowLateSubmission && duePassed;
+  const submitSidebarSolvedAfterDeadline =
+    duePassed && a.allowLateSubmission && hasSubmitted;
   const submitSidebarLabel =
-    a.allowLateSubmission && duePassed
+    a.allowLateSubmission && duePassed && !hasSubmitted
       ? t("assignment.detail.sidebarSubmitLate")
       : t("submission.list.new");
 
@@ -326,7 +329,8 @@ export function AssignmentDetailClient({
           <section className={styles.cohortCard} aria-labelledby="cohort-heading">
             <div className={styles.cohortHead}>
               <h2 id="cohort-heading" className={styles.cohortTitle}>
-                {t("assignment.detail.cohort.title")}
+                {t("assignment.detail.cohort.title")}{" "}
+                <BetaTag label={t("common.betaTag")} />
               </h2>
             </div>
             <p className={styles.cohortLead}>{t("assignment.detail.cohort.lead")}</p>
@@ -385,6 +389,13 @@ export function AssignmentDetailClient({
                   aria-disabled="true"
                 >
                   {t("assignment.detail.sidebarSubmitClosed")}
+                </span>
+              ) : submitSidebarSolvedAfterDeadline ? (
+                <span
+                  className={`${styles.sidePrimaryLink} ${styles.sidePrimaryLinkDisabled}`}
+                  aria-disabled="true"
+                >
+                  {t("assignment.detail.sidebarSubmitSolvedComplete")}
                 </span>
               ) : (
                 <Link href={`${submissionsBase}/new`} className={styles.sidePrimaryLink}>

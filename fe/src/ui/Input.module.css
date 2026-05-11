@@ -1,0 +1,35 @@
+.root {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.invalid {
+  border-color: color-mix(in oklab, #ef4444 55%, var(--color-border));
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: #ef4444;
+}

@@ -3,11 +3,15 @@
 
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { Children, isValidElement } from "react";
+import "katex/dist/katex.min.css";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import type { Options as RehypeSanitizeSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import { buildCls } from "../lib/buildCls";
 import { normalizeLlmMarkdown } from "../lib/normalizeLlmMarkdown";
 import { MarkdownCodeBlock } from "./MarkdownCodeBlock";
 import styles from "./MarkdownPreview.module.css";
@@ -17,6 +21,8 @@ type Props = {
   className?: string;
   /** true면 문단·칩과 같은 줄에 끼워 넣을 때 쓴다(<p>를 인라인 처리). */
   inline?: boolean;
+  /** 댓글 본문 등 좁은 영역 — 기본 본문보다 한 단계 작은 타이포 */
+  variant?: "default" | "compact";
 };
 
 function extractText(node: ReactNode): string {
@@ -73,27 +79,32 @@ const REHYPE_SANITIZE_SCHEMA: RehypeSanitizeSchema = {
   attributes: {
     ...defaultSchema.attributes,
     pre: [["className", /^hljs-/, /^language-/, /^shiki/, /^markdown-/]],
+    /** remark-math → rehype-katex: sanitize 단계에서 플레이스홀더만 허용하고, katex는 그 이후에만 실행한다 */
+    code: [...(defaultSchema.attributes?.code ?? []), ["className", "math-inline", "math-display"]],
   },
 };
 
 /** 블록 마크다운에서만 허용. 인라인(칩 옆) 조각에는 원시 HTML을 넣지 않는다. */
 const REHYPE_PLUGINS_BLOCK = [
   rehypeRaw,
-  [rehypeSanitize, REHYPE_SANITIZE_SCHEMA],
-] as [typeof rehypeRaw, [typeof rehypeSanitize, typeof REHYPE_SANITIZE_SCHEMA]];
+  [rehypeSanitize, REHYPE_SANITIZE_SCHEMA] as [typeof rehypeSanitize, typeof REHYPE_SANITIZE_SCHEMA],
+  rehypeKatex,
+];
 
-export function MarkdownPreview({ content, className, inline = false }: Props) {
+export function MarkdownPreview({ content, className, inline = false, variant = "default" }: Props) {
   const innerClass = inline ? styles.markdownInlineRoot : styles.markdown;
-  const markdownSource = inline ? content : normalizeLlmMarkdown(content);
+  const rootClass = buildCls(innerClass, variant === "compact" && styles.markdownCompact);
+  /** 인라인 모드도 동일 정규화(특히 `<br />` → 하드 줄바꿈). 인라인은 rehype-raw를 끄므로 원시 HTML 태그는 글자로만 보인다. */
+  const markdownSource = normalizeLlmMarkdown(content);
   const components = inline
     ? { pre: PreRenderer, p: InlineParagraph }
     : { pre: PreRenderer };
   /** 인라인 모드는 칩 옆 문장용이다. `<span>` 안에 `<div>`를 넣으면 HTML이 깨져 줄이 갈라진다. */
   const Root = inline ? "span" : "div";
   const body = (
-    <Root className={innerClass}>
+    <Root className={rootClass}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={inline ? [remarkGfm] : [remarkGfm, remarkMath]}
         rehypePlugins={inline ? undefined : REHYPE_PLUGINS_BLOCK}
         components={components}
       >

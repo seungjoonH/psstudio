@@ -17,8 +17,8 @@
 }
 
 .createCta:hover {
-  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 55%, var(--color-border));
+  background: var(--ui-hover-bg-strong);
+  border-color: var(--ui-hover-border);
 }
 
 .createIcon {

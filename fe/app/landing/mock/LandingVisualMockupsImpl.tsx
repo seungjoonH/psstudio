@@ -57,26 +57,35 @@ const LANDING_COHORT_IDS = {
 
 const LANDING_REVIEW_AI_DELAY_MS = 5000;
 
-/** 랜딩 diff 목업의 코드 행(줄 번호·부호·i18n 키)입니다. */
+/**
+ * 랜딩 diff 목업의 코드 행(줄 번호·부호·i18n 키)입니다.
+ * -/+ diff hunk는 상단(라인 13~14)에 두고, 라인 17~19와 20~21은 context 줄로 두어
+ * 빨강(-)·초록(+)·파랑(리뷰 anchor)이 한 화면에서 동시에 보이도록 배치합니다.
+ */
 const LANDING_DIFF_CODE_ROWS = [
   { kind: "context" as const, oldNum: 12, newNum: 12, textKey: "landing.mockDiffPre1", sign: " " as const },
-  { kind: "context" as const, oldNum: 13, newNum: 13, textKey: "landing.mockDiffPre2", sign: " " as const },
-  { kind: "context" as const, oldNum: 14, newNum: 14, textKey: "landing.mockDiffPre3", sign: " " as const },
-  { kind: "context" as const, oldNum: 15, newNum: 15, textKey: "landing.mockDiffCtx", sign: " " as const },
-  { kind: "context" as const, oldNum: 16, newNum: 16, textKey: "landing.mockDiffCtxGap", sign: " " as const },
-  { kind: "remove" as const, oldNum: 17, newNum: null, textKey: "landing.mockDiffOld1", sign: "-" as const },
-  { kind: "remove" as const, oldNum: 18, newNum: null, textKey: "landing.mockDiffOld2", sign: "-" as const },
-  { kind: "add" as const, oldNum: null, newNum: 17, textKey: "landing.mockDiffNew1", sign: "+" as const },
-  { kind: "add" as const, oldNum: null, newNum: 18, textKey: "landing.mockDiffNew2", sign: "+" as const },
-  { kind: "add" as const, oldNum: null, newNum: 19, textKey: "landing.mockDiffNew3", sign: "+" as const },
-  { kind: "context" as const, oldNum: 20, newNum: 20, textKey: "landing.mockDiffPostCtx", sign: " " as const },
-  { kind: "context" as const, oldNum: 21, newNum: 21, textKey: "landing.mockDiffElseHi", sign: " " as const },
-  { kind: "context" as const, oldNum: 22, newNum: 22, textKey: "landing.mockDiffCloseWhile", sign: " " as const },
-  { kind: "context" as const, oldNum: 23, newNum: 23, textKey: "landing.mockDiffReturnLine", sign: " " as const },
+  { kind: "remove" as const, oldNum: 13, newNum: null, textKey: "landing.mockDiffOld1", sign: "-" as const },
+  { kind: "remove" as const, oldNum: 14, newNum: null, textKey: "landing.mockDiffOld2", sign: "-" as const },
+  { kind: "add" as const, oldNum: null, newNum: 13, textKey: "landing.mockDiffPre2", sign: "+" as const },
+  { kind: "context" as const, oldNum: 15, newNum: 14, textKey: "landing.mockDiffPre3", sign: " " as const },
+  { kind: "context" as const, oldNum: 16, newNum: 15, textKey: "landing.mockDiffCtx", sign: " " as const },
+  { kind: "context" as const, oldNum: 17, newNum: 16, textKey: "landing.mockDiffCtxGap", sign: " " as const },
+  { kind: "context" as const, oldNum: 18, newNum: 17, textKey: "landing.mockDiffNew1", sign: " " as const },
+  { kind: "context" as const, oldNum: 19, newNum: 18, textKey: "landing.mockDiffNew2", sign: " " as const },
+  { kind: "context" as const, oldNum: 20, newNum: 19, textKey: "landing.mockDiffNew3", sign: " " as const },
+  { kind: "context" as const, oldNum: 21, newNum: 20, textKey: "landing.mockDiffPostCtx", sign: " " as const },
+  { kind: "context" as const, oldNum: 22, newNum: 21, textKey: "landing.mockDiffElseHi", sign: " " as const },
+  { kind: "context" as const, oldNum: 23, newNum: 22, textKey: "landing.mockDiffCloseWhile", sign: " " as const },
+  { kind: "context" as const, oldNum: 24, newNum: 23, textKey: "landing.mockDiffReturnLine", sign: " " as const },
 ] as const;
 
 const LANDING_MINJI_THREAD_AFTER_ROW = 9;
 const LANDING_AI_THREAD_AFTER_ROW = 11;
+const LANDING_MINJI_REVIEW_RANGE = { startIdx: 7, endIdx: 9 } as const;
+const LANDING_AI_REVIEW_RANGE = { startIdx: 10, endIdx: 11 } as const;
+
+type LandingReviewSpanKind = "none" | "single" | "start" | "middle" | "end";
+type LandingReviewSpanRange = { startIdx: number; endIdx: number };
 
 type LandingReviewAiMockValue = {
   aiCommentVisible: boolean;
@@ -129,8 +138,9 @@ function landingDiffLineNumsInRange(fromIdx: number, toIdx: number): [number, nu
   const nums: number[] = [];
   for (let i = lo; i <= hi; i++) {
     const r = LANDING_DIFF_CODE_ROWS[i];
-    if (r.oldNum != null) nums.push(r.oldNum);
-    if (r.newNum != null) nums.push(r.newNum);
+    // GitHub diff 규약처럼 새 줄 번호를 우선 사용하고, 제거 라인은 옛 줄 번호로 폴백합니다.
+    const n = r.newNum ?? r.oldNum;
+    if (n != null) nums.push(n);
   }
   if (nums.length === 0) return [lo + 1, hi + 1];
   return [Math.min(...nums), Math.max(...nums)];
@@ -141,6 +151,30 @@ function formatLandingDiffLineRef(locale: string, fromIdx: number, toIdx: number
   const ko = locale.toLowerCase().startsWith("ko");
   if (a === b) return ko ? `라인 ${a}` : `Line ${a}`;
   return ko ? `라인 ${a}–${b}` : `Lines ${a}–${b}`;
+}
+
+/** 실제 DiffViewerClient의 리뷰 범위 분류와 같은 규칙으로 랜딩 목업 행 위치를 계산합니다. */
+function classifyLandingReviewSpan(rowIdx: number, ranges: LandingReviewSpanRange[]): LandingReviewSpanKind {
+  const covering = ranges.filter((r) => rowIdx >= r.startIdx && rowIdx <= r.endIdx);
+  if (covering.length === 0) return "none";
+
+  const multiLine = covering.filter((r) => r.endIdx > r.startIdx);
+  const multiStartsHere = multiLine.some((r) => r.startIdx === rowIdx);
+  const multiEndsHere = multiLine.some((r) => r.endIdx === rowIdx);
+  const onlySingles = covering.every((r) => r.startIdx === rowIdx && r.endIdx === rowIdx);
+
+  if (multiLine.length === 0 && onlySingles) return "single";
+  if (multiStartsHere && !multiEndsHere) return "start";
+  if (multiEndsHere && !multiStartsHere) return "end";
+  return "middle";
+}
+
+function landingReviewSpanClass(d: typeof diffStyles, kind: LandingReviewSpanKind): string | undefined {
+  if (kind === "single") return d.reviewSpanSingle;
+  if (kind === "start") return d.reviewSpanStart;
+  if (kind === "middle") return d.reviewSpanMiddle;
+  if (kind === "end") return d.reviewSpanEnd;
+  return undefined;
 }
 
 function formatDateTime(value: string, locale: string): string {
@@ -312,52 +346,73 @@ export function MiniNotifyList({
   const h = homeStyles;
   const noop = () => {};
 
-  const seedRows = useMemo(
-    (): HeroNotifyRow[] => [
+  const seedRows = useMemo((): HeroNotifyRow[] => {
+    type Def = {
+      id: string;
+      kind: HeroNotifyKind;
+      titleKey: string;
+      atIsoKey: string;
+      actorKey?: string;
+    };
+    const defs: Def[] = [
       {
         id: "landing-mock-notify-a",
         kind: "assignment",
-        title: t("landing.mockNotifyAssignCreatedTitle"),
-        when: formatDateTime(t("landing.mockNotifyAssignCreatedAtIso"), locale),
+        titleKey: "landing.mockNotifyAssignCreatedTitle",
+        atIsoKey: "landing.mockNotifyAssignCreatedAtIso",
       },
       {
         id: "landing-mock-notify-1",
         kind: "user",
-        title: t("landing.mockNotify1Title"),
-        when: formatDateTime(t("landing.mockNotify1AtIso"), locale),
-        actor: t("landing.mockNotify1Actor"),
+        titleKey: "landing.mockNotify1Title",
+        atIsoKey: "landing.mockNotify1AtIso",
+        actorKey: "landing.mockNotify1Actor",
       },
       {
         id: "landing-mock-notify-4",
         kind: "user",
-        title: t("landing.mockNotify4Title"),
-        when: formatDateTime(t("landing.mockNotify4AtIso"), locale),
-        actor: t("landing.mockNotify4Actor"),
+        titleKey: "landing.mockNotify4Title",
+        atIsoKey: "landing.mockNotify4AtIso",
+        actorKey: "landing.mockNotify4Actor",
       },
       {
         id: "landing-mock-notify-2",
         kind: "deadline",
-        title: t("landing.mockNotify2Title"),
-        when: formatDateTime(t("landing.mockNotify2AtIso"), locale),
+        titleKey: "landing.mockNotify2Title",
+        atIsoKey: "landing.mockNotify2AtIso",
       },
       {
         id: "landing-mock-notify-3",
         kind: "user",
-        title: t("landing.mockNotify3Title"),
-        when: formatDateTime(t("landing.mockNotify3AtIso"), locale),
-        actor: t("landing.mockNotify3Actor"),
+        titleKey: "landing.mockNotify3Title",
+        atIsoKey: "landing.mockNotify3AtIso",
+        actorKey: "landing.mockNotify3Actor",
       },
-    ],
-    [locale, t],
-  );
+    ];
+    const rows = defs
+      .map((d) => {
+        const atIso = t(d.atIsoKey);
+        return {
+          id: d.id,
+          kind: d.kind,
+          title: t(d.titleKey),
+          actor: d.actorKey !== undefined ? t(d.actorKey) : undefined,
+          sortMs: new Date(atIso).getTime(),
+          when: formatDateTime(atIso, locale),
+        };
+      })
+      .sort((a, b) => b.sortMs - a.sortMs);
+    return rows.map(({ sortMs: _m, ...row }): HeroNotifyRow => row);
+  }, [locale, t]);
 
   const [heroRowsOverride, setHeroRowsOverride] = useState<HeroNotifyRow[] | null>(null);
   useEffect(() => {
     setHeroRowsOverride(null);
-  }, [locale]);
+  }, [locale, maxItems]);
 
-  const heroRows = heroTitleId ? (heroRowsOverride ?? seedRows) : seedRows;
-  const shown = maxItems !== undefined ? seedRows.slice(0, maxItems) : seedRows;
+  const capped = maxItems !== undefined ? seedRows.slice(0, maxItems) : seedRows;
+  const heroRows = heroTitleId ? (heroRowsOverride ?? capped) : seedRows;
+  const shown = capped;
 
   const rootProps = compact
     ? ({ "aria-hidden": true as const } as const)
@@ -397,7 +452,7 @@ export function MiniNotifyList({
 
   const onHeroDeleteOne = (id: string) => {
     setHeroRowsOverride((prev) => {
-      const cur = prev ?? seedRows;
+      const cur = prev ?? capped;
       return cur.filter((r) => r.id !== id);
     });
   };
@@ -496,6 +551,8 @@ const LANDING_TODO_MOCKS = [
     algoKey: "landing.mockKanbanTodo3Algo",
     dueIsoKey: "landing.mockKanbanTodo3DueIso",
     solved: false,
+    /** 목업 과제 생성 시각(홈 칸반과 동일하게 최신순 정렬용). */
+    createdAtIso: "2026-05-02T08:00:00.000Z",
   },
   {
     titleKey: "landing.mockKanbanTodo4Title",
@@ -505,6 +562,7 @@ const LANDING_TODO_MOCKS = [
     algoKey: "landing.mockKanbanTodo4Algo",
     dueIsoKey: "landing.mockKanbanTodo4DueIso",
     solved: false,
+    createdAtIso: "2026-05-08T11:00:00.000Z",
   },
   {
     titleKey: "landing.mockKanbanTodo1Title",
@@ -514,6 +572,7 @@ const LANDING_TODO_MOCKS = [
     algoKey: "landing.mockKanbanTodo1Algo",
     dueIsoKey: "landing.mockKanbanTodo1DueIso",
     solved: false,
+    createdAtIso: "2026-05-11T09:30:00.000Z",
   },
 ] as const;
 
@@ -540,20 +599,32 @@ const LANDING_DONE_MOCKS = [
   },
 ] as const;
 
+/** 랜딩 칸반「모두 보기」와 `MiniNotifyList` 알림 목록 제목(h2)이 공유하는 앵커 id입니다. */
+export const LANDING_NOTIFY_LIST_ANCHOR_ID = "landing-notify-title";
+
 /** 홈과 동일 CSS. 3열(해야 할 일·한 일·최근 알림 미리보기) + 하단 전체 알림은 LandingClient에서 분리 렌더. */
 export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
   const { locale, t } = useI18n();
   const h = homeStyles;
   const todoRowsSorted = useMemo(() => {
     const rows = [...LANDING_TODO_MOCKS];
+    const now = Date.now();
     rows.sort((a, b) => {
-      const aSolved = a.solved ? 1 : 0;
-      const bSolved = b.solved ? 1 : 0;
-      if (aSolved !== bSolved) return aSolved - bSolved;
-      return new Date(t(a.dueIsoKey)).getTime() - new Date(t(b.dueIsoKey)).getTime();
+      const aDue = new Date(t(a.dueIsoKey)).getTime();
+      const bDue = new Date(t(b.dueIsoKey)).getTime();
+      const aLate = aDue < now;
+      const bLate = bDue < now;
+      if (aLate !== bLate) return aLate ? -1 : 1;
+      if (aDue !== bDue) return aDue - bDue;
+      return new Date(b.createdAtIso).getTime() - new Date(a.createdAtIso).getTime();
     });
-    return rows;
-  }, [locale, t]);
+    return rows.slice(0, 4);
+  }, [t]);
+  const doneRowsSorted = useMemo(() => {
+    const rows = [...LANDING_DONE_MOCKS];
+    rows.sort((a, b) => new Date(t(b.atIsoKey)).getTime() - new Date(t(a.atIsoKey)).getTime());
+    return rows.slice(0, 4);
+  }, [t]);
 
   return (
     <div className={styles.landingHomeOuter} role="img" aria-label={ariaLabel}>
@@ -643,7 +714,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
             </header>
             <div className={h.columnBody}>
               <ul className={h.list}>
-                {LANDING_DONE_MOCKS.map((row) => (
+                {doneRowsSorted.map((row) => (
                   <li key={row.titleKey}>
                     <div className={h.feedRowStatic}>
                       <div className={h.feedMain}>
@@ -667,16 +738,16 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               </span>
               <div className={h.columnHeadBody}>
                 <div className={h.columnHeadTop}>
-                  <h3 className={h.cardTitle}>{t("landing.mockNotificationsListTitle")}</h3>
-                  <span className={buildCls(h.viewAllLink, styles.landingFakeLink)} tabIndex={-1} aria-hidden>
+                  <h3 className={h.cardTitle}>{t("home.recent.notifications.title")}</h3>
+                  <a href={`#${LANDING_NOTIFY_LIST_ANCHOR_ID}`} className={h.viewAllLink}>
                     {t("home.recent.notifications.viewAll")}
-                  </span>
+                  </a>
                 </div>
                 <p className={h.cardDesc}>{t("home.kanban.noticeDesc")}</p>
               </div>
             </header>
             <div className={h.columnBody}>
-              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} compact />
+              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} compact maxItems={4} />
             </div>
           </article>
         </section>
@@ -691,6 +762,7 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   const router = useRouter();
   const [anchorDate, setAnchorDate] = useState(() => new Date(LANDING_CAL_MOCK_TODAY));
   const [calView, setCalView] = useState<"month" | "week">("month");
+  const [mockFilterOpen, setMockFilterOpen] = useState(false);
 
   const monthStart = useMemo(() => new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1), [anchorDate]);
 
@@ -776,16 +848,23 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
                 ]}
               />
             </div>
-            <span
-              className={buildCls(btnStyles.root, btnStyles.secondary, styles.landingMiniCalFilterFake)}
-              aria-hidden
-              tabIndex={-1}
+            <button
+              type="button"
+              className={buildCls(
+                btnStyles.root,
+                btnStyles.secondary,
+                styles.landingMiniCalFilterBtn,
+                mockFilterOpen ? styles.landingMiniCalFilterBtnPressed : "",
+              )}
+              aria-pressed={mockFilterOpen}
+              aria-label={t("assignment.list.filter")}
+              onClick={() => setMockFilterOpen((v) => !v)}
             >
-              <span className={btnStyles.icon}>
+              <span className={btnStyles.icon} aria-hidden>
                 <Icon name="filter" size={16} />
               </span>
               <span className={btnStyles.label}>{t("assignment.list.filter")}</span>
-            </span>
+            </button>
             <Button type="button" variant="primary" onClick={() => router.push("/login")}>
               {t("assignment.list.create")}
             </Button>
@@ -856,9 +935,9 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
     myPendingAssignmentCount: 2,
     memberCount: 4,
     members: [
-      { nickname: "윤하", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-0/96/96" },
-      { nickname: "태양", imageUrl: "" },
-      { nickname: "서준", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-2/96/96" },
+      { nickname: "테오", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-0/96/96" },
+      { nickname: "레오", imageUrl: "" },
+      { nickname: "노아", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-2/96/96" },
     ],
   },
   {
@@ -866,9 +945,9 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
     myPendingAssignmentCount: 1,
     memberCount: 3,
     members: [
-      { nickname: "하린", imageUrl: "" },
-      { nickname: "도윤", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-1/96/96" },
-      { nickname: "채원", imageUrl: "" },
+      { nickname: "이안", imageUrl: "" },
+      { nickname: "에반", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-1/96/96" },
+      { nickname: "카이", imageUrl: "" },
     ],
   },
   {
@@ -877,9 +956,9 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
     myPendingAssignmentCount: 1,
     memberCount: 5,
     members: [
-      { nickname: "유진", imageUrl: "" },
-      { nickname: "시우", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-1/96/96" },
-      { nickname: "다은", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-2/96/96" },
+      { nickname: "마일로", imageUrl: "" },
+      { nickname: "루카", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-1/96/96" },
+      { nickname: "핀", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-2/96/96" },
     ],
   },
   {
@@ -887,15 +966,15 @@ const LANDING_GROUP_MOCKS: LandingGroupMockRow[] = [
     myPendingAssignmentCount: 0,
     memberCount: 2,
     members: [
-      { nickname: "준호", imageUrl: "" },
-      { nickname: "수아", imageUrl: "" },
+      { nickname: "오웬", imageUrl: "" },
+      { nickname: "엘리오", imageUrl: "" },
     ],
   },
   {
     nameKey: "landing.mockGroup5Name",
     myPendingAssignmentCount: 0,
     memberCount: 1,
-    members: [{ nickname: "지은", imageUrl: "" }],
+    members: [{ nickname: "리암", imageUrl: "" }],
   },
 ];
 
@@ -1088,7 +1167,7 @@ function MiniDiffReviewCommentCard(props: {
           </div>
           <div className={ccStyles.subHead}>{sub}</div>
           <div className={ccStyles.markdownWrap}>
-            <MarkdownPreview content={props.markdown} />
+            <MarkdownPreview content={props.markdown} variant="compact" />
           </div>
         </div>
       </div>
@@ -1254,6 +1333,18 @@ function MiniLandingInteractiveDiff({ tableAriaLabel }: { tableAriaLabel: string
     setMinjiReplyOpen(false);
   }, [minjiReplyDraft]);
 
+  const reviewSpanRanges = useMemo<LandingReviewSpanRange[]>(() => {
+    const ranges: LandingReviewSpanRange[] = [LANDING_MINJI_REVIEW_RANGE];
+    for (const thread of userThreads) {
+      ranges.push({
+        startIdx: Math.min(thread.fromIdx, thread.toIdx),
+        endIdx: Math.max(thread.fromIdx, thread.toIdx),
+      });
+    }
+    if (aiCommentVisible) ranges.push(LANDING_AI_REVIEW_RANGE);
+    return ranges;
+  }, [aiCommentVisible, userThreads]);
+
   const gutterAria = t("landing.mockGutterAria");
 
   const threadsAfterRow = (rowIdx: number) => {
@@ -1289,7 +1380,7 @@ function MiniLandingInteractiveDiff({ tableAriaLabel }: { tableAriaLabel: string
                               <span className={ccStyles.time}>{formatDateTime(new Date(r.createdAt).toISOString(), locale)}</span>
                             </div>
                             <div className={ccStyles.markdownWrap}>
-                              <MarkdownPreview content={landingEscapeMdPlain(r.body)} />
+                              <MarkdownPreview content={landingEscapeMdPlain(r.body)} variant="compact" />
                             </div>
                           </div>
                         </div>
@@ -1403,12 +1494,13 @@ function MiniLandingInteractiveDiff({ tableAriaLabel }: { tableAriaLabel: string
               (composer !== null &&
                 idx >= Math.min(composer.from, composer.to) &&
                 idx <= Math.max(composer.from, composer.to));
+            const reviewSpanClass = landingReviewSpanClass(d, classifyLandingReviewSpan(idx, reviewSpanRanges));
             const oldStr = row.oldNum == null ? "" : String(row.oldNum);
             const newStr = row.newNum == null ? "" : String(row.newNum);
             return (
               <Fragment key={`code-${idx}`}>
                 <tr
-                  className={buildCls(d.diffRow, rowClass, inRange && d.rangeRow)}
+                  className={buildCls(d.diffRow, rowClass, reviewSpanClass, inRange && d.rangeRow)}
                   data-landing-code-idx={idx}
                   onMouseEnter={() => {
                     if (!canComment || dragAnchorIdx === null) return;
@@ -1488,7 +1580,7 @@ function MiniLandingInteractiveDiff({ tableAriaLabel }: { tableAriaLabel: string
                           ) : (
                             <div className={d.previewArea}>
                               {composer.draft.trim().length > 0 ? (
-                                <MarkdownPreview content={composer.draft} />
+                                <MarkdownPreview content={composer.draft} variant="compact" />
                               ) : (
                                 t("submission.diff.previewEmpty")
                               )}
@@ -1653,7 +1745,9 @@ export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
           assignmentId={LANDING_COHORT_IDS.assignmentId}
           included={included}
           submissionLinks={false}
+          showSubmissionVersionOnChips={false}
         />
+        <p className={cohortStyles.reportFootnote}>{t("landing.mockCohortFootnote")}</p>
       </section>
 
       <section className={s.codeSection} aria-labelledby="landing-cohort-code">

@@ -1,0 +1,186 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: min(1100px, 100%);
+}
+
+.basicJoinRow {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .basicJoinRow {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    align-items: stretch;
+  }
+
+  .joinSection {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.section {
+  display: grid;
+  gap: 6px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.sectionTitle ~ * {
+  margin-top: var(--space-2);
+}
+
+.basicGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .basicGrid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: end;
+  }
+
+  .spanWide {
+    grid-column: 1 / -1;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.req {
+  color: #ef4444;
+}
+
+.input {
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 96px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.toggleStack {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+}
+
+.rulesGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .rulesGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.captioned {
+  display: grid;
+  gap: 4px;
+}
+
+.caption {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.captioned:has(input[name="ruleUseDeadline"]:checked) .capOff,
+.captioned:has(input[name="ruleUseDeadline"]:not(:checked)) .capOn,
+.captioned:has(input[name="ruleAllowEditAfterSubmit"]:checked) .editOff,
+.captioned:has(input[name="ruleAllowEditAfterSubmit"]:not(:checked)) .editOn,
+.captioned:has(input[name="ruleAllowLateSubmission"]:checked) .lateOff,
+.captioned:has(input[name="ruleAllowLateSubmission"]:not(:checked)) .lateOn {
+  display: none;
+}
+
+.rulesGrid:has(input[name="ruleUseDeadline"]:not(:checked)) .deadlineDep {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.langSegment {
+  display: flex;
+  width: 100%;
+}
+
+.langWrap {
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: 2px 4px;
+}
+
+.cancel {
+  font-size: 14px;
+  color: var(--color-muted);
+  text-decoration: none;
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    filter var(--ui-duration) var(--ui-ease);
+}
+
+.cancel:hover {
+  color: var(--color-text);
+  filter: brightness(0.96);
+}
+
+.cancel:active {
+  filter: brightness(0.92);
+}

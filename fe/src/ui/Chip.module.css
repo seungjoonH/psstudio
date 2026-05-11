@@ -15,8 +15,7 @@
     transform var(--ui-duration) var(--ui-ease),
     background 0.14s ease,
     color 0.14s ease,
-    border-color 0.14s ease,
-    box-shadow 0.14s ease;
+    border-color 0.14s ease;
 }
 
 .active {
@@ -27,11 +26,18 @@
 
 .root:hover {
   color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.active:hover {
+  background: var(--ui-hover-bg-strong);
+  border-color: var(--ui-hover-border);
 }
 
 .root:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 
 .icon {

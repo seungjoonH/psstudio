@@ -49,6 +49,9 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
   const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
   const statusLabel = item.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
   const dueTone = dueBadgeTone(item.isLate, daysLeft);
+  const algorithmsVisible =
+    (item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true;
+  const showAlgorithmBadges = algorithmsVisible && (item.algorithms?.length ?? 0) > 0;
 
   return (
     <li className={buildCls(styles.row, item.isLate ? styles.rowPastDue : undefined)}>
@@ -101,16 +104,18 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
             </div>
           </div>
         </div>
-        {((item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true) &&
-        (item.algorithms?.length ?? 0) > 0 ? (
-          <div className={styles.meta}>
-            {(item.algorithms ?? []).map((tag, index) => (
-              <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
-                {formatAssignmentAlgorithmLabel(locale, tag)}
-              </Badge>
-            ))}
-          </div>
-        ) : null}
+        <div
+          className={styles.meta}
+          aria-hidden={!showAlgorithmBadges}
+        >
+          {showAlgorithmBadges
+            ? (item.algorithms ?? []).map((tag, index) => (
+                <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
+                  {formatAssignmentAlgorithmLabel(locale, tag)}
+                </Badge>
+              ))
+            : null}
+        </div>
       </Link>
     </li>
   );

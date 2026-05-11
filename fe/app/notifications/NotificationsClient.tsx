@@ -72,15 +72,15 @@ export function NotificationsClient({ items }: Props) {
               n.type === NOTIFICATION_TYPES.DEADLINE_SOON ? (
                 <DeadlineSoonNotificationGlyph className={styles.avatar} />
               ) : useAssignmentGlyph ? (
-              <AssignmentNotificationGlyph className={styles.avatar} />
-            ) : showActorFace ? (
-              <UserAvatar
-                nickname={notificationActorDisplayName(n)}
-                imageUrl={n.actorProfileImageUrl ?? ""}
-                size={40}
-                className={styles.avatar}
-              />
-            ) : null;
+                <AssignmentNotificationGlyph className={styles.avatar} />
+              ) : showActorFace ? (
+                <UserAvatar
+                  nickname={notificationActorDisplayName(n)}
+                  imageUrl={n.actorProfileImageUrl ?? ""}
+                  size={40}
+                  className={styles.avatar}
+                />
+              ) : null;
             const body = (
               <div className={styles.rowBody}>
                 <span className={styles.title}>{n.title}</span>

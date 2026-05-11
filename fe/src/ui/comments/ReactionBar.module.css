@@ -25,8 +25,8 @@
 }
 
 .chip:hover {
-  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
-  border-color: color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .chipActive {
@@ -70,7 +70,9 @@
 }
 
 .addBtn:hover {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+  border-style: solid;
   color: var(--color-text);
 }
 

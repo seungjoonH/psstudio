@@ -124,3 +124,94 @@
   border-color: color-mix(in oklab, var(--color-muted) 48%, var(--color-border));
   font-weight: 800;
 }
+
+/* 다크: 라이트용 진한 글자색·낮은 틴트가 카드 위에서 묻히므로 틴트·전경 명도를 올립니다. */
+:global(html[data-theme="dark"]) .neutral.chip0 {
+  background: color-mix(in oklab, rgb(167 139 250) 36%, var(--color-surface));
+  color: #e9d5ff;
+  border-color: color-mix(in oklab, rgb(167 139 250) 50%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip1 {
+  background: color-mix(in oklab, rgb(190 242 100) 30%, var(--color-surface));
+  color: #ecfccb;
+  border-color: color-mix(in oklab, rgb(190 242 100) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip2 {
+  background: color-mix(in oklab, rgb(45 212 191) 30%, var(--color-surface));
+  color: #ccfbf1;
+  border-color: color-mix(in oklab, rgb(45 212 191) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip3 {
+  background: color-mix(in oklab, rgb(74 222 128) 30%, var(--color-surface));
+  color: #dcfce7;
+  border-color: color-mix(in oklab, rgb(74 222 128) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip4 {
+  background: color-mix(in oklab, rgb(56 189 248) 32%, var(--color-surface));
+  color: #e0f2fe;
+  border-color: color-mix(in oklab, rgb(56 189 248) 48%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip5 {
+  background: color-mix(in oklab, rgb(251 146 60) 30%, var(--color-surface));
+  color: #ffedd5;
+  border-color: color-mix(in oklab, rgb(251 146 60) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip6 {
+  background: color-mix(in oklab, rgb(251 113 133) 28%, var(--color-surface));
+  color: #ffe4e6;
+  border-color: color-mix(in oklab, rgb(251 113 133) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip7 {
+  background: color-mix(in oklab, rgb(250 204 21) 28%, var(--color-surface));
+  color: #fef9c3;
+  border-color: color-mix(in oklab, rgb(250 204 21) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .success {
+  background: color-mix(in oklab, rgb(74 222 128) 26%, var(--color-surface));
+  color: #bbf7d0;
+  border-color: color-mix(in oklab, rgb(74 222 128) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .warning {
+  background: color-mix(in oklab, rgb(250 204 21) 26%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(250 204 21) 40%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .danger {
+  background: color-mix(in oklab, rgb(248 113 113) 24%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 40%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dangerStrong {
+  background: color-mix(in oklab, rgb(248 113 113) 28%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueWarm {
+  background: color-mix(in oklab, rgb(250 204 21) 28%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(234 179 8) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueOrange {
+  background: color-mix(in oklab, rgb(251 146 60) 26%, var(--color-surface));
+  color: #fed7aa;
+  border-color: color-mix(in oklab, rgb(234 88 12) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueHot {
+  background: color-mix(in oklab, rgb(248 113 113) 26%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 42%, var(--color-border));
+}

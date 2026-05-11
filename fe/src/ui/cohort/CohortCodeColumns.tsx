@@ -47,6 +47,8 @@ type ColumnProps = {
   artifact: CohortSubmissionArtifact;
   title: string;
   versionNo: number;
+  /** false면 랜딩 등에서 제목에 이미 버전·#이 있을 때 v표기를 숨깁니다. */
+  showVersion?: boolean;
 };
 
 const BAND_CLASSES = [
@@ -82,7 +84,7 @@ function lineHighlightKey(line: string): string {
   return line.length > 0 ? line : " ";
 }
 
-function CodeColumn({ artifact, title, versionNo }: ColumnProps) {
+function CodeColumn({ artifact, title, versionNo, showVersion = true }: ColumnProps) {
   const lines = useMemo(
     () => (artifact.code.length === 0 ? [""] : artifact.code.split("\n")),
     [artifact.code],
@@ -142,7 +144,7 @@ function CodeColumn({ artifact, title, versionNo }: ColumnProps) {
     <div className={styles.column}>
       <div className={styles.columnHead}>
         <span className={styles.columnTitle}>{title}</span>
-        <span className={styles.columnVer}>v{versionNo}</span>
+        {showVersion ? <span className={styles.columnVer}>v{versionNo}</span> : null}
       </div>
       <pre className={styles.pre} onMouseLeave={() => setHoveredRoleId(null)}>
         {lines.map((line, idx) => {
@@ -224,6 +226,7 @@ type Props = {
 };
 
 export function CohortCodeColumns({ submissions, titlesBySubmissionId, layout }: Props) {
+  const showVersion = layout !== "landingPeek";
   const colRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   const scrollToColumn = useCallback((index: number) => {
@@ -246,7 +249,7 @@ export function CohortCodeColumns({ submissions, titlesBySubmissionId, layout }:
               {t !== undefined ? (
                 <span className={styles.jumpBtnInner}>
                   <span className={styles.jumpTitle}>{t.title}</span>
-                  <span className={styles.jumpVer}>v{t.versionNo}</span>
+                  {showVersion ? <span className={styles.jumpVer}>v{t.versionNo}</span> : null}
                 </span>
               ) : (
                 s.submissionId.slice(0, 8)
@@ -272,6 +275,7 @@ export function CohortCodeColumns({ submissions, titlesBySubmissionId, layout }:
                   artifact={s}
                   title={t?.title ?? "—"}
                   versionNo={t?.versionNo ?? 1}
+                  showVersion={showVersion}
                 />
               </div>
             );
