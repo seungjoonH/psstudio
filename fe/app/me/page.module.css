@@ -1,0 +1,169 @@
+/* 내 정보 화면의 폼 레이아웃 스타일입니다. */
+.root {
+  display: grid;
+  gap: var(--space-3);
+  max-width: min(720px, 100%);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 18px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-primary) 18%, var(--color-surface)) 0%,
+    var(--color-surface) 60%
+  );
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid color-mix(in oklab, var(--color-primary) 35%, var(--color-surface));
+  background: var(--color-surface-muted);
+  flex-shrink: 0;
+}
+
+.heroBody {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.email {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  word-break: break-all;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+  padding: 14px 18px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.cardHead {
+  display: grid;
+  gap: 2px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.cardLead {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.input {
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formActions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.accountRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.systemGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.systemField {
+  display: grid;
+  gap: 6px;
+}
+
+.systemSegment {
+  display: inline-flex;
+  justify-self: start;
+}
+
+@media (max-width: 640px) {
+  .systemGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.confirmBody {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.5;
+}

@@ -1,0 +1,147 @@
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.row {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  transition:
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    transform var(--ui-duration) var(--ui-ease);
+}
+
+.row:hover {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+/* 마감 후에만 음영(마감 전 해결은 일반 카드) */
+.rowPastDue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.rowPastDue:hover {
+  border-color: var(--ui-hover-border);
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface));
+}
+
+.rowPastDue .title {
+  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
+}
+
+.rowPastDue .titleIcon {
+  opacity: 0.82;
+}
+
+.link {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 11px;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    opacity var(--ui-duration) var(--ui-ease);
+}
+
+/* 카드 전체가 링크라 클릭 시 전역 링크 opacity 깜빡임 방지 */
+.link:active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .link:active {
+    transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
+  }
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.headMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.titleNear {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.headRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.topRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-text);
+  max-width: 100%;
+}
+
+.titleIcon {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.dueToggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.dueToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  color: var(--color-muted);
+  font-size: 13px;
+  /* 알고리즘 비공개·태그 없음이어도 배지 한 줄과 동일한 높이 유지 */
+  min-height: 22px;
+}
+

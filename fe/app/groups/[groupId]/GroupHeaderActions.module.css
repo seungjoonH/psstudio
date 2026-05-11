@@ -1,0 +1,23 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  text-decoration: none;
+}
+
+.linkBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}

@@ -1,0 +1,142 @@
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.lead {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.codeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  width: fit-content;
+}
+
+.code {
+  font-size: 22px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+
+.note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.linkForm {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.input {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-width: 220px;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.linkRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.linkInfo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.linkUrl {
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.linkMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.requestRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.avatar {
+  border-radius: 999px;
+}
+
+.requestActions {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.empty {
+  color: var(--color-muted);
+  padding: var(--space-4);
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+}
+
+.emailForm {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 480px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}

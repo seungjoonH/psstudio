@@ -1,0 +1,17 @@
+{
+  "name": "worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env.local --watch src/main.js",
+    "start": "node --env-file=.env.local src/main.js",
+    "typecheck": "echo \"worker is JS-only for Phase 0~7; typecheck deferred to Phase 10\"",
+    "lint": "echo \"worker lint deferred\"",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
+    "vitest": "^2.1.9"
+  }
+}

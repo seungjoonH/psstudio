@@ -1,0 +1,15 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_HOST} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy be:4000
+	}
+
+	handle {
+		reverse_proxy fe:3000
+	}
+}

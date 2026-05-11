@@ -1,0 +1,28 @@
+{
+  "name": "psstudio",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.10.0",
+  "scripts": {
+    "dev:be": "pnpm --filter be dev",
+    "dev:fe": "pnpm --filter fe dev",
+    "dev:worker": "pnpm --filter worker dev",
+    "dev": "pnpm -r --parallel dev",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "pnpm -r --parallel lint",
+    "test": "pnpm -r --parallel test",
+    "test:cov": "pnpm -r --parallel test:cov",
+    "db:migrate": "pnpm --filter be db:migrate",
+    "db:revert": "pnpm --filter be db:revert",
+    "db:seed": "pnpm --filter be db:seed"
+  },
+  "dependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "prettier": "^3.4.2"
+  }
+}

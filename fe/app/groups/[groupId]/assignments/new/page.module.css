@@ -1,0 +1,209 @@
+.form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 1040px;
+}
+
+.contentSplit {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 980px) {
+  .contentSplit {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+.leftCol,
+.rightCol {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.leftCol {
+  grid-template-rows: auto auto 1fr;
+}
+
+.label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.urlRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.toastError {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, #ef4444 40%, var(--color-border));
+  background: color-mix(in oklab, #ef4444 12%, var(--color-surface));
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.tagsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, outline-color 0.15s ease;
+}
+
+.tagsWrap:focus-within {
+  border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.tagChip {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-text);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tagInput {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  min-width: 140px;
+  flex: 1;
+}
+
+.tagInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.tagPresetRow {
+  display: none;
+}
+
+.presetChip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.presetChip:hover {
+  color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.descLabel {
+  min-height: 100%;
+}
+
+.descLabel .textarea {
+  height: 100%;
+  min-height: 180px;
+}
+
+.visibilityHint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.privateField {
+  border-color: color-mix(in oklab, var(--color-text) 18%, var(--color-border));
+  background: var(--color-surface-muted);
+}
+
+.publicField {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.scheduleSection {
+  display: grid;
+  gap: var(--space-3);
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.modeWrap {
+  display: grid;
+  gap: 8px;
+}
+
+.modeLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.weekdaySegment {
+  flex-wrap: nowrap;
+}
+
+.visibilitySwitches {
+  display: grid;
+  gap: 10px;
+}
+

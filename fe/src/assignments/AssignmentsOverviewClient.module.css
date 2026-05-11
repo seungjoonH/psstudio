@@ -1,0 +1,311 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filterSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.resultCount {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.resetButton {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.activeChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.activeChip {
+  font-size: 12px;
+}
+
+.calendarCard {
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  overflow: hidden;
+  --calendar-line: color-mix(in oklab, var(--color-border) 62%, var(--color-surface));
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+
+.periodNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--calendar-line);
+  border-radius: 12px;
+  padding: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.iconNavBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.iconNavBtn:hover {
+  background: var(--ui-hover-fill-muted);
+  color: var(--color-text);
+}
+
+.chevronLeft {
+  transform: rotate(180deg);
+}
+
+.periodLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  padding: 0 6px;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.rightActions {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.todayBtn {
+  height: 38px;
+  border-radius: 10px;
+  padding: 0 14px;
+}
+
+.viewSegmentWrap {
+  display: inline-flex;
+}
+
+.viewSegmentWrap > div {
+  margin: 0;
+}
+
+.weekHeader {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--calendar-line);
+}
+
+.weekLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+  border-right: 1px solid var(--calendar-line);
+}
+
+.weekLabel:last-child {
+  border-right: 0;
+}
+
+.monthGrid,
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.monthGrid {
+  grid-template-rows: repeat(6, minmax(100px, auto));
+}
+
+.weekGrid {
+  grid-template-rows: minmax(180px, auto);
+}
+
+.dayCell {
+  border-right: 1px solid var(--calendar-line);
+  border-bottom: 1px solid var(--calendar-line);
+  min-height: 96px;
+  background: color-mix(in oklab, var(--color-surface) 96%, transparent);
+}
+
+.dayCell:nth-child(7n) {
+  border-right: 0;
+}
+
+.dayCellMuted {
+  background: color-mix(in oklab, var(--color-surface) 82%, var(--color-bg));
+}
+
+.dayCellToday {
+  background: color-mix(in oklab, var(--color-primary) 14%, var(--color-surface));
+  outline: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--calendar-line));
+  outline-offset: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+.dayCellHit {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dayHead {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dayNumber {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dayNumberMuted {
+  color: color-mix(in oklab, var(--color-muted) 75%, var(--color-surface));
+}
+
+.assignmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.assignmentRow {
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  min-width: 0;
+}
+
+.assignmentPill {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.filterForm {
+  display: grid;
+  gap: 14px;
+}
+
+.filterSection {
+  display: grid;
+  gap: 8px;
+}
+
+.filterLabel {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modalEmpty {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.modalAssignmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.modalAssignmentRow {
+  margin: 0;
+}
+
+.modalAssignmentLink {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  text-decoration: none;
+  color: inherit;
+}
+
+.modalAssignmentTitle {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modalAssignmentMeta {
+  font-size: 12px;
+  color: var(--color-muted);
+}

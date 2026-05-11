@@ -1,0 +1,85 @@
+/* 그룹 서브 탭 카드 오른쪽에 두는 경로(브레드크럼) — 회색 톤 텍스트입니다. */
+.root {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  max-width: 100%;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--color-muted) 78%, var(--color-border));
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sep {
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--color-muted) 55%, var(--color-border));
+  font-weight: 700;
+  user-select: none;
+}
+
+.link {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: color-mix(in oklab, var(--color-muted) 88%, var(--color-text));
+  text-decoration: none;
+  max-width: min(42vw, 280px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    color var(--ui-duration) var(--ui-ease);
+}
+
+.link:hover {
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.current {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border-radius: 8px;
+  color: color-mix(in oklab, var(--color-muted) 62%, var(--color-text));
+  font-weight: 700;
+  max-width: min(46vw, 320px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .list {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,524 @@
+/* 랜딩 목업 전용 스타일(실제 화면 CSS와 동일 규칙을 복제한 분리본, 앱 라우트 CSS 미사용). */
+.root {
+  display: grid;
+  gap: 12px;
+}
+
+.rangeSelector {
+  display: grid;
+  gap: 10px;
+}
+
+.rangeHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.rangeHeaderPending {
+  color: var(--color-muted);
+}
+
+.rangeHeaderPending strong {
+  font-style: italic;
+  font-weight: 600;
+}
+
+.rangeDivider {
+  color: var(--color-muted);
+}
+
+.timeline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.timelineItem {
+  display: inline-flex;
+  align-items: center;
+}
+
+.timelineNode {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.timelineNodeInRange {
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-primary) 36%, var(--color-border));
+}
+
+.timelineNodeStart,
+.timelineNodeEnd {
+  background: var(--color-primary);
+  border-color: color-mix(in oklab, var(--color-primary) 60%, var(--color-border));
+  color: var(--color-primary-text);
+}
+
+.timelineSegment {
+  width: 28px;
+  height: 3px;
+  background: color-mix(in oklab, var(--color-border) 72%, var(--color-surface));
+}
+
+.timelineSegmentActive {
+  background: color-mix(in oklab, var(--color-primary) 68%, var(--color-border));
+}
+
+/* 선택 진행 중(pending) 상태 — 첫 번째 노드를 클릭하고 두 번째 노드를 아직 누르지 않은 시점 */
+.timelinePending .timelineNode {
+  cursor: crosshair;
+}
+
+.timelinePending .timelineNodeInRange {
+  background: var(--color-surface);
+  border-color: color-mix(in oklab, var(--color-primary) 50%, var(--color-border));
+  border-style: dashed;
+}
+
+.timelinePending .timelineNodeStart,
+.timelinePending .timelineNodeEnd {
+  background: color-mix(in oklab, var(--color-primary) 18%, var(--color-surface));
+  color: var(--color-text);
+  border-color: var(--color-primary);
+  border-style: dashed;
+}
+
+.timelinePending .timelineSegmentActive {
+  background: repeating-linear-gradient(
+    to right,
+    color-mix(in oklab, var(--color-primary) 70%, var(--color-border)) 0 6px,
+    transparent 6px 10px
+  );
+}
+
+.tableWrap {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 0 4px;
+  height: 20px;
+  border-bottom: 1px solid var(--color-border-muted);
+}
+
+.iconCell {
+  width: 36px;
+  text-align: center;
+  padding: 0;
+}
+
+.lineCell {
+  width: 52px;
+  text-align: right;
+  color: color-mix(in oklab, var(--color-muted) 18%, var(--color-text));
+  font-weight: 700;
+}
+
+.codeCell {
+  position: relative;
+  white-space: pre;
+  line-height: 1.2;
+  font-family: var(--font-mono, monospace);
+}
+
+/* 접힌 리뷰 댓글 칩을 코드 라인 위에 absolute로 띄웁니다. */
+.collapsedOverlay {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.codeSign {
+  display: inline-block;
+  width: 8px;
+  color: color-mix(in oklab, var(--color-muted) 56%, var(--color-text));
+}
+
+.codeTokens {
+  color: var(--color-text);
+}
+
+/* 줄 단위 Shiki 대신 블록 주석 구간만 단색 처리할 때 */
+.blockCommentLine {
+  color: color-mix(in oklab, #6a737d 72%, var(--color-muted));
+  white-space: pre;
+}
+
+.addRow {
+  background: var(--diff-add-row-bg);
+}
+
+.removeRow {
+  background: var(--diff-remove-row-bg);
+}
+
+.addRow .lineCell {
+  background: var(--diff-add-line-bg);
+}
+
+.removeRow .lineCell {
+  background: var(--diff-remove-line-bg);
+}
+
+.metaRow {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.contextRow {
+  background: var(--color-surface);
+}
+
+.contextRow .lineCell,
+.metaRow .lineCell {
+  background: color-mix(in oklab, var(--color-surface-muted) 84%, var(--color-surface));
+}
+
+.diffRow {
+  position: relative;
+}
+
+.rangeRow {
+  background: var(--diff-range-row-bg) !important;
+}
+
+.rangeRow .lineCell {
+  background: var(--diff-range-line-bg) !important;
+}
+
+/* rangeRow가 모든 셀 배경을 덮어 노란색이 reviewSpan 색보다 우선되게 합니다. */
+.diffRow.rangeRow > td {
+  background-color: var(--diff-range-row-bg) !important;
+}
+
+.diffRow.rangeRow > td.lineCell {
+  background-color: var(--diff-range-line-bg) !important;
+}
+
+.dragging {
+  user-select: none;
+}
+
+.inlineAddBtn {
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  transition: opacity 0.12s ease;
+}
+
+.diffRow:hover .inlineAddBtn,
+.inlineAddBtn:focus-visible {
+  opacity: 1;
+}
+
+/* 리뷰(코멘트) 앵커 줄: primary 틴트 + 행 왼쪽 세로 막대(아이콘 열) */
+.diffRow.reviewSpanStart.addRow > td:first-child,
+.diffRow.reviewSpanMiddle.addRow > td:first-child,
+.diffRow.reviewSpanEnd.addRow > td:first-child,
+.diffRow.reviewSpanSingle.addRow > td:first-child,
+.diffRow.reviewSpanStart.removeRow > td:first-child,
+.diffRow.reviewSpanMiddle.removeRow > td:first-child,
+.diffRow.reviewSpanEnd.removeRow > td:first-child,
+.diffRow.reviewSpanSingle.removeRow > td:first-child,
+.diffRow.reviewSpanStart.contextRow > td:first-child,
+.diffRow.reviewSpanMiddle.contextRow > td:first-child,
+.diffRow.reviewSpanEnd.contextRow > td:first-child,
+.diffRow.reviewSpanSingle.contextRow > td:first-child,
+.diffRow.reviewSpanStart.metaRow > td:first-child,
+.diffRow.reviewSpanMiddle.metaRow > td:first-child,
+.diffRow.reviewSpanEnd.metaRow > td:first-child,
+.diffRow.reviewSpanSingle.metaRow > td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--color-primary);
+}
+
+.diffRow.reviewSpanStart.addRow > td,
+.diffRow.reviewSpanMiddle.addRow > td,
+.diffRow.reviewSpanEnd.addRow > td,
+.diffRow.reviewSpanSingle.addRow > td {
+  background-color: var(--diff-review-on-add-bg);
+}
+
+.diffRow.reviewSpanStart.addRow > td.lineCell,
+.diffRow.reviewSpanMiddle.addRow > td.lineCell,
+.diffRow.reviewSpanEnd.addRow > td.lineCell,
+.diffRow.reviewSpanSingle.addRow > td.lineCell {
+  background-color: var(--diff-review-on-add-line-bg);
+}
+
+.diffRow.reviewSpanStart.removeRow > td,
+.diffRow.reviewSpanMiddle.removeRow > td,
+.diffRow.reviewSpanEnd.removeRow > td,
+.diffRow.reviewSpanSingle.removeRow > td {
+  background-color: var(--diff-review-on-remove-bg);
+}
+
+.diffRow.reviewSpanStart.removeRow > td.lineCell,
+.diffRow.reviewSpanMiddle.removeRow > td.lineCell,
+.diffRow.reviewSpanEnd.removeRow > td.lineCell,
+.diffRow.reviewSpanSingle.removeRow > td.lineCell {
+  background-color: var(--diff-review-on-remove-line-bg);
+}
+
+.diffRow.reviewSpanStart.contextRow > td,
+.diffRow.reviewSpanMiddle.contextRow > td,
+.diffRow.reviewSpanEnd.contextRow > td,
+.diffRow.reviewSpanSingle.contextRow > td {
+  background-color: var(--diff-review-on-context-bg);
+}
+
+.diffRow.reviewSpanStart.contextRow > td.lineCell,
+.diffRow.reviewSpanMiddle.contextRow > td.lineCell,
+.diffRow.reviewSpanEnd.contextRow > td.lineCell,
+.diffRow.reviewSpanSingle.contextRow > td.lineCell {
+  background-color: var(--diff-review-on-context-line-bg);
+}
+
+.diffRow.reviewSpanStart.metaRow > td,
+.diffRow.reviewSpanMiddle.metaRow > td,
+.diffRow.reviewSpanEnd.metaRow > td,
+.diffRow.reviewSpanSingle.metaRow > td {
+  background-color: var(--diff-review-on-meta-bg);
+}
+
+.reviewRow {
+  background: transparent;
+}
+
+.reviewCell {
+  padding: 0 !important;
+}
+
+
+.reviewBox {
+  background: var(--color-surface-muted);
+  padding: 14px;
+}
+
+.reviewCollapseBtn {
+  margin: 0;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.reviewCollapseBtn:hover {
+  color: var(--color-text);
+  background: var(--ui-hover-on-muted);
+}
+
+.reviewCollapsedChip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  line-height: 0;
+  border-radius: 999px;
+  transition: transform 0.12s ease;
+}
+
+.reviewCollapsedChip:active {
+  transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
+}
+
+.reviewCollapsedChip:focus-visible {
+  outline: none;
+}
+
+.reviewCollapsedChip:focus-visible .reviewCollapsedAvatar,
+.reviewCollapsedChip:focus-visible .reviewCollapsedFallback {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.reviewCollapsedAvatar,
+.reviewCollapsedFallback {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  outline: 2px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  outline-offset: 0;
+  transition:
+    outline-color 0.12s ease,
+    transform var(--ui-duration) var(--ui-ease);
+}
+
+.reviewCollapsedAvatar {
+  object-fit: cover;
+  display: block;
+}
+
+.reviewCollapsedFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.reviewCollapsedChip:hover .reviewCollapsedAvatar,
+.reviewCollapsedChip:hover .reviewCollapsedFallback {
+  outline-color: var(--ui-hover-border);
+}
+
+.reviewReplyCountBadge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  outline: 2px solid var(--color-surface);
+  outline-offset: 0;
+}
+
+
+.reviewMeta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.formRow {
+  background: transparent;
+}
+
+.formCell {
+  padding: 0 !important;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+  background: var(--color-surface-muted);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.commentBox {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.commentBox:focus-within {
+  border-color: color-mix(in oklab, var(--color-primary) 55%, var(--color-border));
+}
+
+.commentHead {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.commentTabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.commentTab,
+.commentTabActive {
+  border: 0;
+  background: transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.commentTabActive {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 150px;
+  border: 0;
+  border-radius: 0;
+  padding: 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.textarea:focus {
+  outline: none;
+}
+
+.textarea:focus-visible {
+  box-shadow: none;
+}
+
+.previewArea {
+  min-height: 150px;
+  padding: 16px;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 16px 14px;
+}

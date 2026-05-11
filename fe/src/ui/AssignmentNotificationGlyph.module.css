@@ -1,0 +1,14 @@
+/* 과제 관련 알림 행 왼쪽 원형 과제 아이콘입니다. */
+.root {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-info) 14%, var(--color-surface));
+  color: var(--color-info);
+  border: 1px solid color-mix(in oklab, var(--color-info) 30%, var(--color-border));
+}

@@ -1,0 +1,217 @@
+.root {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.neutral {
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.neutral.chip0 {
+  background: color-mix(in oklab, #8b5cf6 24%, var(--color-surface));
+  color: #7c3aed;
+  border-color: color-mix(in oklab, #8b5cf6 56%, var(--color-border));
+}
+
+.neutral.chip1 {
+  background: color-mix(in oklab, #84cc16 24%, var(--color-surface));
+  color: #4d7c0f;
+  border-color: color-mix(in oklab, #84cc16 56%, var(--color-border));
+}
+
+.neutral.chip2 {
+  background: color-mix(in oklab, #14b8a6 24%, var(--color-surface));
+  color: #0f766e;
+  border-color: color-mix(in oklab, #14b8a6 56%, var(--color-border));
+}
+
+.neutral.chip3 {
+  background: color-mix(in oklab, #22c55e 24%, var(--color-surface));
+  color: #15803d;
+  border-color: color-mix(in oklab, #22c55e 56%, var(--color-border));
+}
+
+.neutral.chip4 {
+  background: color-mix(in oklab, #0ea5e9 24%, var(--color-surface));
+  color: #0369a1;
+  border-color: color-mix(in oklab, #0ea5e9 56%, var(--color-border));
+}
+
+.neutral.chip5 {
+  background: color-mix(in oklab, #f97316 24%, var(--color-surface));
+  color: #c2410c;
+  border-color: color-mix(in oklab, #f97316 56%, var(--color-border));
+}
+
+.neutral.chip6 {
+  background: color-mix(in oklab, #f43f5e 24%, var(--color-surface));
+  color: #be123c;
+  border-color: color-mix(in oklab, #f43f5e 56%, var(--color-border));
+}
+
+.neutral.chip7 {
+  background: color-mix(in oklab, #eab308 24%, var(--color-surface));
+  color: #a16207;
+  border-color: color-mix(in oklab, #eab308 56%, var(--color-border));
+}
+
+.success {
+  background: color-mix(in oklab, #22c55e 18%, var(--color-surface));
+  color: #15803d;
+  border-color: color-mix(in oklab, #22c55e 35%, var(--color-border));
+}
+
+.warning {
+  background: color-mix(in oklab, #f59e0b 18%, var(--color-surface));
+  color: #b45309;
+  border-color: color-mix(in oklab, #f59e0b 35%, var(--color-border));
+}
+
+.danger {
+  background: color-mix(in oklab, #ef4444 16%, var(--color-surface));
+  color: #b91c1c;
+  border-color: color-mix(in oklab, #ef4444 35%, var(--color-border));
+}
+
+.dangerStrong {
+  background: color-mix(in oklab, #7f1d1d 22%, var(--color-surface));
+  color: #7f1d1d;
+  border-color: color-mix(in oklab, #7f1d1d 45%, var(--color-border));
+}
+
+/* D-day 전용: 마감 긴급도만 표시(해결 여부와 무관) */
+.dueIdle {
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.dueWarm {
+  background: color-mix(in oklab, #eab308 22%, var(--color-surface));
+  color: #a16207;
+  border-color: color-mix(in oklab, #ca8a04 42%, var(--color-border));
+}
+
+.dueOrange {
+  background: color-mix(in oklab, #ea580c 20%, var(--color-surface));
+  color: #c2410c;
+  border-color: color-mix(in oklab, #ea580c 38%, var(--color-border));
+}
+
+.dueHot {
+  background: color-mix(in oklab, #ef4444 18%, var(--color-surface));
+  color: #b91c1c;
+  border-color: color-mix(in oklab, #ef4444 38%, var(--color-border));
+}
+
+/* 마감 후: flat 필·테두리(dueIdle·dueWarm 등과 동일 계열, 입체 효과 없음) */
+.duePast {
+  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-text) 58%, var(--color-muted));
+  border-color: color-mix(in oklab, var(--color-muted) 48%, var(--color-border));
+  font-weight: 800;
+}
+
+/* 다크: 라이트용 진한 글자색·낮은 틴트가 카드 위에서 묻히므로 틴트·전경 명도를 올립니다. */
+:global(html[data-theme="dark"]) .neutral.chip0 {
+  background: color-mix(in oklab, rgb(167 139 250) 36%, var(--color-surface));
+  color: #e9d5ff;
+  border-color: color-mix(in oklab, rgb(167 139 250) 50%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip1 {
+  background: color-mix(in oklab, rgb(190 242 100) 30%, var(--color-surface));
+  color: #ecfccb;
+  border-color: color-mix(in oklab, rgb(190 242 100) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip2 {
+  background: color-mix(in oklab, rgb(45 212 191) 30%, var(--color-surface));
+  color: #ccfbf1;
+  border-color: color-mix(in oklab, rgb(45 212 191) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip3 {
+  background: color-mix(in oklab, rgb(74 222 128) 30%, var(--color-surface));
+  color: #dcfce7;
+  border-color: color-mix(in oklab, rgb(74 222 128) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip4 {
+  background: color-mix(in oklab, rgb(56 189 248) 32%, var(--color-surface));
+  color: #e0f2fe;
+  border-color: color-mix(in oklab, rgb(56 189 248) 48%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip5 {
+  background: color-mix(in oklab, rgb(251 146 60) 30%, var(--color-surface));
+  color: #ffedd5;
+  border-color: color-mix(in oklab, rgb(251 146 60) 46%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip6 {
+  background: color-mix(in oklab, rgb(251 113 133) 28%, var(--color-surface));
+  color: #ffe4e6;
+  border-color: color-mix(in oklab, rgb(251 113 133) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .neutral.chip7 {
+  background: color-mix(in oklab, rgb(250 204 21) 28%, var(--color-surface));
+  color: #fef9c3;
+  border-color: color-mix(in oklab, rgb(250 204 21) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .success {
+  background: color-mix(in oklab, rgb(74 222 128) 26%, var(--color-surface));
+  color: #bbf7d0;
+  border-color: color-mix(in oklab, rgb(74 222 128) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .warning {
+  background: color-mix(in oklab, rgb(250 204 21) 26%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(250 204 21) 40%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .danger {
+  background: color-mix(in oklab, rgb(248 113 113) 24%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 40%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dangerStrong {
+  background: color-mix(in oklab, rgb(248 113 113) 28%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueWarm {
+  background: color-mix(in oklab, rgb(250 204 21) 28%, var(--color-surface));
+  color: #fef08a;
+  border-color: color-mix(in oklab, rgb(234 179 8) 44%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueOrange {
+  background: color-mix(in oklab, rgb(251 146 60) 26%, var(--color-surface));
+  color: #fed7aa;
+  border-color: color-mix(in oklab, rgb(234 88 12) 42%, var(--color-border));
+}
+
+:global(html[data-theme="dark"]) .dueHot {
+  background: color-mix(in oklab, rgb(248 113 113) 26%, var(--color-surface));
+  color: #fecaca;
+  border-color: color-mix(in oklab, rgb(248 113 113) 42%, var(--color-border));
+}

@@ -1,0 +1,48 @@
+/* 그룹 서브 탭과 브레드크럼을 한 카드 안에서 한 줄(좌 탭 / 우 경로)로 묶습니다. */
+.cluster {
+  margin-bottom: var(--space-4);
+}
+
+.navBar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  padding-inline-start: var(--space-2);
+  padding-inline-end: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.crumbSlot {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.crumbSlot > * {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .navBar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .crumbSlot {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 980px) {
+  .cluster {
+    margin-bottom: var(--space-6);
+  }
+}

@@ -1,0 +1,599 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sectionBlock {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.membersGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .membersGrid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+.rightStack {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-muted);
+  padding-left: 2px;
+}
+
+.toolbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.toolbarMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.codeLabel {
+  font-weight: 600;
+}
+
+.code {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.toolbarSep {
+  opacity: 0.6;
+}
+
+.memberHint {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.toolbarLinks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.toolbarLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.toolbarLink:hover {
+  text-decoration: underline;
+}
+
+.toolbarLinkMuted {
+  font-size: 13px;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.toolbarLinkMuted:hover {
+  color: var(--color-text);
+}
+
+.memberList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.memberInfo > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.avatar {
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.nickname {
+  font-weight: 700;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameRow > span:not(.nickname) {
+  flex-shrink: 0;
+}
+
+.memberActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+/* 모바일에서 액션이 넓을 때 한 줄 유지(세로 래핑 대신 가로 스크롤) */
+@media (max-width: 979px) {
+  .memberActions {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0;
+    margin: -2px 0;
+  }
+}
+
+/* Button 기본(40px)보다 낮은 구성원·가입 요청 행 액션 */
+.memberActions .memberActionBtn {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.subSection {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.subTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-muted);
+  padding-left: 2px;
+}
+
+.simpleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.simpleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.linkInfo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.linkCode {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 560px);
+}
+
+.linkCopyBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.linkCopyBtn:hover {
+  color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.rowMeta {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.requestUser {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.empty {
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  color: var(--color-muted);
+  font-size: 13px;
+  background: var(--color-surface);
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+}
+
+.settings {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.settingsForm {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.basicJoinRow {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .basicJoinRow {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+    align-items: stretch;
+  }
+
+  .joinSection {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.settingsSection {
+  display: grid;
+  gap: 6px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.settingsTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.settingsTitle ~ * {
+  margin-top: var(--space-2);
+}
+
+.basicSettingsGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .basicSettingsGrid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.field {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.req {
+  color: #ef4444;
+}
+
+.spanWide {
+  grid-column: 1 / -1;
+}
+
+.input {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toggleStack {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+}
+
+/* 가입 방법 스위치 + 복사 버튼 한 줄 */
+.joinMethodRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.joinMethodRow > :first-child {
+  min-width: 0;
+}
+
+.joinSectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.joinSectionHead .settingsTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.joinMethodBlock {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.joinMethodValue {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  min-width: 0;
+}
+
+.joinValueLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.joinMethodValue .code {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.joinLinkUrlList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.joinLinkUrlItem {
+  min-width: 0;
+}
+
+.rulesGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .rulesGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.captioned {
+  display: grid;
+  gap: 4px;
+}
+
+.caption {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.captioned:has(input[name="ruleUseDeadline"]:checked) .capOff,
+.captioned:has(input[name="ruleUseDeadline"]:not(:checked)) .capOn,
+.captioned:has(input[name="ruleAllowEditAfterSubmit"]:checked) .editOff,
+.captioned:has(input[name="ruleAllowEditAfterSubmit"]:not(:checked)) .editOn,
+.captioned:has(input[name="ruleAllowLateSubmission"]:checked) .lateOff,
+.captioned:has(input[name="ruleAllowLateSubmission"]:not(:checked)) .lateOn {
+  display: none;
+}
+
+.rulesGrid:has(input[name="ruleUseDeadline"]:not(:checked)) .deadlineDep {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.segmentField {
+  display: grid;
+  gap: 8px;
+}
+
+.langWrap {
+  min-width: 0;
+}
+
+.langSegment {
+  display: flex;
+  width: 100%;
+}
+
+.settingsActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 4px;
+}
+
+.inviteLabel {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.copyBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    color var(--ui-duration) var(--ui-ease);
+}
+
+.copyBtn:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.copyBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settingDesc {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-2) 0;
+}
+
+.bottomActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.modalBody {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .settingsActions {
+    justify-content: stretch;
+  }
+}

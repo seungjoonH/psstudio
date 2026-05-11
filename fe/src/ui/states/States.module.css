@@ -1,0 +1,45 @@
+.box {
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  padding: var(--space-6);
+  background: var(--color-surface-muted);
+}
+
+.boxMuted {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: var(--space-4);
+  background: color-mix(in oklab, var(--color-muted) 10%, var(--color-surface));
+}
+
+.title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 15px;
+}
+
+.desc {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.action {
+  margin-top: var(--space-4);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 3px solid color-mix(in oklab, var(--color-primary) 25%, var(--color-border));
+  border-top-color: var(--color-primary);
+  animation: spin 0.9s linear infinite;
+  margin-bottom: var(--space-3);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

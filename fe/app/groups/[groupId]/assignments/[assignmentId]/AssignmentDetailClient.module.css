@@ -1,13 +1,14 @@
 .layout {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: start;
+  min-width: 0;
 }
 
 @media (min-width: 980px) {
   .layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: var(--space-4);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: var(--space-6);
   }
 }
 
@@ -21,7 +22,22 @@
   border-radius: 14px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 4%, transparent);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 12px;
+}
+
+.assignmentTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
 }
 
 .heroTop {
@@ -30,6 +46,20 @@
   align-items: flex-start;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.heroRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.heroActionRow {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .badgeRow {
@@ -46,29 +76,36 @@
   font-weight: 600;
 }
 
-.deadlineBlock {
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.deadlineLabel {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.deadlineValue {
-  margin-top: 4px;
-  font-size: 15px;
-  font-weight: 800;
+.iconActionBtn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   color: var(--color-text);
+  text-decoration: none;
 }
 
-.deadlineLate {
-  color: #dc2626;
+.iconActionBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.dueToggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.dueToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .myStrip {
@@ -126,7 +163,11 @@
 }
 
 .primaryLinkBtn:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.94);
+}
+
+.primaryLinkBtn:active {
+  filter: brightness(0.9);
 }
 
 .secondaryLinkBtn {
@@ -146,7 +187,8 @@
 }
 
 .secondaryLinkBtn:hover {
-  background: var(--color-surface-muted);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .descCard {
@@ -157,10 +199,86 @@
 }
 
 .descHeading {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 14px;
   font-weight: 800;
   color: var(--color-text);
+}
+
+.descHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 10px;
+}
+
+.hintRevealWrap {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 48px;
+}
+
+.hintContent {
+  margin: 0;
+}
+
+/* 잠금 시 본문 자체를 Gaussian 블러(gradient와 무관한 흐림) */
+.hintContentLocked {
+  user-select: none;
+  pointer-events: none;
+  filter: blur(12px);
+}
+
+/* 버튼 영역: 살짝만 눌러 주고, 아래 잠금 본문과 버튼은 형제라 버튼은 선명 유지 */
+.blurLockOverlay {
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-surface) 28%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+  border: 1px solid color-mix(in oklab, var(--color-border) 35%, transparent);
+}
+
+.blurLockOverlayBtn {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.algorithmsRevealWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: min(100%, 520px);
+  min-height: 22px;
+  border-radius: 999px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.algorithmsBlurUnder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  pointer-events: none;
+  user-select: none;
+  filter: blur(12px);
+}
+
+/* Badge/Difficulty 칩(22px) 행과 동일 높이 — 공통 blurLockOverlay의 12px 패딩은 여기서 덮어씀 */
+.algorithmsRevealWrap .blurLockOverlay {
+  padding: 0 6px;
 }
 
 .descBody {
@@ -171,12 +289,31 @@
   white-space: pre-wrap;
 }
 
+.revealBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.revealBtn:hover {
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
 .sideCard {
   padding: 16px;
   border-radius: 14px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 4%, transparent);
   display: grid;
   gap: var(--space-3);
 }
@@ -220,6 +357,8 @@
 
 .sortTab:hover {
   color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
 }
 
 .sortTabActive {
@@ -242,6 +381,7 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface-muted);
+  min-width: 0;
 }
 
 .sideLink {
@@ -250,6 +390,7 @@
   padding: 10px 12px;
   text-decoration: none;
   color: inherit;
+  min-width: 0;
 }
 
 .sideRowHead {
@@ -281,17 +422,13 @@
 }
 
 .sideTitleLine {
+  min-width: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--color-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.sideTime {
-  font-size: 11px;
-  color: var(--color-muted);
 }
 
 .sideMetaBadges {
@@ -305,10 +442,18 @@
   font-weight: 600;
   color: var(--color-muted);
   text-decoration: none;
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    filter var(--ui-duration) var(--ui-ease);
 }
 
 .sideFullLink:hover {
   color: var(--color-primary);
+  filter: brightness(0.94);
+}
+
+.sideFullLink:active {
+  filter: brightness(0.9);
 }
 
 .sideNewWrap {
@@ -333,7 +478,34 @@
 }
 
 .sidePrimaryLink:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.94);
+}
+
+.sidePrimaryLink:active {
+  filter: brightness(0.9);
+}
+
+.sidePrimaryLinkDisabled {
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.72;
+  background: color-mix(in oklab, var(--color-muted) 40%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-muted) 88%, var(--color-text));
+  border-color: var(--color-border);
+}
+
+.sidePrimaryLinkDisabled:hover,
+.sidePrimaryLinkDisabled:active {
+  filter: none;
+}
+
+.sideDeadlineCountdown {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-muted);
+  line-height: 1.35;
 }
 
 .sideEmpty {
@@ -342,4 +514,141 @@
   color: var(--color-muted);
   text-align: center;
   padding: 16px 8px;
+}
+
+.cohortCard {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: grid;
+  gap: 12px;
+}
+
+.cohortHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cohortTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.cohortLead {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.cohortBlocked {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-warning, #b45309);
+}
+
+.cohortError {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger, #b91c1c);
+}
+
+.cohortStatus {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cohortActionRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-self: start;
+}
+
+.cohortSpinner {
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: cohortSpinnerRot 0.65s linear infinite;
+}
+
+@keyframes cohortSpinnerRot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cohortPrimaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.cohortPrimaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cohortDoneRow {
+  justify-self: start;
+}
+
+.cohortViewFull {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.cohortViewFull:hover {
+  filter: brightness(0.94);
+}
+
+.cohortViewFull:active {
+  filter: brightness(0.9);
 }

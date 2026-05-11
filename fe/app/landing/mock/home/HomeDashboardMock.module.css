@@ -1,0 +1,434 @@
+/* 랜딩 목업 전용 스타일(실제 화면 CSS와 동일 규칙을 복제한 분리본, 앱 라우트 CSS 미사용). */
+/* 홈 화면 레이아웃 스타일입니다. */
+.dashboard {
+  /* 해야 할 일·한 일·알림 리스트 행 공통 높이(칸반 .board 한정으로 height 고정) */
+  --home-list-item-height: 120px;
+  display: grid;
+  gap: var(--space-5);
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  padding: 22px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 14%, var(--color-border));
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 38%),
+    linear-gradient(135deg, var(--color-surface-paper), var(--color-surface));
+}
+
+.heroEyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
+}
+
+.heroLead {
+  max-width: 620px;
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.statCard {
+  display: grid;
+  gap: 4px;
+  min-width: 120px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-paper);
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+/* 해야 할 일 · 한 일 · 최근 알림 동일 너비(1:1:1). */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+/* 칸반 열만: pill(Badge·난이도) 높이를 서로 맞춘 채로 살짝 낮춤 */
+.board :global(span[class*="Badge_root"]),
+.board :global(span[class*="DifficultyBadge_root"]) {
+  height: 20px;
+  min-height: 20px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+/* 세 열 리스트 카드 동일 높이 + 내용 세로 중앙 */
+.board .feedRow,
+.board .feedRowStatic {
+  box-sizing: border-box;
+  height: var(--home-list-item-height);
+  min-height: var(--home-list-item-height);
+  align-items: center;
+}
+
+.board .cardEmpty {
+  box-sizing: border-box;
+  height: var(--home-list-item-height);
+  min-height: var(--home-list-item-height);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  min-height: 258px;
+  min-width: 0;
+}
+
+.columnBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.columnHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.columnHeadBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.columnHeadTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewAllLink {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: filter var(--ui-duration) var(--ui-ease);
+}
+
+.viewAllLink:hover {
+  text-decoration: underline;
+  filter: brightness(0.94);
+}
+
+.viewAllLink:active {
+  filter: brightness(0.9);
+}
+
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--color-primary) 16%, var(--color-surface));
+  color: var(--color-primary);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+}
+
+.todoIcon {
+  background: color-mix(in oklab, var(--color-warning) 18%, var(--color-surface));
+  color: var(--color-warning);
+  border-color: color-mix(in oklab, var(--color-warning) 36%, var(--color-border));
+}
+
+.doneIcon {
+  background: color-mix(in oklab, var(--color-success) 18%, var(--color-surface));
+  color: var(--color-success);
+  border-color: color-mix(in oklab, var(--color-success) 36%, var(--color-border));
+}
+
+.noticeIcon {
+  background: color-mix(in oklab, var(--color-info) 18%, var(--color-surface));
+  color: var(--color-info);
+  border-color: color-mix(in oklab, var(--color-info) 36%, var(--color-border));
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--color-text);
+}
+
+.cardDesc {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.cardEmpty {
+  margin: 0;
+  box-sizing: border-box;
+  min-height: var(--home-list-item-height);
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in oklab, var(--color-border) 65%, transparent);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+  background: color-mix(in oklab, var(--color-surface-muted) 40%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.feedRow,
+.feedRowStatic {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100px;
+  min-height: 100px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+  background: var(--color-surface-paper);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.feedRowPastDue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface-paper));
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.feedRowPastDue .kanbanItemTitleText {
+  color: color-mix(in oklab, var(--color-text) 76%, var(--color-muted));
+}
+
+.feedRowPastDue .kanbanItemTitleIcon {
+  opacity: 0.82;
+}
+
+.feedRow:hover {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.feedRowPastDue.feedRow:hover {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface-paper));
+}
+
+.feedRowStatic:hover {
+  border-color: var(--ui-hover-border);
+  background: var(--ui-hover-bg);
+}
+
+.feedRowPastDue.feedRowStatic:hover {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface-paper));
+}
+
+.feedRowStatic {
+  cursor: default;
+}
+
+.feedAvatar {
+  flex-shrink: 0;
+}
+
+.feedGlyph {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-surface-muted) 90%, var(--color-surface));
+  color: var(--color-muted);
+}
+
+.todoGlyph {
+  background: color-mix(in oklab, var(--color-warning) 12%, var(--color-surface-muted));
+  color: color-mix(in oklab, var(--color-warning) 85%, var(--color-text));
+}
+
+.noticeGlyph {
+  background: color-mix(in oklab, var(--color-info) 12%, var(--color-surface-muted));
+  color: color-mix(in oklab, var(--color-info) 80%, var(--color-text));
+}
+
+.feedMain {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notifTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.todoCardRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  width: 100%;
+}
+
+.todoCardMain {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  gap: 6px;
+}
+
+.todoTitleStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  width: 100%;
+}
+
+.todoTitleLeft {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.todoTitleDue {
+  flex-shrink: 0;
+}
+
+.todoMetaRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.kanbanItemTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.kanbanItemTitleIcon {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+.kanbanItemTitleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.listTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.listTime {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+@media (min-width: 860px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    align-items: center;
+  }
+}
+
+@media (max-width: 1100px) {
+  .board {
+    grid-template-columns: 1fr;
+  }
+}

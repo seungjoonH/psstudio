@@ -1,0 +1,27 @@
+.image {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.fallback {
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tone0 { background: #4f46e5; }
+.tone1 { background: #0ea5e9; }
+.tone2 { background: #16a34a; }
+.tone3 { background: #f59e0b; }
+.tone4 { background: #ef4444; }
+.tone5 { background: #ec4899; }
+.tone6 { background: #8b5cf6; }
+.tone7 { background: #14b8a6; }
