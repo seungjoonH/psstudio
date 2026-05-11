@@ -733,8 +733,35 @@ export function MiniDiffReview({
         <tbody>
           <tr className={buildCls(d.diffRow, d.contextRow)}>
             <td className={d.iconCell} />
-            <td className={d.lineCell}>6</td>
-            <td className={d.lineCell}>6</td>
+            <td className={d.lineCell}>12</td>
+            <td className={d.lineCell}>12</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffPre1")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>13</td>
+            <td className={d.lineCell}>13</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffPre2")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>14</td>
+            <td className={d.lineCell}>14</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffPre3")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>15</td>
+            <td className={d.lineCell}>15</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}> </span>
               <span className={d.codeTokens}>{t("landing.mockDiffCtx")}</span>
@@ -742,7 +769,7 @@ export function MiniDiffReview({
           </tr>
           <tr className={buildCls(d.diffRow, d.removeRow)}>
             <td className={d.iconCell} />
-            <td className={d.lineCell}>7</td>
+            <td className={d.lineCell}>16</td>
             <td className={d.lineCell} />
             <td className={d.codeCell}>
               <span className={d.codeSign}>-</span>
@@ -754,7 +781,7 @@ export function MiniDiffReview({
               <InlineAddButton className={d.inlineAddBtn} tabIndex={-1} aria-hidden />
             </td>
             <td className={d.lineCell} />
-            <td className={d.lineCell}>7</td>
+            <td className={d.lineCell}>16</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}>+</span>
               <span className={d.codeTokens}>{t("landing.mockDiffNew")}</span>
@@ -778,37 +805,62 @@ export function MiniDiffReview({
               </div>
             </td>
           </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow, withAiFollowUp && d.reviewSpanSingle)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>17</td>
+            <td className={d.lineCell}>17</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffPostCtx")}</span>
+            </td>
+          </tr>
           {withAiFollowUp ? (
-            <>
-              <tr className={buildCls(d.diffRow, d.contextRow, d.reviewSpanSingle)}>
-                <td className={d.iconCell} />
-                <td className={d.lineCell}>8</td>
-                <td className={d.lineCell}>8</td>
-                <td className={d.codeCell}>
-                  <span className={d.codeSign}> </span>
-                  <span className={d.codeTokens}>{t("landing.mockDiffPostCtx")}</span>
-                </td>
-              </tr>
-              <tr className={d.reviewRow}>
-                <td colSpan={4} className={d.reviewCell}>
-                  <div className={d.reviewBox}>
-                    <MiniDiffReviewCommentCard
-                      avatar={
-                        <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
-                          <Icon name="bot" size={16} />
-                        </div>
-                      }
-                      author={t("landing.mockAiCommentAuthor")}
-                      atIso={t("landing.mockAiCommentAtIso")}
-                      lineRef={t("landing.mockAiCommentLineRef")}
-                      markdown={t("landing.mockAiCommentBody")}
-                      replyCta={t("landing.mockCommentReplyCta")}
-                    />
-                  </div>
-                </td>
-              </tr>
-            </>
+            <tr className={d.reviewRow}>
+              <td colSpan={4} className={d.reviewCell}>
+                <div className={d.reviewBox}>
+                  <MiniDiffReviewCommentCard
+                    avatar={
+                      <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
+                        <Icon name="bot" size={16} />
+                      </div>
+                    }
+                    author={t("landing.mockAiCommentAuthor")}
+                    atIso={t("landing.mockAiCommentAtIso")}
+                    lineRef={t("landing.mockAiCommentLineRef")}
+                    markdown={t("landing.mockAiCommentBody")}
+                    replyCta={t("landing.mockCommentReplyCta")}
+                  />
+                </div>
+              </td>
+            </tr>
           ) : null}
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>18</td>
+            <td className={d.lineCell}>18</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffElseHi")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>19</td>
+            <td className={d.lineCell}>19</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffCloseWhile")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>20</td>
+            <td className={d.lineCell}>20</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffReturnLine")}</span>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
