@@ -25,12 +25,6 @@
   letter-spacing: -0.035em;
 }
 
-/* 칸반 열 안 정적 행: 홈 열 배경과 어울리도록 테두리만 완화합니다. */
-.landingHomeKanbanFeed {
-  border: none;
-  background: color-mix(in oklab, var(--color-surface-muted) 42%, var(--color-surface-paper));
-}
-
 .landingFakeLink {
   cursor: default;
   pointer-events: none;

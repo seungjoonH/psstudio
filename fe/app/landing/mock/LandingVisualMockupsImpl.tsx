@@ -381,7 +381,7 @@ export function MiniNotifyList({
         <ul className={h.list}>
           {shown.map((item) => (
             <li key={item.id}>
-              <div className={buildCls(h.feedRowStatic, styles.landingHomeKanbanFeed)}>
+              <div className={h.feedRowStatic}>
                 {rowFace(item, h.feedAvatar)}
                 <div className={h.feedMain}>
                   <span className={h.notifTitle}>{item.title}</span>
@@ -594,11 +594,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                   return (
                     <li key={row.titleKey}>
                       <div
-                        className={buildCls(
-                          h.feedRowStatic,
-                          styles.landingHomeKanbanFeed,
-                          todoLate ? h.feedRowPastDue : undefined,
-                        )}
+                        className={buildCls(h.feedRowStatic, todoLate ? h.feedRowPastDue : undefined)}
                       >
                         <div className={h.todoCardRow}>
                           <div className={h.todoCardMain}>
@@ -649,7 +645,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               <ul className={h.list}>
                 {LANDING_DONE_MOCKS.map((row) => (
                   <li key={row.titleKey}>
-                    <div className={buildCls(h.feedRowStatic, styles.landingHomeKanbanFeed)}>
+                    <div className={h.feedRowStatic}>
                       <div className={h.feedMain}>
                         <span className={buildCls(h.listTitle, styles.psProblemTitle)}>{t(row.titleKey)}</span>
                         <span className={h.listMeta}>
