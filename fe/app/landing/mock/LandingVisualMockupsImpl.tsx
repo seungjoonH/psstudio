@@ -1019,7 +1019,7 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
                         <Icon name="book" size={16} className={a.titleIcon} />
                         <span className={styles.psProblemTitle}>{t(row.titleKey)}</span>
                       </span>
-                      <div className={a.titleNear}>
+                      <div className={buildCls(a.titleNear, styles.landingAssignPlatformMeta)}>
                         <Badge tone="neutral" chipIndex={1}>
                           {platform}
                         </Badge>
