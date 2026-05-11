@@ -62,8 +62,10 @@
   font-size: 0.9rem;
 }
 
+/* 행 높이를 고정해 과제 pill 개수와 관계없이 모든 셀 높이를 동일하게 둡니다. */
 .landingMiniCalGrid {
-  grid-template-rows: repeat(4, minmax(56px, auto)) !important;
+  grid-template-rows: repeat(4, 104px) !important;
+  align-items: stretch;
 }
 
 .landingMiniCalWide {
@@ -104,12 +106,17 @@
 
 /* 랜딩 미니 캘린더: 셀 안 가로 스크롤(세로 스크롤바 유발) 대신 세로 스택 + 말줄임만 사용합니다. */
 .landingMiniCalDayCell {
-  min-height: 0;
+  box-sizing: border-box;
+  min-height: 0 !important;
+  height: 100%;
   overflow: hidden;
 }
 
 .landingMiniCalDayHit {
+  box-sizing: border-box;
+  flex: 1;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
