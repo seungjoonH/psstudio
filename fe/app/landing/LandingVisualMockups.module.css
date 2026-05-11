@@ -243,13 +243,6 @@
   overflow: hidden;
 }
 
-/* 플랫폼·난이도 pill만 종이색(마감 D-n·해결/미해결은 .topRight에 분리되어 있음) */
-.landingAssignPlatformMeta > :global(span) {
-  background: var(--color-surface-paper) !important;
-  color: var(--color-text) !important;
-  border-color: var(--color-border) !important;
-}
-
 /* 랜딩 과제 스트립: 마감(기한 경과) 행 음영을 한 단계 강조합니다. */
 .landingAssignPastDue {
   background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface-paper)) !important;
