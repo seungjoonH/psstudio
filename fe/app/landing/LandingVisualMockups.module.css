@@ -1,0 +1,224 @@
+/* 랜딩용 정적 UI 더미와 장식 영역 스타일입니다. */
+.decorWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.decorImg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.landingHomeOuter {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 0.9rem;
+}
+
+.landingHomeBoard {
+  grid-template-columns: 1fr !important;
+}
+
+.landingHomeColumn {
+  min-height: 0 !important;
+}
+
+.landingFakeLink {
+  cursor: default;
+  pointer-events: none;
+}
+
+.landingMiniCal {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.landingMiniCalGrid {
+  grid-template-rows: repeat(4, minmax(56px, auto)) !important;
+}
+
+.landingAssignOuter {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.landingDiffOuter {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.landingCommentPlain {
+  margin: 0;
+}
+
+.landingNotifyOuter {
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 10px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.aiPanel {
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface-elevated));
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.aiHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.aiList {
+  margin: 0;
+  padding: 0 0 0 1.1em;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+.aiListItem {
+  margin-bottom: 4px;
+}
+
+.aiListItem:last-child {
+  margin-bottom: 0;
+}
+
+.roleGlyph {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.featureBand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: stretch;
+  padding: var(--space-4);
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+}
+
+@media (min-width: 720px) {
+  .featureBand {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .featureBandReverse {
+    flex-direction: row-reverse;
+  }
+}
+
+.featureMock {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.featureText {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 280px;
+}
+
+@media (min-width: 720px) {
+  .featureText {
+    width: 240px;
+  }
+}
+
+.heroGrid {
+  display: grid;
+  gap: var(--space-5);
+  align-items: center;
+}
+
+@media (min-width: 720px) {
+  .heroGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.flowStrip {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.flowChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  flex: 1 1 72px;
+  min-width: 72px;
+}
+
+.flowNum {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.flowLbl {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.featureTitle {
+  margin: 0 0 var(--space-2);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.featureLead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-muted);
+}

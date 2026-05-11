@@ -13,6 +13,10 @@ psstudio 는 알고리즘 문제 풀이를 그룹 단위로 운영하면서, 과
 - 과제 하나는 반드시 문제 하나만 가집니다.
 - 문제 묶음, 대회, 숙제 세트처럼 여러 문제를 묶는 기능은 별도 상위 개념이 필요할 때 추가합니다.
 
+## 1.2 공개 랜딩
+
+- `/landing`은 인증 없이 접근 가능한 제품 소개 페이지입니다. 본문은 로그인 화면과 동일한 `AppShell`(사이드바·상단 타이틀 바)과 카드형 서피스로 구성합니다. 짧은 설명 문구와 예시가 채워진 정적 UI 더미(홈 학습 현황 보드·그룹 캘린더·과제 목록 카드·diff·리뷰 댓글·AI 피드백·알림 목록 등)는 실제 화면과 동일한 CSS 모듈을 쓰고 데이터만 고정합니다. `/public/landing/hero-mesh.svg` 장식으로 시각 비중을 둡니다. `IntersectionObserver`로 뷰포트 진입 시 블록별 페이드인·살짝 상승(`ScrollReveal`)하며, `prefers-reduced-motion`이면 전환을 끕니다. 검색·소셜 공유를 위해 서버에서 `title`·`description`·canonical·Open Graph·Twitter 카드·JSON-LD(WebPage·WebSite·SoftwareApplication) 메타데이터를 구성합니다. 본문 카피는 i18n(`landing.*`)으로 한국어·영어를 제공합니다.
+
 ## 2. 핵심 사용자
 
 - 그룹장.
@@ -77,7 +81,7 @@ psstudio 는 알고리즘 문제 풀이를 그룹 단위로 운영하면서, 과
 - `supabase`: 로컬 개발용 Supabase Postgres 호환 DB.
 - `redis`: 큐, 작업 상태, 알림 카운트, 락.
 
-Supabase는 운영 또는 통합 개발 환경에서 Supabase Cloud나 Supabase CLI 로컬 스택으로 교체할 수 있습니다. 이 경우 앱 컨테이너는 `DATABASE_URL`, `SUPABASE_DB_URL`, 관련 Supabase 환경변수만 바꿔 연결합니다.
+Supabase는 운영 또는 통합 개발 환경에서 Supabase Cloud나 Supabase CLI 로컬 스택으로 교체할 수 있습니다. 이 경우 앱 컨테이너는 `DATABASE_URL`만 바꿔 연결합니다.
 
 ### 4.1.1 백엔드 환경변수(메일·LLM)
 
