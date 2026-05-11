@@ -2,6 +2,8 @@
 
 // 과제 상세 화면을 2열 레이아웃과 그룹 제출 사이드바로 렌더링합니다.
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { dueBadgeTone } from "../../../../../src/lib/dueBadgeTone";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../../../../src/i18n/I18nProvider";
 import type { AssignmentDto, CohortAnalysisDto } from "../../../../../src/assignments/server";
@@ -25,9 +27,25 @@ type Props = {
   meId: string;
   submissions: SubmissionListItemDto[];
   submissionSort: "createdAtAsc" | "createdAtDesc";
-  translationLanguage: string;
   cohortInitial: CohortAnalysisDto;
 };
+
+function sameLocalCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatRemainingHms(ms: number): string {
+  const secTotal = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(secTotal / 3600);
+  const m = Math.floor((secTotal % 3600) / 60);
+  const s = secTotal % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
 
 function formatProblemRef(problemUrl: string, platform: string): string {
   try {
@@ -62,10 +80,10 @@ export function AssignmentDetailClient({
   meId,
   submissions,
   submissionSort,
-  translationLanguage,
   cohortInitial,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale: uiLocale } = useI18n();
+  const router = useRouter();
   const a = assignment;
   const due = new Date(a.dueAt);
   const assignmentBase = `/groups/${groupId}/assignments/${assignmentId}`;
@@ -78,10 +96,31 @@ export function AssignmentDetailClient({
   const [cohort, setCohort] = useState<CohortAnalysisDto>(cohortInitial);
   const [cohortErr, setCohortErr] = useState<string | null>(null);
   const [cohortStarting, setCohortStarting] = useState(false);
+  const [autoMoveToCohortPage, setAutoMoveToCohortPage] = useState(false);
+  const [deadlineTick, setDeadlineTick] = useState(0);
 
   const duePassed = Date.now() >= due.getTime();
-  const cohortLangOk = translationLanguage !== "none";
   const cohortCountOk = submissions.length >= 2;
+
+  void deadlineTick;
+  const now = Date.now();
+  const onDueLocalDay = sameLocalCalendarDay(due, new Date(now));
+  const msUntilDue = due.getTime() - now;
+  const showSidebarDeadlineCountdown =
+    a.allowLateSubmission && onDueLocalDay && msUntilDue > 0;
+  const submitSidebarBlocked = !a.allowLateSubmission && duePassed;
+  const submitSidebarLabel =
+    a.allowLateSubmission && duePassed
+      ? t("assignment.detail.sidebarSubmitLate")
+      : t("submission.list.new");
+
+  useEffect(() => {
+    if (!showSidebarDeadlineCountdown) return;
+    const id = window.setInterval(() => {
+      setDeadlineTick((x) => x + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [showSidebarDeadlineCountdown]);
 
   useEffect(() => {
     if (cohort.status !== "RUNNING") return;
@@ -95,27 +134,27 @@ export function AssignmentDetailClient({
     return () => window.clearInterval(id);
   }, [cohort.status, assignmentId]);
 
+  useEffect(() => {
+    if (!autoMoveToCohortPage) return;
+    if (cohort.status === "DONE") {
+      router.push(`${assignmentBase}/cohort`);
+      return;
+    }
+    if (cohort.status === "FAILED") {
+      setAutoMoveToCohortPage(false);
+    }
+  }, [autoMoveToCohortPage, cohort.status, router, assignmentBase]);
+
   const problemRef = formatProblemRef(a.problemUrl, a.platform);
   const daysLeft = useMemo(() => Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000))), [due]);
   const dueLabel = a.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
-  const dueTone: "neutral" | "warning" | "danger" | "dangerStrong" | "success" = mine
-    ? "success"
-    : a.isLate
-      ? "dangerStrong"
-      : daysLeft <= 1
-        ? "dangerStrong"
-        : daysLeft <= 3
-          ? "danger"
-          : daysLeft <= 7
-            ? "warning"
-            : "neutral";
+  const dueTone = dueBadgeTone(a.isLate, daysLeft);
   const hintHiddenUntilSubmit = a.metadata.hintHiddenUntilSubmit ?? true;
   const algorithmsHiddenUntilSubmit = a.metadata.algorithmsHiddenUntilSubmit ?? true;
   const canSeeHint = hasSubmitted || !hintHiddenUntilSubmit || showHintTemporarily;
   const canSeeAlgorithms = hasSubmitted || !algorithmsHiddenUntilSubmit || showAlgorithmsTemporarily;
 
   const showCohortAction =
-    cohortLangOk &&
     duePassed &&
     cohortCountOk &&
     (cohort.status === "NONE" || cohort.status === "FAILED" || cohort.status === "RUNNING");
@@ -125,10 +164,18 @@ export function AssignmentDetailClient({
     setCohortErr(null);
     setCohortStarting(true);
     try {
-      const next = await startCohortAnalysisAction(groupId, assignmentId);
+      const next = await startCohortAnalysisAction(groupId, assignmentId, uiLocale);
       setCohort(next);
+      if (next.status === "DONE") {
+        router.push(`${assignmentBase}/cohort`);
+      } else if (next.status === "RUNNING") {
+        setAutoMoveToCohortPage(true);
+      } else {
+        setAutoMoveToCohortPage(false);
+      }
     } catch (e) {
       setCohortErr((e as Error).message);
+      setAutoMoveToCohortPage(false);
     } finally {
       setCohortStarting(false);
     }
@@ -176,7 +223,7 @@ export function AssignmentDetailClient({
                   {a.platform}
                 </Badge>
                 <DifficultyBadge platform={a.platform} difficulty={a.difficulty} />
-                {canSeeAlgorithms
+                {canSeeAlgorithms && (a.metadata.algorithms?.length ?? 0) > 0
                   ? a.metadata.algorithms?.map((tag) => (
                       <Badge key={tag} tone="neutral" chipIndex={3}>
                         {tag}
@@ -184,15 +231,25 @@ export function AssignmentDetailClient({
                     ))
                   : null}
                 {!canSeeAlgorithms && (a.metadata.algorithms?.length ?? 0) > 0 ? (
-                  <button
-                    type="button"
-                    className={styles.revealBtn}
-                    onClick={() => setShowAlgorithmsTemporarily(true)}
-                  >
-                    {t("assignment.detail.revealAlgorithms")}
-                  </button>
+                  <div className={styles.algorithmsRevealWrap}>
+                    <div className={styles.algorithmsBlurUnder} aria-hidden="true">
+                      {a.metadata.algorithms?.map((tag) => (
+                        <Badge key={tag} tone="neutral" chipIndex={3}>
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className={styles.blurLockOverlay}>
+                      <button
+                        type="button"
+                        className={`${styles.revealBtn} ${styles.blurLockOverlayBtn}`}
+                        onClick={() => setShowAlgorithmsTemporarily(true)}
+                      >
+                        {t("assignment.detail.revealAlgorithms")}
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
-                {a.isLate ? <Badge tone="danger">{t("assignment.detail.lateBadge")}</Badge> : null}
                 {a.analysisStatus !== "DONE" ? (
                   <Badge tone="warning">
                     {t("assignment.detail.analysisBadge", { status: a.analysisStatus })}
@@ -210,7 +267,7 @@ export function AssignmentDetailClient({
                 >
                   <Badge tone={dueTone}>{showDueAt && !a.isLate ? due.toLocaleString() : dueLabel}</Badge>
                 </button>
-                <Badge tone={mine ? "success" : "warning"}>
+                <Badge tone={mine ? "success" : "danger"}>
                   {mine ? t("assignment.detail.solvedBadge") : t("assignment.detail.unsolvedBadge")}
                 </Badge>
               </div>
@@ -241,71 +298,78 @@ export function AssignmentDetailClient({
             <section className={styles.descCard}>
               <div className={styles.descHead}>
                 <h2 className={styles.descHeading}>{t("assignment.detail.hintHeading")}</h2>
+              </div>
+              <div className={styles.hintRevealWrap}>
+                <div
+                  className={
+                    canSeeHint ? styles.hintContent : `${styles.hintContent} ${styles.hintContentLocked}`
+                  }
+                  aria-hidden={!canSeeHint}
+                >
+                  <p className={styles.descBody}>{a.hintPlain}</p>
+                </div>
                 {!canSeeHint ? (
-                  <button type="button" className={styles.revealBtn} onClick={() => setShowHintTemporarily(true)}>
-                    {t("assignment.detail.revealHint")}
-                  </button>
+                  <div className={styles.blurLockOverlay}>
+                    <button
+                      type="button"
+                      className={`${styles.revealBtn} ${styles.blurLockOverlayBtn}`}
+                      onClick={() => setShowHintTemporarily(true)}
+                    >
+                      {t("assignment.detail.revealHint")}
+                    </button>
+                  </div>
                 ) : null}
               </div>
-              {canSeeHint ? (
-                <p className={styles.descBody}>{a.hintPlain}</p>
-              ) : (
-                <p className={styles.lockedBody}>{t("assignment.detail.hintLocked")}</p>
-              )}
             </section>
           ) : null}
 
-          {cohortLangOk ? (
-            <section className={styles.cohortCard} aria-labelledby="cohort-heading">
-              <div className={styles.cohortHead}>
-                <h2 id="cohort-heading" className={styles.cohortTitle}>
-                  {t("assignment.detail.cohort.title")}
-                </h2>
-              </div>
-              <p className={styles.cohortLead}>{t("assignment.detail.cohort.lead")}</p>
-              {cohortLangOk && !duePassed ? (
-                <p className={styles.cohortBlocked}>{t("assignment.detail.cohort.blockedDue")}</p>
-              ) : null}
-              {cohortLangOk && duePassed && !cohortCountOk ? (
-                <p className={styles.cohortBlocked}>{t("assignment.detail.cohort.blockedCount")}</p>
-              ) : null}
-              {cohortErr !== null ? <p className={styles.cohortError}>{cohortErr}</p> : null}
-              {showCohortAction ? (
-                <div className={styles.cohortActionRow}>
-                  <button
-                    type="button"
-                    className={styles.cohortPrimaryBtn}
-                    disabled={cohortActionBusy}
-                    aria-busy={cohortActionBusy}
-                    onClick={() => void handleStartCohort()}
-                  >
-                    {t("assignment.detail.cohort.start")}
-                  </button>
+          <section className={styles.cohortCard} aria-labelledby="cohort-heading">
+            <div className={styles.cohortHead}>
+              <h2 id="cohort-heading" className={styles.cohortTitle}>
+                {t("assignment.detail.cohort.title")}
+              </h2>
+            </div>
+            <p className={styles.cohortLead}>{t("assignment.detail.cohort.lead")}</p>
+            {!duePassed ? (
+              <p className={styles.cohortBlocked}>{t("assignment.detail.cohort.blockedDue")}</p>
+            ) : null}
+            {duePassed && !cohortCountOk ? (
+              <p className={styles.cohortBlocked}>{t("assignment.detail.cohort.blockedCount")}</p>
+            ) : null}
+            {cohortErr !== null ? <p className={styles.cohortError}>{cohortErr}</p> : null}
+            {showCohortAction ? (
+              <div className={styles.cohortActionRow}>
+                <button
+                  type="button"
+                  className={styles.cohortPrimaryBtn}
+                  disabled={cohortActionBusy}
+                  aria-busy={cohortActionBusy}
+                  onClick={() => void handleStartCohort()}
+                >
                   {cohortActionBusy ? (
-                    <span
-                      className={styles.cohortSpinner}
-                      role="status"
-                      aria-live="polite"
-                      aria-label={t("assignment.detail.cohort.running")}
-                    />
+                    <>
+                      <span className={styles.cohortSpinner} aria-hidden />
+                      <span className={styles.srOnly}>{t("assignment.detail.cohort.running")}</span>
+                    </>
                   ) : null}
-                </div>
-              ) : null}
-              {cohort.status === "FAILED" ? (
-                <p className={styles.cohortStatus}>
-                  {t("assignment.detail.cohort.failed")}
-                  {cohort.failureReason ? ` — ${cohort.failureReason}` : ""}
-                </p>
-              ) : null}
-              {cohort.status === "DONE" ? (
-                <div className={styles.cohortDoneRow}>
-                  <Link href={`${assignmentBase}/cohort`} className={styles.cohortViewFull}>
-                    {t("assignment.detail.cohort.viewFull")}
-                  </Link>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
+                  {t("assignment.detail.cohort.start")}
+                </button>
+              </div>
+            ) : null}
+            {cohort.status === "FAILED" ? (
+              <p className={styles.cohortStatus}>
+                {t("assignment.detail.cohort.failed")}
+                {cohort.failureReason ? ` — ${cohort.failureReason}` : ""}
+              </p>
+            ) : null}
+            {cohort.status === "DONE" ? (
+              <div className={styles.cohortDoneRow}>
+                <Link href={`${assignmentBase}/cohort`} className={styles.cohortViewFull}>
+                  {t("assignment.detail.cohort.viewFull")}
+                </Link>
+              </div>
+            ) : null}
+          </section>
         </div>
 
         <aside>
@@ -315,9 +379,25 @@ export function AssignmentDetailClient({
               <span className={styles.sideCount}>{submissions.length}</span>
             </div>
             <div className={styles.sideNewWrap}>
-              <Link href={`${submissionsBase}/new`} className={styles.sidePrimaryLink}>
-                {t("submission.list.new")}
-              </Link>
+              {submitSidebarBlocked ? (
+                <span
+                  className={`${styles.sidePrimaryLink} ${styles.sidePrimaryLinkDisabled}`}
+                  aria-disabled="true"
+                >
+                  {t("assignment.detail.sidebarSubmitClosed")}
+                </span>
+              ) : (
+                <Link href={`${submissionsBase}/new`} className={styles.sidePrimaryLink}>
+                  {submitSidebarLabel}
+                </Link>
+              )}
+              {showSidebarDeadlineCountdown ? (
+                <p className={styles.sideDeadlineCountdown} aria-live="polite">
+                  {t("assignment.detail.sidebarDeadlineCountdown", {
+                    time: formatRemainingHms(msUntilDue),
+                  })}
+                </p>
+              ) : null}
             </div>
             <div className={styles.sideToolbar}>
               <Link

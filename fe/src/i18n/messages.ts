@@ -549,6 +549,10 @@ export const messages = {
         mySubmissionView: "내 제출 보기",
         notSubmitted: "아직 제출하지 않았습니다.",
         sidebarTitle: "그룹 제출 현황",
+        /** vars: time — HH:MM:SS */
+        sidebarDeadlineCountdown: "마감 {time} 남음",
+        sidebarSubmitLate: "늦게라도 제출하기",
+        sidebarSubmitClosed: "마감된 과제입니다",
         sidebarFullPage: "전체 화면으로 보기",
         sidebarEmpty: "아직 제출이 없습니다.",
         errorTitle: "과제를 불러오지 못했습니다.",
@@ -1289,6 +1293,10 @@ export const messages = {
         mySubmissionView: "View my submission",
         notSubmitted: "You have not submitted yet.",
         sidebarTitle: "Group submissions",
+        /** vars: time — HH:MM:SS */
+        sidebarDeadlineCountdown: "{time} until the deadline",
+        sidebarSubmitLate: "Submit anyway (late)",
+        sidebarSubmitClosed: "This assignment is closed",
         sidebarFullPage: "Open full list",
         sidebarEmpty: "No submissions yet.",
         errorTitle: "Failed to load assignment.",
