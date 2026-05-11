@@ -10,6 +10,8 @@ import { CommentsSubmissionVersionNo1783000000000 } from "../../migrations/17830
 import { AssignmentCohortAnalyses1784000000000 } from "../../migrations/1784000000000-assignment-cohort-analyses.js";
 import { AssignmentCohortReportLocale1785000000000 } from "../../migrations/1785000000000-assignment-cohort-report-locale.js";
 import { ClearAssignmentCohortAnalyses1786000000000 } from "../../migrations/1786000000000-clear-assignment-cohort-analyses.js";
+import { ClearAssignmentCohortAnalysesData1787000000000 } from "../../migrations/1787000000000-clear-assignment-cohort-analyses-data.js";
+import { RemoveTranslationCohortTargetLang1788000000000 } from "../../migrations/1788000000000-remove-translation-cohort-target-lang.js";
 import { ENV } from "./env.js";
 import { AiTokenBalance } from "../modules/ai-tokens/ai-token-balance.entity.js";
 import { Announcement } from "../modules/board/announcement.entity.js";
@@ -76,6 +78,8 @@ export const MIGRATIONS = [
   AssignmentCohortAnalyses1784000000000,
   AssignmentCohortReportLocale1785000000000,
   ClearAssignmentCohortAnalyses1786000000000,
+  ClearAssignmentCohortAnalysesData1787000000000,
+  RemoveTranslationCohortTargetLang1788000000000,
 ];
 
 export const dataSource = new DataSource({

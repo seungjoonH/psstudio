@@ -168,7 +168,7 @@ export class ReviewsService {
           recipientUserId: review.authorUserId,
           type: NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW,
           payload: {
-            title: `${authorNickname}님이 내 리뷰에 답글을 남겼습니다.`,
+            title: `${authorNickname}님이 리뷰 스레드에 답글을 달았습니다.`,
             ...basePayload,
           },
         }),
@@ -185,7 +185,7 @@ export class ReviewsService {
           recipientUserId: submission.authorUserId,
           type: NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE,
           payload: {
-            title: `${authorNickname}님이 내 제출의 리뷰 스레드에 답글을 남겼습니다.`,
+            title: `${authorNickname}님이 리뷰 스레드에 답글을 달았습니다.`,
             ...basePayload,
           },
         }),

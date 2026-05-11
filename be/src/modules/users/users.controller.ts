@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
+import { IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { Transform, Type } from "class-transformer";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import { In, IsNull } from "typeorm";
@@ -55,6 +55,17 @@ class ListMeSubmissionQuery {
   @IsOptional()
   @IsIn(["createdAtAsc", "createdAtDesc"])
   sort?: "createdAtAsc" | "createdAtDesc";
+  /** ISO 8601. 지정 시 해당 시각 이후 생성된 제출만 포함합니다. */
+  @IsOptional()
+  @IsDateString()
+  createdAfter?: string;
+}
+
+/** 예전에 저장된 리뷰 답글 알림 제목(무기명) — 표시 시 행위자 닉네임 형식으로 통일합니다. */
+const LEGACY_REVIEW_REPLY_THREAD_TITLE_KO = "코드 리뷰 스레드에 답글이 달렸습니다.";
+
+function formatReviewReplyThreadTitleKo(actorNickname: string): string {
+  return `${actorNickname}님이 리뷰 스레드에 답글을 달았습니다.`;
 }
 
 function resolveNotificationTitle(type: string, payload: Record<string, unknown>): string {
@@ -101,7 +112,8 @@ function resolveNotificationHref(type: string, payload: Record<string, unknown>)
   if (
     type === NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION ||
     type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
-    type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE
+    type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE ||
+    type === NOTIFICATION_TYPES.REACTION_ON_MY_REVIEW_THREAD
   ) {
     if (
       groupId !== undefined &&
@@ -238,7 +250,15 @@ async function buildMeNotificationListItems(rows: Notification[]): Promise<
           u.profileImageUrl.trim().length > 0 ? u.profileImageUrl.trim() : null;
       }
     }
-    const title = resolveNotificationTitle(row.type, payload);
+    let title = resolveNotificationTitle(row.type, payload);
+    if (
+      actorNickname !== null &&
+      (row.type === NOTIFICATION_TYPES.REPLY_ON_MY_REVIEW ||
+        row.type === NOTIFICATION_TYPES.REPLY_ON_REVIEW_I_WROTE) &&
+      title === LEGACY_REVIEW_REPLY_THREAD_TITLE_KO
+    ) {
+      title = formatReviewReplyThreadTitleKo(actorNickname);
+    }
     if (actorNickname === null && row.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED) {
       const parsed = parseActorNameFromNotificationTitle(title);
       if (parsed !== null) actorNickname = parsed;
@@ -323,13 +343,17 @@ export class UsersController {
   async getRecentSubmissions(@CurrentUser() me: { id: string }, @Query() query: ListMeSubmissionQuery) {
     await this.usersService.ensureInitialized();
     const sortDirection = query.sort === "createdAtAsc" ? "ASC" : "DESC";
-    const rows = await dataSource
+    const qb = dataSource
       .getRepository(Submission)
       .createQueryBuilder("s")
       .innerJoin(Assignment, "a", "a.id = s.assignment_id")
       .where("s.author_user_id = :userId", { userId: me.id })
       .andWhere("s.deleted_at IS NULL")
-      .andWhere("a.deleted_at IS NULL")
+      .andWhere("a.deleted_at IS NULL");
+    if (query.createdAfter !== undefined && query.createdAfter.trim() !== "") {
+      qb.andWhere("s.created_at >= :createdAfter", { createdAfter: new Date(query.createdAfter) });
+    }
+    const rows = await qb
       .orderBy("s.created_at", sortDirection)
       .select([
         "s.id AS id",

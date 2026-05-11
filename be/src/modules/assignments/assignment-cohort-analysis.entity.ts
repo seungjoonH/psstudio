@@ -19,9 +19,6 @@ export class AssignmentCohortAnalysis {
   @Column({ type: "varchar", length: 16 })
   status!: "RUNNING" | "DONE" | "FAILED";
 
-  @Column({ name: "target_language", type: "varchar", length: 32 })
-  targetLanguage!: string;
-
   @Column({ name: "report_locale", type: "varchar", length: 16, nullable: true })
   reportLocale!: string | null;
 

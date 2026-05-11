@@ -41,8 +41,6 @@ export type CreateGroupInput = {
   maxMembers?: number;
   joinByCodeEnabled?: boolean;
   joinByLinkEnabled?: boolean;
-  joinByRequestEnabled?: boolean;
-  joinByEmailEnabled?: boolean;
   ruleUseDeadline?: boolean;
   ruleDefaultDeadlineTime?: string;
   ruleAllowLateSubmission?: boolean;
@@ -59,8 +57,6 @@ export type UpdateGroupInput = Partial<
     | "maxMembers"
     | "joinByCodeEnabled"
     | "joinByLinkEnabled"
-    | "joinByRequestEnabled"
-    | "joinByEmailEnabled"
     | "ruleUseDeadline"
     | "ruleDefaultDeadlineTime"
     | "ruleAllowLateSubmission"
@@ -226,8 +222,8 @@ export class GroupsService {
           groupCode,
           joinByCodeEnabled: input.joinByCodeEnabled ?? true,
           joinByLinkEnabled: input.joinByLinkEnabled ?? true,
-          joinByRequestEnabled: input.joinByRequestEnabled ?? true,
-          joinByEmailEnabled: input.joinByEmailEnabled ?? true,
+          joinByRequestEnabled: false,
+          joinByEmailEnabled: false,
           ruleUseDeadline: input.ruleUseDeadline ?? false,
           ruleDefaultDeadlineTime: input.ruleDefaultDeadlineTime ?? "23:59",
           ruleAllowLateSubmission: input.ruleAllowLateSubmission ?? true,
@@ -270,10 +266,6 @@ export class GroupsService {
     }
     if (patch.joinByCodeEnabled !== undefined) group.joinByCodeEnabled = patch.joinByCodeEnabled;
     if (patch.joinByLinkEnabled !== undefined) group.joinByLinkEnabled = patch.joinByLinkEnabled;
-    if (patch.joinByRequestEnabled !== undefined) {
-      group.joinByRequestEnabled = patch.joinByRequestEnabled;
-    }
-    if (patch.joinByEmailEnabled !== undefined) group.joinByEmailEnabled = patch.joinByEmailEnabled;
     if (patch.ruleUseDeadline !== undefined) group.ruleUseDeadline = patch.ruleUseDeadline;
     if (patch.ruleDefaultDeadlineTime !== undefined) {
       group.ruleDefaultDeadlineTime = patch.ruleDefaultDeadlineTime;

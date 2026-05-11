@@ -152,8 +152,8 @@ function markdownFenceForSubmissionLanguage(language: string): string {
     scala: "scala",
     go: "go",
     golang: "go",
-    rust: "rust",
-    rs: "rust",
+    rust: "javascript",
+    rs: "javascript",
     cpp: "cpp",
     "c++": "cpp",
     cxx: "cpp",
@@ -1012,7 +1012,7 @@ export class SubmissionsService {
           recipientUserId: submission.authorUserId,
           type: NOTIFICATION_TYPES.REVIEW_ON_MY_SUBMISSION,
           payload: {
-            title: `${authorNickname}님이 내 제출에 댓글을 남겼습니다.`,
+            title: `${authorNickname}님이 내 제출에 댓글을 달았습니다.`,
             submissionId,
             assignmentId: submission.assignmentId,
             groupId: assignment.groupId,
@@ -1149,7 +1149,7 @@ export class SubmissionsService {
             recipientUserId: submission.authorUserId,
             type: NOTIFICATION_TYPES.COMMENT_ON_MY_SUBMISSION,
             payload: {
-              title: `${authorNickname}님이 내 제출에 댓글을 남겼습니다.`,
+              title: `${authorNickname}님이 내 제출에 댓글을 달았습니다.`,
               submissionId,
               assignmentId: submission.assignmentId,
               groupId: assignment.groupId,
@@ -1167,7 +1167,7 @@ export class SubmissionsService {
           recipientUserId: parentComment.authorUserId,
           type: NOTIFICATION_TYPES.REPLY_ON_MY_COMMENT,
           payload: {
-            title: `${authorNickname}님이 내 댓글에 답글을 남겼습니다.`,
+            title: `${authorNickname}님이 내 댓글에 답글을 달았습니다.`,
             submissionId,
             assignmentId: submission.assignmentId,
             groupId: assignment.groupId,
