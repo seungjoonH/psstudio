@@ -885,17 +885,39 @@ export function MiniDiffReview({
   );
 }
 
-export function MiniMergedCodeReviewAi({ ariaLabel }: { ariaLabel: string }) {
+/** 랜딩 피처 밴드 제목 아래에 붙는 AI 피드백 CTA(실제 제출 화면과 동일한 secondary·스파클). */
+export function MiniMergedCodeReviewAiTrigger() {
   const { t } = useI18n();
-
   return (
-    <div className={styles.mergedReviewRoot} role="img" aria-label={ariaLabel}>
+    <>
       <div className={styles.mergedReviewToolbar}>
-        <Button type="button" variant="primary" tabIndex={-1}>
+        <Button
+          type="button"
+          variant="secondary"
+          tabIndex={-1}
+          leftIcon={<Icon name="sparkles" size={14} aria-hidden />}
+        >
           {t("landing.mockAiReviewButton")}
         </Button>
       </div>
       <p className={styles.mergedReviewHint}>{t("landing.mockAiReviewHint")}</p>
+    </>
+  );
+}
+
+export function MiniMergedCodeReviewAi({
+  ariaLabel,
+  omitAiTrigger,
+}: {
+  ariaLabel: string;
+  /** true면 CTA·힌트는 피처 밴드 텍스트 열(`FeatureBand`의 `textFooter`)로만 렌더합니다. */
+  omitAiTrigger?: boolean;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className={styles.mergedReviewRoot} role="img" aria-label={ariaLabel}>
+      {omitAiTrigger ? null : <MiniMergedCodeReviewAiTrigger />}
       <div className={styles.codeCompareGrid} aria-hidden>
         <div className={styles.codeCompareCol}>
           <p className={styles.codeCompareLabel}>{t("landing.mockCompareLeftTitle")}</p>
@@ -1029,11 +1051,14 @@ export function FeatureBand({
   mock,
   title,
   lead,
+  textFooter,
 }: {
   reverse?: boolean;
   mock: ReactNode;
   title: ReactNode;
   lead: string;
+  /** 제목·리드 아래에 렌더(예: AI 피드백 CTA). */
+  textFooter?: ReactNode;
 }) {
   return (
     <div className={buildCls(styles.featureBand, reverse ? styles.featureBandReverse : "")}>
@@ -1041,6 +1066,7 @@ export function FeatureBand({
       <div className={styles.featureText}>
         <h3 className={styles.featureTitle}>{title}</h3>
         {lead.trim().length > 0 ? <p className={styles.featureLead}>{lead}</p> : null}
+        {textFooter ?? null}
       </div>
     </div>
   );

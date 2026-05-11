@@ -17,6 +17,7 @@ import {
   MiniGroupsStrip,
   MiniHomeKanban,
   MiniMergedCodeReviewAi,
+  MiniMergedCodeReviewAiTrigger,
   MiniNotifyList,
 } from "./LandingVisualMockups";
 import { ScrollReveal } from "./ScrollReveal";
@@ -46,6 +47,7 @@ export function LandingClient() {
     mock: ReactNode;
     title: ReactNode;
     lead: string;
+    textFooter?: ReactNode;
   }> = [
     {
       key: "assignments",
@@ -64,9 +66,10 @@ export function LandingClient() {
     {
       key: "review-ai",
       reverse: false,
-      mock: <MiniMergedCodeReviewAi ariaLabel={t("landing.mockupReviewAiAria")} />,
+      mock: <MiniMergedCodeReviewAi omitAiTrigger ariaLabel={t("landing.mockupReviewAiAria")} />,
       title: t("landing.featureReviewAiTitle"),
       lead: t("landing.featureReviewAiLead"),
+      textFooter: <MiniMergedCodeReviewAiTrigger />,
     },
     {
       key: "cohort",
@@ -137,7 +140,13 @@ export function LandingClient() {
             <div className={styles.featureStack}>
               {featureBands.map((band, i) => (
                 <ScrollReveal key={band.key} delayMs={i * FEATURE_STAGGER_MS}>
-                  <FeatureBand reverse={band.reverse} mock={band.mock} title={band.title} lead={band.lead} />
+                  <FeatureBand
+                    reverse={band.reverse}
+                    mock={band.mock}
+                    title={band.title}
+                    lead={band.lead}
+                    textFooter={band.textFooter}
+                  />
                 </ScrollReveal>
               ))}
             </div>
