@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import type { CohortSubmissionArtifact } from "../../src/assignments/server";
 import { useI18n } from "../../src/i18n/I18nProvider";
+import { AI_TUTOR_PROFILE_IMAGE_URL } from "../../src/lib/aiTutorProfileImageUrl";
 import { buildCls } from "../../src/lib/buildCls";
 import { resolveShikiLanguage } from "../../src/lib/shikiLanguage";
 import { dueBadgeTone } from "../../src/lib/dueBadgeTone";
@@ -895,9 +896,11 @@ export function MiniDiffReview({
                 <div className={d.reviewBox}>
                   <MiniDiffReviewCommentCard
                     avatar={
-                      <div className={styles.mergedAiAvatar} aria-hidden>
-                        <Icon name="bot" size={16} />
-                      </div>
+                      <UserAvatar
+                        nickname={t("landing.mockAiCommentAuthor")}
+                        imageUrl={AI_TUTOR_PROFILE_IMAGE_URL}
+                        size={36}
+                      />
                     }
                     author={t("landing.mockAiCommentAuthor")}
                     atIso={t("landing.mockAiCommentAtIso")}
