@@ -8,8 +8,8 @@
 - Backend: NestJS API
 - DB: Supabase(PostgreSQL), Redis(캐시/큐/락)
 - Local Infra: Docker Compose(`fe`, `be`, `worker`, `supabase`, `redis`)
-- Deploy Infra: GCP 단일 GCE VM에 Docker Compose로 모노레포 통째 배포(FE/BE/Worker/Redis 동거), 앞단 Caddy reverse proxy + Cloudflare 무료 CDN/TLS, DB는 Supabase 매니지드(무료 티어 시작). 자세한 정책은 9장 참고.
-- AI: 외부 LLM API(OpenRouter 또는 Requesty)로 문제 분석, AI 코드 리뷰, 과제 집단 코드 비교 분석을 비동기로 처리하고 토큰 차감 정책을 적용(제출 코드 기계 번역 파이프라인은 현재 두지 않음)
+- Deploy Infra: 추후 배포 시 Vercel/GCP/관리형 Supabase 등으로 분리 가능
+- AI: 외부 LLM API(OpenRouter)로 문제 분석, AI 코드 리뷰, 코드 번역을 비동기로 처리하고 토큰 차감 정책을 적용
 - Email: Resend API로 그룹 이메일 초대 메시지 발송(이메일은 그룹 초대 외 용도로 사용하지 않음)
 
 ## 1.1 로컬 Docker Compose 구성
@@ -22,7 +22,7 @@
 - `supabase`: 로컬 개발용 Supabase Postgres 호환 DB, 호스트 포트 `54322`.
 - `redis`: 큐, 작업 상태, 알림 카운트, 락, 호스트 포트 `6379`.
 
-공식 Supabase 전체 로컬 스택은 내부 컨테이너가 많으므로 앱 Compose에 직접 포함하지 않습니다. Supabase Cloud 또는 Supabase CLI 스택을 사용할 때는 앱의 `DATABASE_URL`을 해당 환경으로 교체합니다.
+공식 Supabase 전체 로컬 스택은 내부 컨테이너가 많으므로 앱 Compose에 직접 포함하지 않습니다. Supabase Cloud 또는 Supabase CLI 스택을 사용할 때는 앱의 `DATABASE_URL`, `SUPABASE_DB_URL` 계열 환경변수를 해당 환경으로 교체합니다.
 
 ### 1.2 로컬 DB·Redis 데이터 보존(초기화 방지)
 
@@ -43,7 +43,7 @@ flowchart LR
     BE --> PG[(Supabase Postgres)]
     BE --> RD[(Redis)]
     BE --> OAUTH[Google/GitHub OAuth]
-    BE --> AIAPI[OpenRouter/Requesty LLM]
+    BE --> AIAPI[OpenRouter LLM]
     BE --> EMAIL[Resend Email]
 
     BE --> NQ[BullMQ on Redis]
@@ -98,8 +98,8 @@ flowchart LR
 - 그룹 코드 영구 토큰 + 그룹 코드 갱신 시 일괄 무효화
 - 이메일 초대 1회용 토큰 발급 + Resend 호출
 - 알림 이벤트 생성 및 읽음/삭제 처리
-- AI 코드 리뷰/문제 분석 작업 큐 발행 및 결과 저장
-- 과제 집단 코드 비교 분석(마감 후·과제당 1회 성공) 인-프로세스 파이프라인 및 `ASSIGNMENT_COHORT_ANALYSES`·`report_locale`·`artifacts`(제출별 `regions`만 저장, 원문 코드는 멤버의 `submission_version_id`로 조회해 응답 병합) 저장
+- AI 코드 리뷰/문제 분석/번역 작업 큐 발행 및 결과 저장(번역은 제출 버전 단위 캐시)
+- 과제 집단 코드 비교 분석(마감 후·과제당 1회 성공) 인-프로세스 파이프라인 및 `ASSIGNMENT_COHORT_ANALYSES`·`report_locale`·`artifacts`(제출별 정규화 코드·역할 구역) 저장
 
 ### 3.3 Database (Supabase + Redis)
 
@@ -127,6 +127,7 @@ flowchart TD
     Submission[Submission Module]
     Review[Review/Comment Module]
     AI[AI Code Review Module]
+    Translate[Translation Module]
     CohortCompare[Assignment Cohort Analysis Module]
     Notification[Notification Module]
     Calendar[Calendar Module]
@@ -139,6 +140,7 @@ flowchart TD
     Assignment --> Submission
     Submission --> Review
     Submission --> AI
+    Submission --> Translate
     Assignment --> CohortCompare
     CohortCompare --> Submission
     AI --> Review
@@ -183,7 +185,7 @@ sequenceDiagram
     participant BE as NestJS
     participant Q as BullMQ
     participant WK as Worker
-    participant LLM as OpenRouter/Requesty
+    participant LLM as OpenRouter
     participant DB as Postgres
 
     C->>BE: POST /submissions/:id/ai-review (수동 트리거)
@@ -213,7 +215,7 @@ sequenceDiagram
     participant Q as BullMQ
     participant WK as Worker
     participant SITE as Problem Site
-    participant LLM as OpenRouter/Requesty
+    participant LLM as OpenRouter
     participant DB as Postgres
 
     C->>BE: POST /assignments/:id/problem-analysis
@@ -231,9 +233,29 @@ sequenceDiagram
     end
 ```
 
-### 5.2.2 제출 코드 기계 번역(미구현)
+### 5.2.2 코드 번역 캐시
 
-`POST /submissions/:id/translations` 및 `SUBMISSION_TRANSLATIONS` 캐시 흐름은 설계에서 보류했습니다(`design/design.md` 5.4.4).
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant BE as NestJS
+    participant LLM as OpenRouter
+    participant DB as Postgres
+
+    C->>BE: POST /submissions/:id/translations
+    BE->>DB: SUBMISSION_TRANSLATIONS 캐시 조회
+    alt cache hit
+        BE-->>C: 캐시된 번역 (토큰 차감 없음)
+    else 원본 == 대상 언어
+        BE->>DB: 원본 코드 복사본 저장 (is_copy=true, token=0)
+        BE-->>C: 복사된 결과
+    else 캐시 miss + 다른 언어
+        BE->>LLM: 코드 + 대상 언어 프롬프트
+        LLM-->>BE: 번역 결과
+        BE->>DB: 캐시 저장, 요청자 토큰 차감
+        BE-->>C: 번역 결과
+    end
+```
 
 ### 5.2.3 이메일 초대
 
@@ -296,6 +318,7 @@ sequenceDiagram
   - 제출/댓글/리뷰
   - 직접 그룹 탈퇴 가능
   - 그룹 코드 노출(공유 가능, 가입 토글 켜져 있을 때만 실제 합류 가능)
+  - 번역 기능 트리거(같은 그룹 어떤 제출이든)
   - AI 코드 리뷰 트리거는 본인 제출에 한정(또는 그룹장/그룹 관리자)
 
 ## 7. 성능/운영 기준
@@ -316,83 +339,3 @@ sequenceDiagram
 - AI 봇이 작성한 댓글·리뷰는 그룹장/그룹 관리자만 삭제할 수 있습니다.
 - 과제 삭제자는 별도로 기록하지 않습니다.
 - 외부 LLM과 Resend로 전송되는 데이터는 분석/발송에 필요한 최소 범위로 제한합니다.
-
-## 9. 운영 배포 (단일 GCE VM)
-
-### 9.1 결정 사항
-
-비용 최소화를 절대 기준으로 다음 구성을 운영 배포의 표준으로 확정합니다.
-
-- 컴퓨트. GCP Compute Engine `e2-small`(2 vCPU burst, 2GB RAM) 1대, 리전 `asia-northeast3`(서울), 1년 약정(CUD) 적용.
-- 컨테이너 오케스트레이션. Docker Compose로 `fe`, `be`, `worker`, `redis`, `caddy` 5개 서비스를 한 VM에서 실행합니다. 로컬 `docker-compose.yml`과 동일 구조의 `docker-compose.prod.yml`을 사용합니다.
-- Reverse proxy. Caddy 컨테이너 1개가 외부 `443`을 받아 `/`는 `fe:3000`, `/api/*`는 `be:4000`으로 라우팅합니다. nginx는 사용하지 않습니다(설정 단순성과 TLS 자동화 때문).
-- DNS / TLS / CDN. Cloudflare 무료 플랜이 DNS, TLS, CDN, DDoS 방어를 담당합니다. Caddy는 Cloudflare Origin Certificate로 origin TLS만 처리합니다. GCP Load Balancer는 사용하지 않습니다(고정비 회피).
-- DB. Supabase 매니지드 무료 티어로 시작합니다. 500MB 한도 임박 시 Supabase Pro 또는 Neon으로 전환합니다. Cloud SQL은 사용하지 않습니다.
-- Redis. VM 내부 컨테이너로만 운영합니다. Memorystore는 사용하지 않습니다. BullMQ 작업은 재시도로 복구되므로 단일 VM 로컬 Redis로 충분합니다.
-- CI/CD. GitHub Actions에서 이미지 빌드 후 GitHub Container Registry(GHCR)로 push, SSH로 VM에 접속해 `docker compose pull && docker compose up -d`를 실행합니다.
-- 시크릿. VM 내 `/etc/psstudio/.env.production`(권한 600) 파일을 단일 source로 사용합니다. 루트 `.env.local` SSOT 정책의 운영 대응이며, 키 누락 시 fail-fast 정책은 그대로 유지합니다.
-- 백업. Supabase 자동 백업을 1차 백업으로 사용하고, 주 1회 `pg_dump` 결과를 GCS Coldline에 업로드합니다.
-
-### 9.2 배포 토폴로지
-
-```mermaid
-flowchart LR
-    U[User Browser] --> CF[Cloudflare Free<br/>DNS + TLS + CDN]
-    CF --> VM[GCE e2-small<br/>asia-northeast3]
-    subgraph VM_compose[Docker Compose on VM]
-        CADDY[Caddy :443] -->|/| FE[fe Next.js :3000]
-        CADDY -->|/api/*| BE[be NestJS :4000]
-        WK[worker BullMQ]
-        RD[(redis :6379<br/>VM 내부 전용)]
-    end
-    VM --> CADDY
-    BE --> RD
-    WK --> RD
-    BE --> SB[(Supabase 무료 티어<br/>매니지드 Postgres)]
-    WK --> SB
-    BE --> AIAPI[OpenRouter / Requesty LLM]
-    WK --> AIAPI
-    BE --> EMAIL[Resend Email]
-    WK --> EMAIL
-    WK --> EXTSITE[(External Problem Sites)]
-    BACKUP[GCS Coldline<br/>주 1회 pg_dump] -. 업로드 .- WK
-```
-
-### 9.3 비용 가이드
-
-장기 운영 기준 월 예상 비용은 다음과 같습니다. egress 사용량에 따라 변동합니다.
-
-| 항목 | 월 비용(USD) |
-|---|---|
-| GCE `e2-small` (1년 CUD) | ~8 |
-| pd-balanced 20GB | ~2 |
-| Egress 10~30GB | ~1~4 |
-| Supabase 무료 티어 | 0 |
-| Cloudflare 무료 | 0 |
-| GitHub Actions / GHCR 무료 한도 | 0 |
-| GCS Coldline 백업 1GB | ~0.5 |
-| 합계 | ~12~15 |
-
-### 9.4 운영 제약 / 한계
-
-다음 항목은 단일 VM 구성의 명시적 제약입니다. 비용보다 우선해야 하는 요건이 생기면 9.5 전환 트리거를 따릅니다.
-
-- 단일 장애점. VM 1대이므로 인스턴스 장애 시 전체 다운타임이 발생합니다. Cloudflare “Always Online” 캐시로만 부분 완화합니다.
-- 무중단 배포 미지원. `docker compose up -d`는 짧은 다운타임을 허용합니다.
-- 수평 확장 없음. vertical scale(`e2-small` → `e2-medium`/`e2-standard-*`)만 가능합니다.
-- 리전 단일. 멀티 리전 페일오버는 제공하지 않습니다.
-
-### 9.5 2단계 전환 트리거 (Cloud Run 분리)
-
-다음 중 하나라도 만족하면 Cloud Run + Memorystore 구성으로 전환을 검토합니다.
-
-- 동시 사용자 200명 이상이 일상화되거나 VM CPU 평균 70% 이상이 1주 이상 지속.
-- 월 egress 100GB 초과.
-- 무중단 배포가 비즈니스 요구가 됨.
-- DB가 Supabase 무료 티어 한도를 초과하여 Pro 전환이 확정됨(이때 BE/Worker도 분리 검토).
-
-### 9.6 도메인 / 환경 분리
-
-- 단일 도메인 정책을 유지합니다(예: `app.psstudio.io`). FE/BE 도메인 분리는 하지 않습니다(OAuth 쿠키, CORS 단순성 유지).
-- Vercel은 사용하지 않습니다. FE 별도 배포가 필요해지는 시점은 9.5의 전환 트리거에 포함합니다.
-- 운영/스테이징은 VM을 추가하지 않고 동일 VM에 별도 Compose 프로젝트로 두는 것을 1차 안으로 합니다(필요 시 별도 VM으로 분리).
