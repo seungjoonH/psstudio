@@ -1,0 +1,56 @@
+# --- 의존성 ---
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# --- 환경·비밀 (루트 .env.local SSOT는 로컬 전용, 커밋 금지) ---
+**/.env
+**/.env.*
+!/env.example
+!**/env.example
+
+# --- 에이전트·로컬 가이드 (원격/릴리스 트리에서 제외) ---
+.cursor/
+CLAUDE.md
+AGENTS.md
+EXAMPLES.md
+PLAYBOOK.md
+
+# --- 내부 운영 문서(배포 메모 등, 레포 스냅샷에서 제외) ---
+docs/
+design/
+playbook/
+
+# --- 빌드·번들 산출물 ---
+**/.next/
+**/out/
+**/dist/
+**/build/
+**/.turbo/
+**/.vercel/
+*.tsbuildinfo
+
+# --- 테스트·커버리지 ---
+**/coverage/
+.nyc_output/
+**/.vitest/
+
+# --- 로그·캐시·OS ---
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- 로컬 키·인증서 ---
+*.pem
+*.key
+
+# --- Docker 볼륨 덤프 등(실수 커밋 방지) ---
+*.dump
+*.sql.gz

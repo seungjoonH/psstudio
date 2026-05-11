@@ -1,0 +1,5 @@
+packages:
+  - "be"
+  - "fe"
+  - "worker"
+  - "packages/*"
