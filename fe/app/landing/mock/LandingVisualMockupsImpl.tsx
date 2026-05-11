@@ -303,7 +303,7 @@ export function MiniNotifyList({
 }: {
   ariaLabel: string;
   maxItems?: number;
-  /** true일 때 칸반 열 안: 바깥 notifyShowcase와 이중 테두리를 만들지 않음 */
+  /** true일 때 칸반 열 안: 열 카드 안에만 넣고 별도 외곽 테두리 없음 */
   compact?: boolean;
   /** 히어로 단독 블록(2번 레퍼런스): 제목·전체 삭제를 한 줄에 두고 목록은 그 아래 */
   heroTitleId?: string;

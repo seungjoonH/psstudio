@@ -230,14 +230,11 @@
   color: var(--color-text);
 }
 
+/* surface 한 겹만 카드로 두고, 그 안에서는 그룹 쇼케이스처럼 레이아웃만 둡니다. */
 .notifyShowcase {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
-  border-radius: 14px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-elevated);
   max-width: 100%;
 }
 
