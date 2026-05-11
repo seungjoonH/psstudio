@@ -127,6 +127,12 @@ export function MiniNotifyList({
       actor: t("landing.mockNotify1Actor"),
     },
     {
+      kind: "user",
+      title: t("landing.mockNotify4Title"),
+      when: formatDateTime(t("landing.mockNotify4AtIso"), locale),
+      actor: t("landing.mockNotify4Actor"),
+    },
+    {
       kind: "deadline",
       title: t("landing.mockNotify2Title"),
       when: formatDateTime(t("landing.mockNotify2AtIso"), locale),
@@ -352,7 +358,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               </div>
             </header>
             <div className={h.columnBody}>
-              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} maxItems={3} compact />
+              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} maxItems={4} compact />
             </div>
           </article>
         </section>
