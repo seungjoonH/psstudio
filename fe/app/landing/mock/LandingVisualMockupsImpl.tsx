@@ -55,7 +55,7 @@ const LANDING_COHORT_IDS = {
   py: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
 } as const;
 
-const LANDING_REVIEW_AI_DELAY_MS = 3000;
+const LANDING_REVIEW_AI_DELAY_MS = 5000;
 
 /** 랜딩 diff 목업의 코드 행(줄 번호·부호·i18n 키)입니다. */
 const LANDING_DIFF_CODE_ROWS = [
@@ -1533,7 +1533,8 @@ export function MiniMergedCodeReviewAiTrigger() {
         <Button
           type="button"
           variant="secondary"
-          disabled={aiLoading || aiCommentVisible}
+          loading={aiLoading}
+          disabled={aiCommentVisible}
           onClick={requestAiFeedback}
           leftIcon={<Icon name="sparkles" size={14} aria-hidden />}
         >
