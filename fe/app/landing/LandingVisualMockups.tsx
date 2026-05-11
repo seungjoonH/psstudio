@@ -2,6 +2,7 @@
 
 // 랜딩용 예시 UI 더미와 장식 이미지를 렌더링합니다.
 import type { ReactNode } from "react";
+import Link from "next/link";
 import assignStyles from "../../src/assignments/AssignmentList.module.css";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { buildCls } from "../../src/lib/buildCls";
@@ -9,6 +10,7 @@ import { dueBadgeTone } from "../../src/lib/dueBadgeTone";
 import cohortStyles from "../groups/[groupId]/assignments/[assignmentId]/cohort/CohortAnalysisClient.module.css";
 import calStyles from "../groups/[groupId]/calendar/page.module.css";
 import diffStyles from "../groups/[groupId]/assignments/[assignmentId]/submissions/[submissionId]/diff/DiffViewerClient.module.css";
+import groupsExploreStyles from "../groups/explore/page.module.css";
 import homeStyles from "../page.module.css";
 import ccStyles from "../../src/ui/comments/CommentCard.module.css";
 import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
@@ -413,27 +415,91 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
 }
 
 const LANDING_GROUP_MOCKS = [
-  { nameKey: "landing.mockGroup1Name", metaKey: "landing.mockGroup1Meta" },
-  { nameKey: "landing.mockGroup2Name", metaKey: "landing.mockGroup2Meta" },
-  { nameKey: "landing.mockGroup3Name", metaKey: "landing.mockGroup3Meta" },
-  { nameKey: "landing.mockGroup4Name", metaKey: "landing.mockGroup4Meta" },
+  {
+    nameKey: "landing.mockGroup1Name",
+    metaKey: "landing.mockGroup1Meta",
+    memberCount: 12,
+    members: [
+      { nickname: "윤하", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-0/96/96" },
+      { nickname: "태양", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-1/96/96" },
+      { nickname: "서준", imageUrl: "https://picsum.photos/seed/psstudio-landing-g1-2/96/96" },
+    ],
+  },
+  {
+    nameKey: "landing.mockGroup2Name",
+    metaKey: "landing.mockGroup2Meta",
+    memberCount: 8,
+    members: [
+      { nickname: "하린", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-0/96/96" },
+      { nickname: "도윤", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-1/96/96" },
+      { nickname: "채원", imageUrl: "https://picsum.photos/seed/psstudio-landing-g2-2/96/96" },
+    ],
+  },
+  {
+    nameKey: "landing.mockGroup3Name",
+    metaKey: "landing.mockGroup3Meta",
+    memberCount: 24,
+    members: [
+      { nickname: "유진", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-0/96/96" },
+      { nickname: "시우", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-1/96/96" },
+      { nickname: "다은", imageUrl: "https://picsum.photos/seed/psstudio-landing-g3-2/96/96" },
+    ],
+  },
+  {
+    nameKey: "landing.mockGroup4Name",
+    metaKey: "landing.mockGroup4Meta",
+    memberCount: 6,
+    members: [
+      { nickname: "준호", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-0/96/96" },
+      { nickname: "수아", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-1/96/96" },
+      { nickname: "현우", imageUrl: "https://picsum.photos/seed/psstudio-landing-g4-2/96/96" },
+    ],
+  },
 ] as const;
 
 export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
   const { t } = useI18n();
+  const gx = groupsExploreStyles;
 
   return (
-    <div className={styles.groupsStripRoot} role="img" aria-label={ariaLabel}>
-      <ul className={styles.groupsStripList}>
+    <div className={buildCls(gx.layout, styles.landingGroupsWrap)} role="img" aria-label={ariaLabel}>
+      <div className={gx.actions}>
+        <Link href="/groups/new">
+          <Button type="button" variant="primary">
+            {t("groupsAdd.createTitle")}
+          </Button>
+        </Link>
+        <Link href="/join-by-code">
+          <Button type="button" variant="secondary">
+            {t("groupsAdd.joinTitle")}
+          </Button>
+        </Link>
+      </div>
+      <ul className={gx.grid}>
         {LANDING_GROUP_MOCKS.map((row) => (
-          <li key={row.nameKey} className={styles.groupMiniCard}>
-            <div className={styles.groupMiniHead}>
-              <span className={styles.groupMiniIcon} aria-hidden>
-                <Icon name="users" size={18} />
-              </span>
-              <strong className={styles.groupMiniName}>{t(row.nameKey)}</strong>
+          <li key={row.nameKey} className={gx.card}>
+            <div className={gx.cardLink}>
+              <strong className={gx.groupName}>
+                <Icon name="users" size={16} className={gx.groupNameIcon} aria-hidden />
+                {t(row.nameKey)}
+              </strong>
+              <p className={gx.groupDescription}>{"\u00a0"}</p>
+              <span className={gx.groupMeta}>{t(row.metaKey)}</span>
+              <div className={gx.avatarStack} aria-hidden>
+                {row.members.map((m) => (
+                  <UserAvatar
+                    key={`${row.nameKey}-${m.nickname}`}
+                    nickname={m.nickname}
+                    imageUrl={m.imageUrl}
+                    size={44}
+                    className={gx.avatar}
+                  />
+                ))}
+                {row.memberCount > 3 ? (
+                  <span className={gx.avatarMore}>+{row.memberCount - 3}</span>
+                ) : null}
+              </div>
             </div>
-            <p className={styles.groupMiniMeta}>{t(row.metaKey)}</p>
           </li>
         ))}
       </ul>
