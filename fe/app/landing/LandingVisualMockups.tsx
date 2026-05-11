@@ -347,31 +347,41 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
 }
 
 export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const c = calStyles;
+
+  const yearMonthCaption = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale === "ko" ? "ko-KR" : "en-US", {
+        year: "numeric",
+        month: "long",
+      }).format(new Date()),
+    [locale],
+  );
 
   return (
     <div className={buildCls(c.calendarCard, styles.landingMiniCal, styles.landingMiniCalWide)} role="img" aria-label={ariaLabel}>
-      <header className={c.calendarHeader}>
-        <div className={c.headerActions}>
+      <header className={buildCls(c.calendarHeader, styles.landingMiniCalHeader)}>
+        <div className={buildCls(c.headerActions, styles.landingMiniCalHeaderActions)}>
           <div className={c.periodNav}>
             <span className={c.iconNavBtn} aria-hidden>
               <Icon name="chevronRight" size={16} className={c.chevronLeft} />
             </span>
-            <strong className={c.periodLabel}>{t("landing.mockCalCaption")}</strong>
+            <strong className={buildCls(c.periodLabel, styles.landingMiniCalPeriodLabel)}>{yearMonthCaption}</strong>
             <span className={c.iconNavBtn} aria-hidden>
               <Icon name="chevronRight" size={16} />
             </span>
           </div>
-          <div className={c.rightActions}>
+          <div className={buildCls(c.rightActions, styles.landingMiniCalRight)}>
             <span className={c.todayLink}>{t("groupCalendar.today")}</span>
             <div className={c.viewSegmentWrap}>
               <SegmentedControl
                 name="landingCalView"
                 defaultValue="month"
                 aria-label={t("groupCalendar.viewAria")}
+                noWrap
                 options={[
-                  { value: "week", label: t("groupCalendar.week") },
+                  { value: "week", label: t("landing.mockCalWeekFocus") },
                   { value: "month", label: t("groupCalendar.month") },
                 ]}
               />
@@ -404,13 +414,13 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
               <header className={c.dayHead}>
                 <span className={buildCls(c.dayNumber, cell.outside ? c.dayNumberMuted : "").trim()}>{cell.day}</span>
               </header>
-              <ul className={c.assignmentList}>
+              <ul className={buildCls(c.assignmentList, styles.landingMiniCalAssignmentList)}>
                 {(cell.pills ?? []).map((pillIdx) => {
                   const key = CAL_PILL_KEYS[pillIdx];
                   if (key === undefined) return null;
                   return (
-                    <li key={`${idx}-${pillIdx}`} className={c.assignmentRow}>
-                      <span className={c.assignmentPill}>
+                    <li key={`${idx}-${pillIdx}`} className={buildCls(c.assignmentRow, styles.landingMiniCalAssignmentRow)}>
+                      <span className={buildCls(c.assignmentPill, styles.landingMiniCalPill)}>
                         <span className={c.assignmentTitle}>{t(key)}</span>
                       </span>
                     </li>
