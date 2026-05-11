@@ -23,7 +23,8 @@
 .card {
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: var(--color-surface);
+  /* 랜딩 목업: 칸반 feed와 동일한 흰색계열 패널 */
+  background: var(--color-surface-paper);
 }
 
 .cardLink {
@@ -76,7 +77,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 3px solid var(--color-surface);
+  border: 3px solid var(--color-surface-paper);
   background: var(--color-surface-muted);
   object-fit: cover;
 }
@@ -93,8 +94,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 3px solid var(--color-surface);
-  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface));
+  border: 3px solid var(--color-surface-paper);
+  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface-paper));
   color: var(--color-primary);
   font-size: 18px;
   font-weight: 500;
@@ -105,7 +106,7 @@
   padding: 12px 14px;
   border: 1px dashed var(--color-border);
   border-radius: 12px;
-  background: var(--color-surface);
+  background: var(--color-surface-paper);
   font-size: 13px;
   color: var(--color-muted);
 }
