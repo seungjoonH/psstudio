@@ -781,24 +781,60 @@ export function MiniDiffReview({
               <span className={d.codeTokens}>{t("landing.mockDiffCtx")}</span>
             </td>
           </tr>
-          <tr className={buildCls(d.diffRow, d.removeRow)}>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
             <td className={d.iconCell} />
             <td className={d.lineCell}>16</td>
+            <td className={d.lineCell}>16</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffCtxGap")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.removeRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>17</td>
             <td className={d.lineCell} />
             <td className={d.codeCell}>
               <span className={d.codeSign}>-</span>
-              <span className={d.codeTokens}>{t("landing.mockDiffOld")}</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffOld1")}</span>
             </td>
           </tr>
-          <tr className={buildCls(d.diffRow, d.addRow, d.reviewSpanSingle)}>
+          <tr className={buildCls(d.diffRow, d.removeRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>18</td>
+            <td className={d.lineCell} />
+            <td className={d.codeCell}>
+              <span className={d.codeSign}>-</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffOld2")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.addRow)}>
             <td className={d.iconCell}>
               <InlineAddButton className={d.inlineAddBtn} tabIndex={-1} aria-hidden />
             </td>
             <td className={d.lineCell} />
-            <td className={d.lineCell}>16</td>
+            <td className={d.lineCell}>17</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}>+</span>
-              <span className={d.codeTokens}>{t("landing.mockDiffNew")}</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffNew1")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.addRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell} />
+            <td className={d.lineCell}>18</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}>+</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffNew2")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.addRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell} />
+            <td className={d.lineCell}>19</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}>+</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffNew3")}</span>
             </td>
           </tr>
           <tr className={d.reviewRow}>
@@ -819,13 +855,22 @@ export function MiniDiffReview({
               </div>
             </td>
           </tr>
-          <tr className={buildCls(d.diffRow, d.contextRow, withAiFollowUp && d.reviewSpanSingle)}>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
             <td className={d.iconCell} />
-            <td className={d.lineCell}>17</td>
-            <td className={d.lineCell}>17</td>
+            <td className={d.lineCell}>20</td>
+            <td className={d.lineCell}>20</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}> </span>
               <span className={d.codeTokens}>{t("landing.mockDiffPostCtx")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>21</td>
+            <td className={d.lineCell}>21</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffElseHi")}</span>
             </td>
           </tr>
           {withAiFollowUp ? (
@@ -851,17 +896,8 @@ export function MiniDiffReview({
           ) : null}
           <tr className={buildCls(d.diffRow, d.contextRow)}>
             <td className={d.iconCell} />
-            <td className={d.lineCell}>18</td>
-            <td className={d.lineCell}>18</td>
-            <td className={d.codeCell}>
-              <span className={d.codeSign}> </span>
-              <span className={d.codeTokens}>{t("landing.mockDiffElseHi")}</span>
-            </td>
-          </tr>
-          <tr className={buildCls(d.diffRow, d.contextRow)}>
-            <td className={d.iconCell} />
-            <td className={d.lineCell}>19</td>
-            <td className={d.lineCell}>19</td>
+            <td className={d.lineCell}>22</td>
+            <td className={d.lineCell}>22</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}> </span>
               <span className={d.codeTokens}>{t("landing.mockDiffCloseWhile")}</span>
@@ -869,8 +905,8 @@ export function MiniDiffReview({
           </tr>
           <tr className={buildCls(d.diffRow, d.contextRow)}>
             <td className={d.iconCell} />
-            <td className={d.lineCell}>20</td>
-            <td className={d.lineCell}>20</td>
+            <td className={d.lineCell}>23</td>
+            <td className={d.lineCell}>23</td>
             <td className={d.codeCell}>
               <span className={d.codeSign}> </span>
               <span className={d.codeTokens}>{t("landing.mockDiffReturnLine")}</span>
