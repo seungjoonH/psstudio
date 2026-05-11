@@ -132,8 +132,9 @@ export const messages = {
       featureReviewAiLead: "",
       featureCohortTitle: "과제 제출 코드 AI 비교 분석",
       featureCohortLead: "같은 과제에 올라온 풀이들을 묶어 차이를 요약합니다.",
-      groupsShowcaseTitle: "여러 그룹에 함께 참여할 수 있습니다",
-      groupsShowcaseLead: "스터디마다 그룹을 나눠 두어도 한 계정에서 과제와 알림을 모아 봅니다.",
+      groupsShowcaseTitle: "그룹",
+      groupsShowcaseLead:
+        "여러 그룹에 함께 참여할 수 있습니다. 스터디마다 그룹을 나눠 두어도 한 계정에서 과제와 알림을 모아 봅니다.",
       mockupHomeKanbanAria: "홈 학습 현황 보드 예시",
       mockupCalendarAria: "그룹 캘린더(월간) 예시",
       mockupAssignmentsAria: "과제 목록 카드 예시",
@@ -962,8 +963,9 @@ export const messages = {
       featureReviewAiLead: "",
       featureCohortTitle: "AI cohort comparison of submissions",
       featureCohortLead: "Compare solutions on the same assignment in one report.",
-      groupsShowcaseTitle: "Join multiple groups at once",
-      groupsShowcaseLead: "Keep assignments and alerts in one account even when each study runs its own group.",
+      groupsShowcaseTitle: "Groups",
+      groupsShowcaseLead:
+        "Join multiple groups at once. Keep assignments and alerts in one account even when each study runs its own group.",
       mockupHomeKanbanAria: "Sample home learning board",
       mockupCalendarAria: "Sample group calendar (month view)",
       mockupAssignmentsAria: "Sample assignment list card",
