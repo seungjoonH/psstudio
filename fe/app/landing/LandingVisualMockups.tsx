@@ -46,12 +46,6 @@ function formatDateTime(value: string, locale: string): string {
   }).format(new Date(value));
 }
 
-function getDaysLeft(dueAt: string): number {
-  const now = Date.now();
-  const due = new Date(dueAt).getTime();
-  return Math.max(0, Math.ceil((due - now) / (24 * 60 * 60 * 1000)));
-}
-
 const CAL_PILL_KEYS = [
   "landing.mockPgCal1",
   "landing.mockPgCal2",
@@ -276,25 +270,33 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
               <ul className={h.list}>
                 {todoRowsSorted.map((row) => {
                   const dueAt = t(row.dueIsoKey);
-                  const todoDays = getDaysLeft(dueAt);
-                  const todoLate = new Date(dueAt).getTime() < Date.now();
+                  const dueMs = new Date(dueAt).getTime();
+                  const now = Date.now();
+                  const todoLate = dueMs < now;
+                  const rawDaysLeft = Math.max(0, Math.ceil((dueMs - now) / (24 * 60 * 60 * 1000)));
+                  const displayDays = Math.min(10, rawDaysLeft);
+                  const dueTone = dueBadgeTone(todoLate, displayDays);
                   return (
                     <li key={row.titleKey}>
-                      <div className={h.feedRowStatic}>
+                      <div
+                        className={buildCls(
+                          h.feedRowStatic,
+                          todoLate && styles.landingTodoPastDue,
+                        )}
+                      >
                         <div className={h.feedMain}>
-                          <span className={buildCls(h.listTitle, styles.psProblemTitle)}>{t(row.titleKey)}</span>
+                          <div className={styles.landingTodoTitleRow}>
+                            <span className={buildCls(h.listTitle, styles.psProblemTitle, styles.landingTodoTitleText)}>
+                              {t(row.titleKey)}
+                            </span>
+                            <Badge tone={dueTone} className={h.duePill}>
+                              {todoLate ? t("assignment.list.late") : `D-${displayDays}`}
+                            </Badge>
+                          </div>
                           <span className={h.listMeta}>
                             <Badge tone="neutral">{t(row.groupKey)}</Badge>
                             <Badge tone="neutral">{t(row.platformKey)}</Badge>
                             <Badge tone="neutral">{t(row.algoKey)}</Badge>
-                          </span>
-                          <span className={h.listMeta}>
-                            <Badge tone={dueBadgeTone(todoLate, todoDays)} className={h.duePill}>
-                              {todoLate ? t("assignment.list.late") : formatDateTime(dueAt, locale)}
-                            </Badge>
-                            <Badge tone={row.solved ? "success" : "danger"}>
-                              {row.solved ? t("assignment.detail.solvedBadge") : t("assignment.detail.unsolvedBadge")}
-                            </Badge>
                           </span>
                         </div>
                       </div>

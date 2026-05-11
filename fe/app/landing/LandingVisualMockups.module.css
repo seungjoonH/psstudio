@@ -51,6 +51,24 @@
   background: color-mix(in oklab, var(--color-surface-muted) 42%, var(--color-surface-paper));
 }
 
+/* 해야 할 일: 마감(기한 경과) 카드는 열 기본 배경보다 음영을 우선합니다. */
+.landingHomeColumn :global(.feedRowStatic).landingTodoPastDue {
+  background: color-mix(in oklab, var(--color-muted) 20%, var(--color-surface)) !important;
+}
+
+.landingTodoTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.landingTodoTitleText {
+  min-width: 0;
+}
+
 .landingFakeLink {
   cursor: default;
   pointer-events: none;
