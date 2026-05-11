@@ -20,13 +20,24 @@
   font-size: 0.9rem;
 }
 
+.psProblemTitle {
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
 .landingHomeBoard {
   grid-template-columns: 1fr !important;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 720px) {
   .landingHomeBoard {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1100px) {
+  .landingHomeBoard {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
@@ -51,9 +62,147 @@
 
 .landingMiniCalWide {
   width: 100%;
-  max-width: min(100%, 900px);
+  max-width: min(100%, 1180px);
   margin-left: auto;
   margin-right: auto;
+}
+
+.landingNotifyCompact {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.mergedReviewRoot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 100%;
+}
+
+.mergedReviewToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mergedReviewHint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.codeCompareGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .codeCompareGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.codeCompareCol {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.codeCompareLabel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.codeComparePre {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mergedAiThread {
+  margin-top: var(--space-1);
+}
+
+.mergedAiAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--color-primary) 18%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.groupsStripRoot {
+  max-width: 100%;
+}
+
+.groupsStripList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .groupsStripList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .groupsStripList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.groupMiniCard {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  min-width: 0;
+}
+
+.groupMiniHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupMiniIcon {
+  display: inline-flex;
+  color: var(--color-primary);
+}
+
+.groupMiniName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.groupMiniMeta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-muted);
 }
 
 .landingCohortOuter {

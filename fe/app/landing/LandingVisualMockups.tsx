@@ -86,6 +86,73 @@ const MAY_2026_CAL: { day: number; outside: boolean; today: boolean; pills?: num
 
 const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
+type HeroNotifyKind = "assignment" | "user" | "deadline";
+
+export function MiniNotifyList({
+  ariaLabel,
+  maxItems,
+  compact,
+}: {
+  ariaLabel: string;
+  maxItems?: number;
+  compact?: boolean;
+}) {
+  const { locale, t } = useI18n();
+  const h = homeStyles;
+  const rows: { kind: HeroNotifyKind; title: string; when: string; actor?: string }[] = [
+    {
+      kind: "assignment",
+      title: t("landing.mockNotifyAssignCreatedTitle"),
+      when: formatDateTime(t("landing.mockNotifyAssignCreatedAtIso"), locale),
+    },
+    {
+      kind: "user",
+      title: t("landing.mockNotify1Title"),
+      when: formatDateTime(t("landing.mockNotify1AtIso"), locale),
+      actor: t("landing.mockNotify1Actor"),
+    },
+    {
+      kind: "deadline",
+      title: t("landing.mockNotify2Title"),
+      when: formatDateTime(t("landing.mockNotify2AtIso"), locale),
+    },
+    {
+      kind: "user",
+      title: t("landing.mockNotify3Title"),
+      when: formatDateTime(t("landing.mockNotify3AtIso"), locale),
+      actor: t("landing.mockNotify3Actor"),
+    },
+  ];
+  const shown = maxItems !== undefined ? rows.slice(0, maxItems) : rows;
+
+  return (
+    <div
+      className={buildCls(styles.landingNotifyOuter, compact ? styles.landingNotifyCompact : "")}
+      {...(compact ? { "aria-hidden": true } : { role: "img", "aria-label": ariaLabel })}
+    >
+      <ul className={h.list}>
+        {shown.map((item, idx) => (
+          <li key={`${idx}-${item.kind}`}>
+            <div className={h.feedRowStatic}>
+              {item.kind === "assignment" ? null : item.kind === "deadline" ? (
+                <span className={buildCls(h.feedGlyph, h.noticeGlyph)} aria-hidden>
+                  <Icon name="calendar" size={18} />
+                </span>
+              ) : (
+                <UserAvatar nickname={item.actor ?? ""} imageUrl="" size={40} className={h.feedAvatar} />
+              )}
+              <div className={h.feedMain}>
+                <span className={h.notifTitle}>{item.title}</span>
+                <span className={h.listTime}>{item.when}</span>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function LandingHeroDecor() {
   return (
     <div className={styles.decorWrap}>
@@ -94,14 +161,66 @@ export function LandingHeroDecor() {
   );
 }
 
-/** 홈과 동일 CSS. 알림 열 제외(히어로 상단 알림으로 분리). */
+const LANDING_TODO_MOCKS = [
+  {
+    titleKey: "landing.mockKanbanTodo1Title",
+    groupKey: "landing.mockKanbanTodo1Group",
+    platformKey: "landing.mockKanbanTodo1Platform",
+    algoKey: "landing.mockKanbanTodo1Algo",
+    dueIsoKey: "landing.mockKanbanTodo1DueIso",
+    solved: false,
+  },
+  {
+    titleKey: "landing.mockKanbanTodo2Title",
+    groupKey: "landing.mockKanbanTodo2Group",
+    platformKey: "landing.mockKanbanTodo2Platform",
+    algoKey: "landing.mockKanbanTodo2Algo",
+    dueIsoKey: "landing.mockKanbanTodo2DueIso",
+    solved: true,
+  },
+  {
+    titleKey: "landing.mockKanbanTodo3Title",
+    groupKey: "landing.mockKanbanTodo3Group",
+    platformKey: "landing.mockKanbanTodo3Platform",
+    algoKey: "landing.mockKanbanTodo3Algo",
+    dueIsoKey: "landing.mockKanbanTodo3DueIso",
+    solved: false,
+  },
+  {
+    titleKey: "landing.mockKanbanTodo4Title",
+    groupKey: "landing.mockKanbanTodo4Group",
+    platformKey: "landing.mockKanbanTodo4Platform",
+    algoKey: "landing.mockKanbanTodo4Algo",
+    dueIsoKey: "landing.mockKanbanTodo4DueIso",
+    solved: false,
+  },
+  {
+    titleKey: "landing.mockKanbanTodo5Title",
+    groupKey: "landing.mockKanbanTodo5Group",
+    platformKey: "landing.mockKanbanTodo5Platform",
+    algoKey: "landing.mockKanbanTodo5Algo",
+    dueIsoKey: "landing.mockKanbanTodo5DueIso",
+    solved: true,
+  },
+] as const;
+
+const LANDING_DONE_MOCKS = [
+  {
+    titleKey: "landing.mockHomeDoneTitle",
+    langKey: "landing.mockHomeDoneLang",
+    atIsoKey: "landing.mockHomeDoneAtIso",
+  },
+  {
+    titleKey: "landing.mockHomeDone2Title",
+    langKey: "landing.mockHomeDone2Lang",
+    atIsoKey: "landing.mockHomeDone2AtIso",
+  },
+] as const;
+
+/** 홈과 동일 CSS. 3열(해야 할 일·한 일·최근 알림 미리보기) + 하단 전체 알림은 LandingClient에서 분리 렌더. */
 export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
   const { locale, t } = useI18n();
   const h = homeStyles;
-  const todoDue = t("landing.mockHomeTodoDueIso");
-  const doneAt = t("landing.mockHomeDoneAtIso");
-  const todoDays = getDaysLeft(todoDue);
-  const todoLate = new Date(todoDue).getTime() < Date.now();
 
   return (
     <div className={styles.landingHomeOuter} role="img" aria-label={ariaLabel}>
@@ -130,19 +249,33 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
             </header>
             <div className={h.columnBody}>
               <ul className={h.list}>
-                <li>
-                  <div className={h.feedRowStatic}>
-                    <div className={h.feedMain}>
-                      <span className={h.listTitle}>{t("landing.mockHomeTodoTitle")}</span>
-                      <span className={h.listMeta}>
-                        <Badge tone="neutral">{t("landing.mockHomeTodoPlatform")}</Badge>
-                      </span>
-                      <Badge tone={dueBadgeTone(todoLate, todoDays)} className={h.duePill}>
-                        {formatDateTime(todoDue, locale)}
-                      </Badge>
-                    </div>
-                  </div>
-                </li>
+                {LANDING_TODO_MOCKS.map((row) => {
+                  const dueAt = t(row.dueIsoKey);
+                  const todoDays = getDaysLeft(dueAt);
+                  const todoLate = new Date(dueAt).getTime() < Date.now();
+                  return (
+                    <li key={row.titleKey}>
+                      <div className={h.feedRowStatic}>
+                        <div className={h.feedMain}>
+                          <span className={buildCls(h.listTitle, styles.psProblemTitle)}>{t(row.titleKey)}</span>
+                          <span className={h.listMeta}>
+                            <Badge tone="neutral">{t(row.groupKey)}</Badge>
+                            <Badge tone="neutral">{t(row.platformKey)}</Badge>
+                            <Badge tone="neutral">{t(row.algoKey)}</Badge>
+                          </span>
+                          <span className={h.listMeta}>
+                            <Badge tone={dueBadgeTone(todoLate, todoDays)} className={h.duePill}>
+                              {todoLate ? t("assignment.list.late") : formatDateTime(dueAt, locale)}
+                            </Badge>
+                            <Badge tone={row.solved ? "success" : "danger"}>
+                              {row.solved ? t("assignment.detail.solvedBadge") : t("assignment.detail.unsolvedBadge")}
+                            </Badge>
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </article>
@@ -159,18 +292,40 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
             </header>
             <div className={h.columnBody}>
               <ul className={h.list}>
-                <li>
-                  <div className={h.feedRowStatic}>
-                    <div className={h.feedMain}>
-                      <span className={h.listTitle}>{t("landing.mockHomeDoneTitle")}</span>
-                      <span className={h.listMeta}>
-                        <span className={h.listLang}>{t("landing.mockHomeDoneLang")}</span>
-                        <span className={h.listTime}>{formatDateTime(doneAt, locale)}</span>
-                      </span>
+                {LANDING_DONE_MOCKS.map((row) => (
+                  <li key={row.titleKey}>
+                    <div className={h.feedRowStatic}>
+                      <div className={h.feedMain}>
+                        <span className={buildCls(h.listTitle, styles.psProblemTitle)}>{t(row.titleKey)}</span>
+                        <span className={h.listMeta}>
+                          <span className={h.listLang}>{t(row.langKey)}</span>
+                          <span className={h.listTime}>{formatDateTime(t(row.atIsoKey), locale)}</span>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </li>
+                  </li>
+                ))}
               </ul>
+            </div>
+          </article>
+
+          <article className={buildCls(h.column, styles.landingHomeColumn)}>
+            <header className={h.columnHead}>
+              <span className={buildCls(h.cardIcon, h.noticeIcon)} aria-hidden>
+                <Icon name="mail" size={16} />
+              </span>
+              <div className={h.columnHeadBody}>
+                <div className={h.columnHeadTop}>
+                  <h3 className={h.cardTitle}>{t("home.recent.notifications.title")}</h3>
+                  <span className={buildCls(h.viewAllLink, styles.landingFakeLink)} tabIndex={-1} aria-hidden>
+                    {t("home.recent.notifications.viewAll")}
+                  </span>
+                </div>
+                <p className={h.cardDesc}>{t("home.kanban.noticeDesc")}</p>
+              </div>
+            </header>
+            <div className={h.columnBody}>
+              <MiniNotifyList ariaLabel={t("landing.mockupNotifyPreviewAria")} maxItems={1} compact />
             </div>
           </article>
         </section>
@@ -258,118 +413,244 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
-export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
+const LANDING_GROUP_MOCKS = [
+  { nameKey: "landing.mockGroup1Name", metaKey: "landing.mockGroup1Meta" },
+  { nameKey: "landing.mockGroup2Name", metaKey: "landing.mockGroup2Meta" },
+  { nameKey: "landing.mockGroup3Name", metaKey: "landing.mockGroup3Meta" },
+  { nameKey: "landing.mockGroup4Name", metaKey: "landing.mockGroup4Meta" },
+] as const;
+
+export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
   const { t } = useI18n();
-  const a = assignStyles;
-  const dueAt = t("landing.mockAssignmentDueIso");
-  const due = new Date(dueAt);
-  const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
-  const isLate = due.getTime() < Date.now();
-  const dueTone = dueBadgeTone(isLate, daysLeft);
-  const platform = t("landing.mockAssignmentPlatform");
 
   return (
-    <div className={styles.landingAssignOuter} role="img" aria-label={ariaLabel}>
-      <ul className={a.list}>
-        <li className={buildCls(a.row, isLate ? a.rowPastDue : undefined)}>
-          <div className={a.link}>
-            <div className={a.head}>
-              <div className={a.headMain}>
-                <div className={a.titleRow}>
-                  <span className={a.title}>
-                    <Icon name="book" size={16} className={a.titleIcon} />
-                    {t("landing.mockAssignmentCardTitle")}
-                  </span>
-                  <div className={a.titleNear}>
-                    <Badge tone="neutral" chipIndex={1}>
-                      {platform}
-                    </Badge>
-                    <DifficultyBadge platform={platform} difficulty={t("landing.mockAssignmentDifficulty")} />
-                  </div>
-                </div>
-              </div>
-              <div className={a.headRight}>
-                <div className={a.topRight}>
-                  <Badge tone={dueTone}>{isLate ? t("assignment.list.late") : `D-${daysLeft}`}</Badge>
-                  <Badge tone="danger">{t("assignment.list.unsolved")}</Badge>
-                </div>
-              </div>
+    <div className={styles.groupsStripRoot} role="img" aria-label={ariaLabel}>
+      <ul className={styles.groupsStripList}>
+        {LANDING_GROUP_MOCKS.map((row) => (
+          <li key={row.nameKey} className={styles.groupMiniCard}>
+            <div className={styles.groupMiniHead}>
+              <span className={styles.groupMiniIcon} aria-hidden>
+                <Icon name="users" size={18} />
+              </span>
+              <strong className={styles.groupMiniName}>{t(row.nameKey)}</strong>
             </div>
-          </div>
-        </li>
+            <p className={styles.groupMiniMeta}>{t(row.metaKey)}</p>
+          </li>
+        ))}
       </ul>
     </div>
   );
 }
 
-export function MiniDiffReview({ ariaLabel }: { ariaLabel: string }) {
+const LANDING_ASSIGNMENT_SHOWCASE = [
+  {
+    titleKey: "landing.mockAssignShow1Title",
+    platformKey: "landing.mockAssignShow1Platform",
+    difficultyKey: "landing.mockAssignShow1Difficulty",
+    dueIsoKey: "landing.mockAssignShow1DueIso",
+    solved: false,
+  },
+  {
+    titleKey: "landing.mockAssignShow2Title",
+    platformKey: "landing.mockAssignShow2Platform",
+    difficultyKey: "landing.mockAssignShow2Difficulty",
+    dueIsoKey: "landing.mockAssignShow2DueIso",
+    solved: true,
+  },
+  {
+    titleKey: "landing.mockAssignShow3Title",
+    platformKey: "landing.mockAssignShow3Platform",
+    difficultyKey: "landing.mockAssignShow3Difficulty",
+    dueIsoKey: "landing.mockAssignShow3DueIso",
+    solved: false,
+  },
+  {
+    titleKey: "landing.mockAssignShow4Title",
+    platformKey: "landing.mockAssignShow4Platform",
+    difficultyKey: "landing.mockAssignShow4Difficulty",
+    dueIsoKey: "landing.mockAssignShow4DueIso",
+    solved: true,
+  },
+  {
+    titleKey: "landing.mockAssignShow5Title",
+    platformKey: "landing.mockAssignShow5Platform",
+    difficultyKey: "landing.mockAssignShow5Difficulty",
+    dueIsoKey: "landing.mockAssignShow5DueIso",
+    solved: false,
+  },
+] as const;
+
+export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
+  const { t } = useI18n();
+  const a = assignStyles;
+
+  return (
+    <div className={styles.landingAssignOuter} role="img" aria-label={ariaLabel}>
+      <ul className={a.list}>
+        {LANDING_ASSIGNMENT_SHOWCASE.map((row) => {
+          const dueAt = t(row.dueIsoKey);
+          const due = new Date(dueAt);
+          const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
+          const isLate = due.getTime() < Date.now();
+          const dueTone = dueBadgeTone(isLate, daysLeft);
+          const platform = t(row.platformKey);
+          return (
+            <li key={row.titleKey} className={buildCls(a.row, isLate ? a.rowPastDue : undefined)}>
+              <div className={a.link}>
+                <div className={a.head}>
+                  <div className={a.headMain}>
+                    <div className={a.titleRow}>
+                      <span className={a.title}>
+                        <Icon name="book" size={16} className={a.titleIcon} />
+                        <span className={styles.psProblemTitle}>{t(row.titleKey)}</span>
+                      </span>
+                      <div className={a.titleNear}>
+                        <Badge tone="neutral" chipIndex={1}>
+                          {platform}
+                        </Badge>
+                        <DifficultyBadge platform={platform} difficulty={t(row.difficultyKey)} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className={a.headRight}>
+                    <div className={a.topRight}>
+                      <Badge tone={dueTone}>{isLate ? t("assignment.list.late") : `D-${daysLeft}`}</Badge>
+                      <Badge tone={row.solved ? "success" : "danger"}>
+                        {row.solved ? t("assignment.detail.solvedBadge") : t("assignment.detail.unsolvedBadge")}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+export function MiniDiffReview({ ariaLabel, embedded }: { ariaLabel: string; embedded?: boolean }) {
   const { locale, t } = useI18n();
   const d = diffStyles;
 
+  const inner = (
+    <div className={d.tableWrap}>
+      <table className={d.table}>
+        <tbody>
+          <tr className={buildCls(d.diffRow, d.contextRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>6</td>
+            <td className={d.lineCell}>6</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}> </span>
+              <span className={d.codeTokens}>{t("landing.mockDiffCtx")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.removeRow)}>
+            <td className={d.iconCell} />
+            <td className={d.lineCell}>7</td>
+            <td className={d.lineCell} />
+            <td className={d.codeCell}>
+              <span className={d.codeSign}>-</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffOld")}</span>
+            </td>
+          </tr>
+          <tr className={buildCls(d.diffRow, d.addRow)}>
+            <td className={d.iconCell}>
+              <InlineAddButton className={d.inlineAddBtn} tabIndex={-1} aria-hidden />
+            </td>
+            <td className={d.lineCell} />
+            <td className={d.lineCell}>7</td>
+            <td className={d.codeCell}>
+              <span className={d.codeSign}>+</span>
+              <span className={d.codeTokens}>{t("landing.mockDiffNew")}</span>
+            </td>
+          </tr>
+          <tr className={d.reviewRow}>
+            <td colSpan={4} className={d.reviewCell}>
+              <div className={d.reviewBox}>
+                <article className={ccStyles.card}>
+                  <div className={ccStyles.row}>
+                    <div className={ccStyles.avatarFallback} aria-hidden>
+                      {t("landing.mockDiffAvatarLetter")}
+                    </div>
+                    <div className={ccStyles.body}>
+                      <div className={ccStyles.headRow}>
+                        <strong className={ccStyles.author}>{t("landing.mockDiffAuthor1")}</strong>
+                        <span className={ccStyles.time}>{formatDateTime(t("landing.mockDiffCommentAtIso"), locale)}</span>
+                      </div>
+                      <div className={ccStyles.subHead}>{t("landing.mockDiffLineRef")}</div>
+                      <div className={ccStyles.markdownWrap}>
+                        <MarkdownPreview content={t("landing.mockDiffBody1")} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className={ccStyles.replyFooter}>
+                    <button type="button" className={ccStyles.replyOpenBtn} tabIndex={-1}>
+                      {t("landing.mockCommentReplyCta")}
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (embedded) {
+    return <div className={styles.landingDiffOuter}>{inner}</div>;
+  }
+
   return (
     <div className={styles.landingDiffOuter} role="img" aria-label={ariaLabel}>
-      <div className={d.tableWrap}>
-        <table className={d.table}>
-          <tbody>
-            <tr className={buildCls(d.diffRow, d.contextRow)}>
-              <td className={d.iconCell} />
-              <td className={d.lineCell}>6</td>
-              <td className={d.lineCell}>6</td>
-              <td className={d.codeCell}>
-                <span className={d.codeSign}> </span>
-                <span className={d.codeTokens}>{t("landing.mockDiffCtx")}</span>
-              </td>
-            </tr>
-            <tr className={buildCls(d.diffRow, d.removeRow)}>
-              <td className={d.iconCell} />
-              <td className={d.lineCell}>7</td>
-              <td className={d.lineCell} />
-              <td className={d.codeCell}>
-                <span className={d.codeSign}>-</span>
-                <span className={d.codeTokens}>{t("landing.mockDiffOld")}</span>
-              </td>
-            </tr>
-            <tr className={buildCls(d.diffRow, d.addRow)}>
-              <td className={d.iconCell}>
-                <InlineAddButton className={d.inlineAddBtn} tabIndex={-1} aria-hidden />
-              </td>
-              <td className={d.lineCell} />
-              <td className={d.lineCell}>7</td>
-              <td className={d.codeCell}>
-                <span className={d.codeSign}>+</span>
-                <span className={d.codeTokens}>{t("landing.mockDiffNew")}</span>
-              </td>
-            </tr>
-            <tr className={d.reviewRow}>
-              <td colSpan={4} className={d.reviewCell}>
-                <div className={d.reviewBox}>
-                  <article className={ccStyles.card}>
-                    <div className={ccStyles.row}>
-                      <div className={ccStyles.avatarFallback} aria-hidden>
-                        {t("landing.mockDiffAvatarLetter")}
-                      </div>
-                      <div className={ccStyles.body}>
-                        <div className={ccStyles.headRow}>
-                          <strong className={ccStyles.author}>{t("landing.mockDiffAuthor1")}</strong>
-                          <span className={ccStyles.time}>{formatDateTime(t("landing.mockDiffCommentAtIso"), locale)}</span>
-                        </div>
-                        <div className={ccStyles.subHead}>{t("landing.mockDiffLineRef")}</div>
-                        <div className={ccStyles.markdownWrap}>
-                          <MarkdownPreview content={t("landing.mockDiffBody1")} />
-                        </div>
-                      </div>
-                    </div>
-                    <div className={ccStyles.replyFooter}>
-                      <button type="button" className={ccStyles.replyOpenBtn} tabIndex={-1}>
-                        {t("landing.mockCommentReplyCta")}
-                      </button>
-                    </div>
-                  </article>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {inner}
+    </div>
+  );
+}
+
+export function MiniMergedCodeReviewAi({ ariaLabel }: { ariaLabel: string }) {
+  const { locale, t } = useI18n();
+
+  return (
+    <div className={styles.mergedReviewRoot} role="img" aria-label={ariaLabel}>
+      <div className={styles.mergedReviewToolbar}>
+        <Button type="button" variant="primary" tabIndex={-1}>
+          {t("landing.mockAiReviewButton")}
+        </Button>
+      </div>
+      <p className={styles.mergedReviewHint}>{t("landing.mockAiReviewHint")}</p>
+      <div className={styles.codeCompareGrid} aria-hidden>
+        <div className={styles.codeCompareCol}>
+          <p className={styles.codeCompareLabel}>{t("landing.mockCompareLeftTitle")}</p>
+          <pre className={styles.codeComparePre}>{t("landing.mockCompareLeftCode")}</pre>
+        </div>
+        <div className={styles.codeCompareCol}>
+          <p className={styles.codeCompareLabel}>{t("landing.mockCompareRightTitle")}</p>
+          <pre className={styles.codeComparePre}>{t("landing.mockCompareRightCode")}</pre>
+        </div>
+      </div>
+      <MiniDiffReview ariaLabel={t("landing.mockupReviewAria")} embedded />
+      <div className={styles.mergedAiThread}>
+        <article className={ccStyles.card}>
+          <div className={ccStyles.row}>
+            <div className={buildCls(ccStyles.avatarFallback, styles.mergedAiAvatar)} aria-hidden>
+              <Icon name="sparkles" size={16} />
+            </div>
+            <div className={ccStyles.body}>
+              <div className={ccStyles.headRow}>
+                <strong className={ccStyles.author}>{t("landing.mockAiCommentAuthor")}</strong>
+                <span className={ccStyles.time}>{formatDateTime(t("landing.mockAiCommentAtIso"), locale)}</span>
+              </div>
+              <div className={ccStyles.subHead}>{t("landing.mockAiCommentLineRef")}</div>
+              <div className={ccStyles.markdownWrap}>
+                <MarkdownPreview content={t("landing.mockAiCommentBody")} />
+              </div>
+            </div>
+          </div>
+        </article>
       </div>
     </div>
   );
@@ -413,61 +694,6 @@ export function MiniCohortReportShowcase({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
-type HeroNotifyKind = "assignment" | "user" | "deadline";
-
-export function MiniNotifyList({ ariaLabel }: { ariaLabel: string }) {
-  const { locale, t } = useI18n();
-  const h = homeStyles;
-  const rows: { kind: HeroNotifyKind; title: string; when: string; actor?: string }[] = [
-    {
-      kind: "assignment",
-      title: t("landing.mockNotifyAssignCreatedTitle"),
-      when: formatDateTime(t("landing.mockNotifyAssignCreatedAtIso"), locale),
-    },
-    {
-      kind: "user",
-      title: t("landing.mockNotify1Title"),
-      when: formatDateTime(t("landing.mockNotify1AtIso"), locale),
-      actor: t("landing.mockNotify1Actor"),
-    },
-    {
-      kind: "deadline",
-      title: t("landing.mockNotify2Title"),
-      when: formatDateTime(t("landing.mockNotify2AtIso"), locale),
-    },
-    {
-      kind: "user",
-      title: t("landing.mockNotify3Title"),
-      when: formatDateTime(t("landing.mockNotify3AtIso"), locale),
-      actor: t("landing.mockNotify3Actor"),
-    },
-  ];
-
-  return (
-    <div className={styles.landingNotifyOuter} role="img" aria-label={ariaLabel}>
-      <ul className={h.list}>
-        {rows.map((item) => (
-          <li key={item.title}>
-            <div className={h.feedRowStatic}>
-              {item.kind === "assignment" ? null : item.kind === "deadline" ? (
-                <span className={buildCls(h.feedGlyph, h.noticeGlyph)} aria-hidden>
-                  <Icon name="calendar" size={18} />
-                </span>
-              ) : (
-                <UserAvatar nickname={item.actor ?? ""} imageUrl="" size={40} className={h.feedAvatar} />
-              )}
-              <div className={h.feedMain}>
-                <span className={h.notifTitle}>{item.title}</span>
-                <span className={h.listTime}>{item.when}</span>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 export function RoleGlyph({ icon }: { icon: IconName }) {
   return (
     <div className={styles.roleGlyph}>
@@ -492,7 +718,7 @@ export function FeatureBand({
       <div className={styles.featureMock}>{mock}</div>
       <div className={styles.featureText}>
         <h3 className={styles.featureTitle}>{title}</h3>
-        <p className={styles.featureLead}>{lead}</p>
+        {lead.trim().length > 0 ? <p className={styles.featureLead}>{lead}</p> : null}
       </div>
     </div>
   );

@@ -9,16 +9,13 @@ import btnStyles from "../../src/ui/Button.module.css";
 import styles from "./landing.module.css";
 import {
   FeatureBand,
-  LandingFlowStrip,
-  LandingHeroDecor,
-  MiniAiPanel,
   MiniAssignmentShowcase,
   MiniCalendar,
   MiniCohortReportShowcase,
-  MiniDiffReview,
+  MiniGroupsStrip,
   MiniHomeKanban,
+  MiniMergedCodeReviewAi,
   MiniNotifyList,
-  RoleGlyph,
 } from "./LandingVisualMockups";
 import { ScrollReveal } from "./ScrollReveal";
 
@@ -26,7 +23,6 @@ const LOGIN_HREF = "/login";
 const INVITE_LOGIN_HREF = "/login?next=%2Fjoin-by-code";
 
 const FEATURE_STAGGER_MS = 72;
-const ROLE_STAGGER_MS = 55;
 
 export function LandingClient() {
   const { t } = useI18n();
@@ -41,19 +37,6 @@ export function LandingClient() {
       </Link>
     </div>
   );
-
-  const flowSteps = [
-    { step: "1", icon: "userPlus" as const, label: t("landing.flowChip1") },
-    { step: "2", icon: "book" as const, label: t("landing.flowChip2") },
-    { step: "3", icon: "check" as const, label: t("landing.flowChip3") },
-    { step: "4", icon: "sparkles" as const, label: t("landing.flowChip4") },
-  ];
-
-  const roleCards = [
-    { icon: "user" as const, titleKey: "landing.roleOwnerTitle", leadKey: "landing.roleOwnerLead" },
-    { icon: "users" as const, titleKey: "landing.roleManagerTitle", leadKey: "landing.roleManagerLead" },
-    { icon: "compass" as const, titleKey: "landing.roleMemberTitle", leadKey: "landing.roleMemberLead" },
-  ];
 
   const featureBands = [
     {
@@ -70,18 +53,12 @@ export function LandingClient() {
     },
     {
       reverse: false,
-      mock: <MiniDiffReview ariaLabel={t("landing.mockupReviewAria")} />,
-      titleKey: "landing.featureReviewTitle",
-      leadKey: "landing.featureReviewLead",
+      mock: <MiniMergedCodeReviewAi ariaLabel={t("landing.mockupReviewAiAria")} />,
+      titleKey: "landing.featureReviewAiTitle",
+      leadKey: "landing.featureReviewAiLead",
     },
     {
       reverse: true,
-      mock: <MiniAiPanel ariaLabel={t("landing.mockupAiAria")} />,
-      titleKey: "landing.featureAiFeedbackTitle",
-      leadKey: "landing.featureAiFeedbackLead",
-    },
-    {
-      reverse: false,
       mock: <MiniCohortReportShowcase ariaLabel={t("landing.mockupCohortAria")} />,
       titleKey: "landing.featureCohortTitle",
       leadKey: "landing.featureCohortLead",
@@ -109,34 +86,33 @@ export function LandingClient() {
                   </h2>
                   <p className={styles.lead}>{t("landing.heroLead")}</p>
                 </div>
-                <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
-                <div className={styles.heroDashRow}>
-                  <LandingHeroDecor />
+                <div className={styles.heroKanbanWrap}>
                   <MiniHomeKanban ariaLabel={t("landing.mockupHomeKanbanAria")} />
+                </div>
+                <div className={styles.heroNotifyFull} aria-labelledby="landing-notify-full-title">
+                  <div className={styles.heroNotifyHead}>
+                    <h3 id="landing-notify-full-title" className={styles.heroNotifyTitle}>
+                      {t("home.recent.notifications.title")}
+                    </h3>
+                    <span className={styles.heroNotifyViewAll} tabIndex={-1} aria-hidden>
+                      {t("home.recent.notifications.viewAll")}
+                    </span>
+                  </div>
+                  <p className={styles.mockDisclaimer}>{t("landing.mockNotifyDisclaimer")}</p>
+                  <MiniNotifyList ariaLabel={t("landing.mockupHeroNotifyAria")} />
                 </div>
               </div>
             </ScrollReveal>
           </section>
 
-          <section className={styles.surface} aria-labelledby="landing-roles-title">
+          <section className={styles.surface} aria-labelledby="landing-groups-title">
             <ScrollReveal delayMs={40}>
-              <h2 id="landing-roles-title" className={styles.blockTitle}>
-                {t("landing.rolesTitle")}
+              <h2 id="landing-groups-title" className={styles.blockTitle}>
+                {t("landing.groupsShowcaseTitle")}
               </h2>
+              <p className={styles.muted}>{t("landing.groupsShowcaseLead")}</p>
+              <MiniGroupsStrip ariaLabel={t("landing.mockupGroupsAria")} />
             </ScrollReveal>
-            <div className={styles.roleGrid}>
-              {roleCards.map((card, i) => (
-                <ScrollReveal key={card.titleKey} delayMs={i * ROLE_STAGGER_MS}>
-                  <article className={styles.roleCard}>
-                    <RoleGlyph icon={card.icon} />
-                    <div className={styles.roleBody}>
-                      <h3 className={styles.cardHeading}>{t(card.titleKey)}</h3>
-                      <p className={styles.muted}>{t(card.leadKey)}</p>
-                    </div>
-                  </article>
-                </ScrollReveal>
-              ))}
-            </div>
           </section>
 
           <section className={styles.surface} aria-labelledby="landing-features-title">
@@ -157,25 +133,6 @@ export function LandingClient() {
                 </ScrollReveal>
               ))}
             </div>
-          </section>
-
-          <section className={styles.surface} aria-labelledby="landing-flow-title">
-            <ScrollReveal>
-              <h2 id="landing-flow-title" className={styles.blockTitle}>
-                {t("landing.flowTitle")}
-              </h2>
-              <LandingFlowStrip ariaLabel={t("landing.flowStripAria")} steps={flowSteps} />
-            </ScrollReveal>
-          </section>
-
-          <section className={styles.surface} aria-labelledby="landing-trust-title">
-            <ScrollReveal>
-              <h2 id="landing-trust-title" className={styles.blockTitle}>
-                {t("landing.trustTitle")}
-              </h2>
-              <p className={styles.trustLead}>{t("landing.trustLead")}</p>
-              <p className={styles.trustBeta}>{t("landing.trustBeta")}</p>
-            </ScrollReveal>
           </section>
 
           <section className={styles.surfaceMuted} aria-labelledby="landing-bottom-cta-title">
