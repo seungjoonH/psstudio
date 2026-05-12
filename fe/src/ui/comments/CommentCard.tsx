@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useI18n } from "../../i18n/I18nProvider";
+import { formatKstDateTime } from "../../i18n/formatDateTime";
 import { MarkdownPreview } from "../MarkdownPreview";
 import { UserAvatar } from "../UserAvatar";
 import { ReactionBar, type ReactionSummary } from "./ReactionBar";
@@ -39,18 +41,6 @@ type Props = {
   replyDisabled?: boolean;
 };
 
-function formatRelative(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function CommentCard({
   authorNickname,
   authorProfileImageUrl,
@@ -66,6 +56,7 @@ export function CommentCard({
   replyPlaceholder = "답글을 입력하세요.",
   replyDisabled = false,
 }: Props) {
+  const { locale } = useI18n();
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -90,7 +81,7 @@ export function CommentCard({
         <div className={styles.body}>
           <div className={styles.headRow}>
             <strong className={styles.author}>{authorNickname}</strong>
-            <span className={styles.time}>{formatRelative(createdAt)}</span>
+            <span className={styles.time}>{formatKstDateTime(createdAt, locale)}</span>
             {headerAction !== undefined ? (
               <span className={styles.headAction}>{headerAction}</span>
             ) : null}
@@ -111,7 +102,7 @@ export function CommentCard({
               <div className={styles.replyBody}>
                 <div className={styles.headRow}>
                   <strong className={styles.author}>{reply.authorNickname}</strong>
-                  <span className={styles.time}>{formatRelative(reply.createdAt)}</span>
+                  <span className={styles.time}>{formatKstDateTime(reply.createdAt, locale)}</span>
                 </div>
                 <div className={styles.markdownWrap}>
                   <MarkdownPreview content={reply.body} variant="compact" />

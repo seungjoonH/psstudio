@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from "react";
 import type { GroupMember } from "../../../../src/groups/server";
+import { formatKstMonthLabel, toKstPseudoDate } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { Button } from "../../../../src/ui/Button";
@@ -48,19 +49,18 @@ export function GroupCalendarClient({
   gridClassName,
 }: Props) {
   const { t, locale } = useI18n();
-  const localeTag = locale === "ko" ? "ko-KR" : "en-US";
-  const baseDate = new Date(baseDateIso);
+  const baseDate = toKstPseudoDate(baseDateIso) ?? toKstPseudoDate(new Date()) ?? new Date();
   const periodLabel = useMemo(() => {
     if (view === "week") {
       const weekStart = new Date(baseDate);
-      weekStart.setHours(0, 0, 0, 0);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      weekStart.setUTCHours(0, 0, 0, 0);
+      weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay());
       const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      return formatCalendarWeekRangeLabel(localeTag, weekStart, weekEnd);
+      weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+      return formatCalendarWeekRangeLabel(locale, weekStart, weekEnd);
     }
-    return baseDate.toLocaleDateString(localeTag, { year: "numeric", month: "long" });
-  }, [baseDate, localeTag, view]);
+    return formatKstMonthLabel(baseDateIso, locale);
+  }, [baseDate, baseDateIso, locale, view]);
   const emptyFilter: FilterState = {
     query: "",
     solvedFilter: "all",

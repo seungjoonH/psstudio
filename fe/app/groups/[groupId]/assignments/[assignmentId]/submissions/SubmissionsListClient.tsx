@@ -2,6 +2,7 @@
 
 // 과제별 제출 목록 화면을 i18n 적용해 렌더링합니다.
 import Link from "next/link";
+import { formatKstDateTime } from "../../../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
 import type { SubmissionListItemDto } from "../../../../../../src/submissions/server";
 import { AppShell } from "../../../../../../src/shell/AppShell";
@@ -30,7 +31,7 @@ export function SubmissionsListClient({
   sort,
   items,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return (
     <AppShell
@@ -95,10 +96,10 @@ export function SubmissionsListClient({
                 </div>
                 <div className={styles.title}>{s.title}</div>
                 <div className={styles.timestamp}>
-                  {new Date(s.createdAt).toLocaleString()}
+                  {formatKstDateTime(s.createdAt, locale)}
                   {s.currentVersionNo > 1
                     ? ` · ${t("submission.list.lastEdit", {
-                        date: new Date(s.updatedAt).toLocaleString(),
+                        date: formatKstDateTime(s.updatedAt, locale),
                       })}`
                     : ""}
                 </div>

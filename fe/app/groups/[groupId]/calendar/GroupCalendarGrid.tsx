@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
+import { formatKstDateTime, formatKstDateWithWeekday } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { Badge } from "../../../../src/ui/Badge";
 import { DifficultyBadge } from "../../../../src/ui/DifficultyBadge";
@@ -69,7 +70,6 @@ function getAssignmentTone(
 
 export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: Props) {
   const { t, locale } = useI18n();
-  const localeTag = locale === "ko" ? "ko-KR" : "en-US";
   const router = useRouter();
   const [selected, setSelected] = useState<CalendarGridCell | null>(null);
 
@@ -77,13 +77,8 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
 
   const modalTitle = useMemo(() => {
     if (selected === null) return "";
-    return new Date(selected.dateIso).toLocaleDateString(localeTag, {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }, [localeTag, selected]);
+    return formatKstDateWithWeekday(selected.dateIso, locale);
+  }, [locale, selected]);
 
   return (
     <>
@@ -226,7 +221,7 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
                     </div>
                     <span className={styles.modalAssignmentDue}>
                       {t("groupCalendar.modalDueLabel")}{" "}
-                      {new Date(assignment.dueAt).toLocaleString(localeTag)}
+                      {formatKstDateTime(assignment.dueAt, locale)}
                     </span>
                     {assignment.isAssignedToMe ? (
                       <div className={styles.modalAssigneeGroups}>

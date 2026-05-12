@@ -3,6 +3,7 @@
 // 캘린더 헤더 이동/뷰 전환/과제 만들기 컨트롤입니다.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fromKstPseudoDateToUtcIso, toKstPseudoDate } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { SegmentedControl } from "../../../../src/ui/SegmentedControl";
 import { Button } from "../../../../src/ui/Button";
@@ -34,6 +35,10 @@ export function CalendarHeaderControls({
 }: Props) {
   const { t } = useI18n();
   const router = useRouter();
+  const todayAnchorIso = (() => {
+    const now = toKstPseudoDate(new Date());
+    return now === null ? new Date().toISOString() : fromKstPseudoDateToUtcIso(now);
+  })();
 
   return (
     <div className={styles.headerActions}>
@@ -56,7 +61,7 @@ export function CalendarHeaderControls({
       </div>
 
       <div className={styles.rightActions}>
-        <Link href={`/groups/${groupId}/calendar?view=${view}&date=${new Date().toISOString()}`} className={styles.todayLink}>
+        <Link href={`/groups/${groupId}/calendar?view=${view}&date=${todayAnchorIso}`} className={styles.todayLink}>
           {t("groupCalendar.today")}
         </Link>
 

@@ -29,7 +29,7 @@ import { extractOfficialProblemTitle } from "./problem-official-title.js";
 import { parseProblemUrl } from "./problem-parser.js";
 
 function toDateOnly(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 export type AssignmentDetail = {

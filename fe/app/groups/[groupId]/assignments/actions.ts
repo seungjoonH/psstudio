@@ -12,6 +12,7 @@ import {
   updateAssignment,
   updateAssignmentMetadata,
 } from "../../../../src/assignments/server";
+import { kstDateTimeLocalInputToUtcIso } from "../../../../src/i18n/formatDateTime";
 import { LOCALES, type Locale } from "../../../../src/i18n/messages";
 
 function coerceUiLocale(value: string): Locale {
@@ -40,11 +41,13 @@ export async function createAssignmentAction(groupId: string, formData: FormData
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
   if (title.length === 0 || problemUrl.length === 0 || dueAtLocal.length === 0) return;
+  const dueAt = kstDateTimeLocalInputToUtcIso(dueAtLocal);
+  if (dueAt === null) return;
   const created = await createAssignment(groupId, {
     title,
     hint,
     problemUrl,
-    dueAt: new Date(dueAtLocal).toISOString(),
+    dueAt,
     allowLateSubmission,
     assigneeUserIds,
   });
@@ -80,11 +83,12 @@ export async function updateAssignmentAction(
   const dueAtLocal = String(formData.get("dueAt") ?? "").trim();
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
+  const dueAt = dueAtLocal.length > 0 ? kstDateTimeLocalInputToUtcIso(dueAtLocal) : undefined;
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
     hint,
     problemUrl: problemUrl.length > 0 ? problemUrl : undefined,
-    dueAt: dueAtLocal.length > 0 ? new Date(dueAtLocal).toISOString() : undefined,
+    dueAt: dueAt ?? undefined,
     allowLateSubmission,
     assigneeUserIds,
   });
@@ -109,12 +113,13 @@ export async function updateAssignmentCombinedAction(
   const hintHiddenUntilSubmit = formData.get("hintHiddenUntilSubmit") === "on";
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
+  const dueAt = dueAtLocal.length > 0 ? kstDateTimeLocalInputToUtcIso(dueAtLocal) : undefined;
 
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
     hint,
     problemUrl: problemUrl.length > 0 ? problemUrl : undefined,
-    dueAt: dueAtLocal.length > 0 ? new Date(dueAtLocal).toISOString() : undefined,
+    dueAt: dueAt ?? undefined,
     allowLateSubmission,
     assigneeUserIds,
   });

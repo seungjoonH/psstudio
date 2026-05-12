@@ -284,7 +284,7 @@ export function SubmissionDetailClient({
                 <strong>v{latestVersion.versionNo}</strong>
               </Link>
               <span className={styles.note}>{latestVersion.language}</span>
-              <span className={styles.note}>{new Date(latestVersion.createdAt).toLocaleString()}</span>
+              <span className={styles.note}>{formatKstDateTime(latestVersion.createdAt, locale)}</span>
             </li>
           </ul>
           {pastVersions.length > 0 ? (
@@ -309,7 +309,7 @@ export function SubmissionDetailClient({
                       </Link>
                       <span className={styles.note}>{version.language}</span>
                       <span className={styles.note}>
-                        {new Date(version.createdAt).toLocaleString()}
+                        {formatKstDateTime(version.createdAt, locale)}
                       </span>
                     </li>
                   ))}

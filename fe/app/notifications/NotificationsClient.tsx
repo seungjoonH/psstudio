@@ -5,6 +5,7 @@ import type { HomeRecentNotification } from "../../src/auth/api.server";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatKstDateTime } from "../../src/i18n/formatDateTime";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
 import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
@@ -19,15 +20,6 @@ import styles from "./notifications.module.css";
 type Props = {
   items: HomeRecentNotification[];
 };
-
-function formatDateTime(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export function NotificationsClient({ items }: Props) {
   const { locale, t } = useI18n();
@@ -89,7 +81,7 @@ export function NotificationsClient({ items }: Props) {
             const body = (
               <div className={styles.rowBody}>
                 <span className={styles.title}>{n.title}</span>
-                <span className={styles.time}>{formatDateTime(n.createdAt, locale)}</span>
+                <span className={styles.time}>{formatKstDateTime(n.createdAt, locale)}</span>
               </div>
             );
             return (

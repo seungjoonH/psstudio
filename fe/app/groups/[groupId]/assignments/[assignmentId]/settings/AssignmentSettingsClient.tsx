@@ -12,6 +12,12 @@ import {
   type AssignmentAssigneeMember,
 } from "../../../../../../src/assignments/AssignmentAssigneePicker";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
+import {
+  formatKstPseudoDateTimeLocalInput,
+  parseKstDateTimeLocalInput,
+  toKstDateTimeLocalInput,
+  toKstPseudoDate,
+} from "../../../../../../src/i18n/formatDateTime";
 import { Button } from "../../../../../../src/ui/Button";
 import { Icon } from "../../../../../../src/ui/Icon";
 import { Input } from "../../../../../../src/ui/Input";
@@ -42,11 +48,78 @@ type Props = {
   myRole: "OWNER" | "MANAGER";
 };
 
-function toLocalDateTimeInput(iso: string): string {
-  const d = new Date(iso);
-  const tz = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - tz * 60_000);
-  return local.toISOString().slice(0, 16);
+const DAY_OPTIONS = ["1", "3", "7", "14"] as const;
+const WEEKDAY_OPTIONS = ["1", "2", "3", "4", "5", "6", "7"] as const;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const parseTime = (time: string): { hour: number; minute: number } => {
+  const [h, m] = time.split(":");
+  const hour = Number(h);
+  const minute = Number(m);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return { hour: 23, minute: 59 };
+  return { hour, minute };
+};
+
+const normalizeDueTime = (value: string): string => {
+  const matched = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!matched) return "23:59";
+  const hour = Number(matched[1]);
+  const minute = Number(matched[2]);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return "23:59";
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "23:59";
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+};
+
+const extractTime = (localDateTime: string): string => {
+  const parts = localDateTime.split("T");
+  if (parts.length < 2) return "23:59";
+  return parts[1].slice(0, 5);
+};
+
+const computeDueAtByDays = (days: string, dueTime: string): string => {
+  const now = toKstPseudoDate(new Date());
+  if (now === null) return "";
+  const { hour, minute } = parseTime(dueTime);
+  const next = new Date(now);
+  next.setUTCDate(next.getUTCDate() + Number(days));
+  next.setUTCHours(hour, minute, 0, 0);
+  return formatKstPseudoDateTimeLocalInput(next);
+};
+
+const computeDueAtByWeekday = (weekday: string, dueTime: string): string => {
+  const now = toKstPseudoDate(new Date());
+  if (now === null) return "";
+  const { hour, minute } = parseTime(dueTime);
+  const target = Number(weekday) % 7;
+  const next = new Date(now);
+  const diff = (target - now.getUTCDay() + 7) % 7;
+  next.setUTCDate(now.getUTCDate() + diff);
+  next.setUTCHours(hour, minute, 0, 0);
+  if (diff === 0 && next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 7);
+  return formatKstPseudoDateTimeLocalInput(next);
+};
+
+function deriveScheduleSelection(localDateTime: string): {
+  periodDays: (typeof DAY_OPTIONS)[number] | null;
+  weekday: (typeof WEEKDAY_OPTIONS)[number] | null;
+} {
+  const now = toKstPseudoDate(new Date());
+  const due = parseKstDateTimeLocalInput(localDateTime);
+  if (now === null || due === null) {
+    return { periodDays: null, weekday: null };
+  }
+
+  const diffMs = due.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    return { periodDays: null, weekday: null };
+  }
+  const diffDays = Math.ceil(diffMs / DAY_MS);
+  const periodDays = DAY_OPTIONS.find((value) => Number(value) === diffDays) ?? null;
+  const weekday =
+    diffDays >= 8
+      ? null
+      : ((due.getUTCDay() === 0 ? "7" : String(due.getUTCDay())) as (typeof WEEKDAY_OPTIONS)[number]);
+  return { periodDays, weekday };
 }
 
 export function AssignmentSettingsClient({
@@ -59,6 +132,8 @@ export function AssignmentSettingsClient({
   myRole,
 }: Props) {
   const { t, locale } = useI18n();
+  const initialDueAtLocal = toKstDateTimeLocalInput(assignment.dueAt);
+  const initialSchedule = deriveScheduleSelection(initialDueAtLocal);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
   const [title, setTitle] = useState(assignment.title);
@@ -66,9 +141,9 @@ export function AssignmentSettingsClient({
   const [hint, setHint] = useState(assignment.hintPlain);
   const [difficulty, setDifficulty] = useState(assignment.difficulty ?? assignment.metadata.difficulty ?? "");
   const [scheduleMode, setScheduleMode] = useState<"days" | "weekday">("days");
-  const [periodDays, setPeriodDays] = useState("7");
-  const [weekday, setWeekday] = useState("2");
-  const [dueAtLocal, setDueAtLocal] = useState(toLocalDateTimeInput(assignment.dueAt));
+  const [periodDays, setPeriodDays] = useState<(typeof DAY_OPTIONS)[number] | null>(initialSchedule.periodDays);
+  const [weekday, setWeekday] = useState<(typeof WEEKDAY_OPTIONS)[number] | null>(initialSchedule.weekday);
+  const [dueAtLocal, setDueAtLocal] = useState(initialDueAtLocal);
   const [algorithms, setAlgorithms] = useState(
     (assignment.metadata.algorithms ?? []).join(", "),
   );
@@ -216,36 +291,37 @@ export function AssignmentSettingsClient({
                 <h3 className={styles.sectionTitle}>{t("assignment.new.scheduleTitle")}</h3>
                 <div
                   className={styles.modeWrap}
-                  onChange={(e) => {
-                    const target = e.target as HTMLInputElement;
-                    if (target.name !== "scheduleMode" || !target.checked) return;
-                    setScheduleMode(target.value as "days" | "weekday");
-                  }}
                 >
                   <SegmentedControl
                     name="scheduleMode"
                     defaultValue="days"
+                    value={scheduleMode}
                     aria-label={t("assignment.new.scheduleModeLabel")}
                     options={[
                       { value: "days", label: t("assignment.new.scheduleMode.days") },
                       { value: "weekday", label: t("assignment.new.scheduleMode.weekday") },
                     ]}
+                    onValueChange={(value) => {
+                      const nextMode = value as "days" | "weekday";
+                      setScheduleMode(nextMode);
+                      const currentTime = normalizeDueTime(extractTime(dueAtLocal));
+                      if (nextMode === "days" && periodDays !== null) {
+                        setDueAtLocal(computeDueAtByDays(periodDays, currentTime));
+                      }
+                      if (nextMode === "weekday" && weekday !== null) {
+                        setDueAtLocal(computeDueAtByWeekday(weekday, currentTime));
+                      }
+                    }}
                   />
                 </div>
 
                 {scheduleMode === "days" ? (
-                  <div
-                    className={styles.modeWrap}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.name === "periodDays" && target.checked) setPeriodDays(target.value);
-                    }}
-                  >
+                  <div className={styles.modeWrap}>
                     <label className={styles.modeLabel}>{t("assignment.new.periodDaysLabel")}</label>
                     <SegmentedControl
                       name="periodDays"
                       defaultValue="7"
-                      value={periodDays}
+                      value={periodDays ?? ""}
                       aria-label={t("assignment.new.periodDaysLabel")}
                       options={[
                         { value: "1", label: t("assignment.new.periodDaysOption", { days: "1" }) },
@@ -253,21 +329,20 @@ export function AssignmentSettingsClient({
                         { value: "7", label: t("assignment.new.periodDaysOption", { days: "7" }) },
                         { value: "14", label: t("assignment.new.periodDaysOption", { days: "14" }) },
                       ]}
+                      onValueChange={(value) => {
+                        const currentTime = normalizeDueTime(extractTime(dueAtLocal));
+                        setPeriodDays(value as (typeof DAY_OPTIONS)[number]);
+                        setDueAtLocal(computeDueAtByDays(value, currentTime));
+                      }}
                     />
                   </div>
                 ) : (
-                  <div
-                    className={styles.modeWrap}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.name === "weekday" && target.checked) setWeekday(target.value);
-                    }}
-                  >
+                  <div className={styles.modeWrap}>
                     <label className={styles.modeLabel}>{t("assignment.new.weekdayLabel")}</label>
                     <SegmentedControl
                       name="weekday"
                       defaultValue="2"
-                      value={weekday}
+                      value={weekday ?? ""}
                       aria-label={t("assignment.new.weekdayLabel")}
                       options={[
                         { value: "1", label: t("assignment.new.weekdayOption.1") },
@@ -279,6 +354,11 @@ export function AssignmentSettingsClient({
                         { value: "7", label: t("assignment.new.weekdayOption.7") },
                       ]}
                       className={styles.weekdaySegment}
+                      onValueChange={(value) => {
+                        const currentTime = normalizeDueTime(extractTime(dueAtLocal));
+                        setWeekday(value as (typeof WEEKDAY_OPTIONS)[number]);
+                        setDueAtLocal(computeDueAtByWeekday(value, currentTime));
+                      }}
                     />
                   </div>
                 )}
@@ -288,8 +368,15 @@ export function AssignmentSettingsClient({
                   <input
                     name="dueAt"
                     type="datetime-local"
+                    lang="en-GB"
                     value={dueAtLocal}
-                    onChange={(e) => setDueAtLocal(e.target.value)}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setDueAtLocal(nextValue);
+                      const nextSchedule = deriveScheduleSelection(nextValue);
+                      setPeriodDays(nextSchedule.periodDays);
+                      setWeekday(nextSchedule.weekday);
+                    }}
                     className={styles.input}
                   />
                 </label>

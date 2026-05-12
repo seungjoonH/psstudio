@@ -3,6 +3,15 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  createKstPseudoDate,
+  formatKstDateTime,
+  formatKstDateWithWeekday,
+  formatKstMonthLabel,
+  formatKstPseudoDateKey,
+  getKstDateKey,
+  toKstPseudoDate,
+} from "../i18n/formatDateTime";
 import { useI18n } from "../i18n/I18nProvider";
 import { AssignmentList, type AssignmentListItem } from "./AssignmentList";
 import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
@@ -81,34 +90,26 @@ const getVisibleAlgorithms = (item: OverviewItem): string[] => {
   return (item.algorithms ?? []).filter((tag) => tag.length > 0);
 };
 
-const dayKey = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
 const getStartOfWeek = (date: Date): Date => {
   const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
   return start;
 };
 
 const addDays = (date: Date, days: number): Date => {
   const next = new Date(date);
-  next.setDate(next.getDate() + days);
+  next.setUTCDate(next.getUTCDate() + days);
   return next;
 };
 
 const getMonthGridStart = (baseDate: Date): Date => {
-  const first = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+  const first = createKstPseudoDate(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 1);
   return getStartOfWeek(first);
 };
 
 export function AssignmentsOverviewClient({ items, mode }: Props) {
   const { t, locale } = useI18n();
-  const localeTag = locale === "ko" ? "ko-KR" : "en-US";
   const emptyFilter: FilterState = {
     query: "",
     solvedFilter: "all",
@@ -119,7 +120,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
   };
 
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
-  const [baseDate, setBaseDate] = useState<Date>(new Date());
+  const [baseDate, setBaseDate] = useState<Date>(() => toKstPseudoDate(new Date()) ?? new Date());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(emptyFilter);
   const [draftFilter, setDraftFilter] = useState<FilterState>(emptyFilter);
@@ -201,7 +202,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
 
   const groupedByDate = useMemo(() => {
     return filteredItems.reduce<Record<string, OverviewItem[]>>((acc, item) => {
-      const key = dayKey(new Date(item.dueAt));
+      const key = getKstDateKey(item.dueAt);
       acc[key] = acc[key] ?? [];
       acc[key].push(item);
       return acc;
@@ -220,13 +221,14 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
   const calendarCells = useMemo<CalendarCell[]>(
     () =>
       days.map((day) => {
-        const key = dayKey(day);
+        const key = formatKstPseudoDateKey(day);
+        const todayKey = getKstDateKey(new Date());
         return {
           dateKey: key,
-          dateIso: day.toISOString(),
-          dayNumber: day.getDate(),
-          isOutsideMonth: calendarView === "month" && day.getMonth() !== baseDate.getMonth(),
-          isToday: key === dayKey(new Date()),
+          dateIso: `${key}T00:00:00.000Z`,
+          dayNumber: day.getUTCDate(),
+          isOutsideMonth: calendarView === "month" && day.getUTCMonth() !== baseDate.getUTCMonth(),
+          isToday: key === todayKey,
           assignments: groupedByDate[key] ?? [],
         };
       }),
@@ -237,10 +239,10 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     if (calendarView === "week") {
       const weekStart = getStartOfWeek(baseDate);
       const weekEnd = addDays(weekStart, 6);
-      return formatCalendarWeekRangeLabel(localeTag, weekStart, weekEnd);
+      return formatCalendarWeekRangeLabel(locale, weekStart, weekEnd);
     }
-    return baseDate.toLocaleDateString(localeTag, { year: "numeric", month: "long" });
-  }, [calendarView, baseDate, localeTag]);
+    return formatKstMonthLabel(baseDate, locale);
+  }, [calendarView, baseDate, locale]);
 
   const openFilterModal = () => {
     setDraftFilter(appliedFilter);
@@ -270,7 +272,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       setBaseDate((prev) => addDays(prev, amount * 7));
       return;
     }
-    setBaseDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + amount, 1));
+    setBaseDate((prev) => createKstPseudoDate(prev.getUTCFullYear(), prev.getUTCMonth() + 1 + amount, 1));
   };
 
   return (
@@ -418,7 +420,12 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                 </button>
               </div>
               <div className={styles.rightActions}>
-                <Button variant="secondary" type="button" className={styles.todayBtn} onClick={() => setBaseDate(new Date())}>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  className={styles.todayBtn}
+                  onClick={() => setBaseDate(toKstPseudoDate(new Date()) ?? new Date())}
+                >
                   {t("assignments.calendar.today")}
                 </Button>
                 <div className={styles.viewSegmentWrap}>
@@ -649,12 +656,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
         title={
           selectedDateCell === null
             ? ""
-            : new Date(selectedDateCell.dateIso).toLocaleDateString(localeTag, {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
+            : formatKstDateWithWeekday(selectedDateCell.dateIso, locale)
         }
         onClose={() => setSelectedDateCell(null)}
       >
@@ -704,7 +706,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                       </div>
                     </div>
                     <span className={styles.modalAssignmentDue}>
-                      {t("groupCalendar.modalDueLabel")} {new Date(assignment.dueAt).toLocaleString(localeTag)}
+                      {t("groupCalendar.modalDueLabel")} {formatKstDateTime(assignment.dueAt, locale)}
                     </span>
                     {assignment.isAssignedToMe ? (
                       <div className={styles.modalAssigneeGroups}>

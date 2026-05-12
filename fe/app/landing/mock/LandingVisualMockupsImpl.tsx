@@ -25,6 +25,7 @@ import homeStyles from "./home/HomeDashboardMock.module.css";
 import nf from "./notifications/NotificationsListMock.module.css";
 import { useI18n } from "../../../src/i18n/I18nProvider";
 import { formatProblemPlatformLabel } from "../../../src/assignments/algorithmLabels";
+import { formatKstDateTime, formatKstMonthLabel } from "../../../src/i18n/formatDateTime";
 import { AI_TUTOR_PROFILE_IMAGE_URL } from "../../../src/lib/aiTutorProfileImageUrl";
 import { buildCls } from "../../../src/lib/buildCls";
 import { formatCalendarWeekRangeLabel } from "../../../src/lib/formatCalendarWeekRangeLabel";
@@ -178,13 +179,8 @@ function landingReviewSpanClass(d: typeof diffStyles, kind: LandingReviewSpanKin
   return undefined;
 }
 
-function formatDateTime(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+function formatDateTime(value: string, locale: "ko" | "en"): string {
+  return formatKstDateTime(value, locale);
 }
 
 const CAL_PILL_KEYS = [
@@ -774,15 +770,14 @@ export function MiniCalendar({ ariaLabel }: { ariaLabel: string }) {
   }, [anchorDate, calView, monthStart]);
 
   const periodCaption = useMemo(() => {
-    const loc = locale === "ko" ? "ko-KR" : "en-US";
     if (calView === "month") {
-      return new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(monthStart);
+      return formatKstMonthLabel(monthStart, locale);
     }
     const start = new Date(anchorDate);
     start.setDate(anchorDate.getDate() - anchorDate.getDay());
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-    return formatCalendarWeekRangeLabel(loc, start, end);
+    return formatCalendarWeekRangeLabel(locale, start, end);
   }, [anchorDate, calView, locale, monthStart]);
 
   const onPrev = () => {

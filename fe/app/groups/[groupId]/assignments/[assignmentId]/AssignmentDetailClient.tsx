@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { dueBadgeTone } from "../../../../../src/lib/dueBadgeTone";
 import { useEffect, useMemo, useState } from "react";
+import { formatKstDateTime, isSameKstDay } from "../../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../../src/i18n/I18nProvider";
 import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "../../../../../src/assignments/algorithmLabels";
 import type { AssignmentDto, CohortAnalysisDto } from "../../../../../src/assignments/server";
@@ -31,14 +32,6 @@ type Props = {
   submissionSort: "createdAtAsc" | "createdAtDesc";
   cohortInitial: CohortAnalysisDto;
 };
-
-function sameLocalCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
 
 function formatRemainingHms(ms: number): string {
   const secTotal = Math.max(0, Math.floor(ms / 1000));
@@ -106,7 +99,7 @@ export function AssignmentDetailClient({
 
   void deadlineTick;
   const now = Date.now();
-  const onDueLocalDay = sameLocalCalendarDay(due, new Date(now));
+  const onDueLocalDay = isSameKstDay(due, new Date(now));
   const msUntilDue = due.getTime() - now;
   const showSidebarDeadlineCountdown =
     a.allowLateSubmission && onDueLocalDay && msUntilDue > 0;
@@ -270,7 +263,7 @@ export function AssignmentDetailClient({
                   }}
                   aria-label={showDueAt ? t("assignment.detail.dueToggleRemain") : t("assignment.detail.dueToggleDate")}
                 >
-                  <Badge tone={dueTone}>{showDueAt && !a.isLate ? due.toLocaleString() : dueLabel}</Badge>
+                  <Badge tone={dueTone}>{showDueAt && !a.isLate ? formatKstDateTime(due, uiLocale) : dueLabel}</Badge>
                 </button>
                 <Badge tone={mine ? "success" : "danger"}>
                   {mine ? t("assignment.detail.solvedBadge") : t("assignment.detail.unsolvedBadge")}
@@ -301,7 +294,7 @@ export function AssignmentDetailClient({
                 {mine !== undefined ? (
                   <>
                     <span className={styles.myStripMeta}>
-                      {mine.title} · {new Date(mine.updatedAt).toLocaleString()}
+                      {mine.title} · {formatKstDateTime(mine.updatedAt, uiLocale)}
                     </span>
                     <Link href={`${submissionsBase}/${mine.id}`} className={styles.secondaryLinkBtn}>
                       {t("assignment.detail.mySubmissionView")}

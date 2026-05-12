@@ -23,6 +23,7 @@ import {
   IsString,
   IsUUID,
   IsUrl,
+  Matches,
   MaxLength,
   MinLength,
 } from "class-validator";
@@ -39,7 +40,7 @@ class CreateAssignmentBody {
   @IsString() @MinLength(1) @MaxLength(200) title!: string;
   @IsOptional() @IsString() @MaxLength(2000) hint?: string;
   @IsUrl({ require_protocol: true }) problemUrl!: string;
-  @IsDateString() dueAt!: string;
+  @IsDateString() @Matches(/(?:Z|[+-]\d{2}:\d{2})$/) dueAt!: string;
   @IsBoolean() allowLateSubmission!: boolean;
   @IsOptional() @IsArray() @IsUUID("4", { each: true }) assigneeUserIds?: string[];
 }
@@ -48,7 +49,7 @@ class UpdateAssignmentBody {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(200) title?: string;
   @IsOptional() @IsString() @MaxLength(2000) hint?: string;
   @IsOptional() @IsUrl({ require_protocol: true }) problemUrl?: string;
-  @IsOptional() @IsDateString() dueAt?: string;
+  @IsOptional() @IsDateString() @Matches(/(?:Z|[+-]\d{2}:\d{2})$/) dueAt?: string;
   @IsOptional() @IsBoolean() allowLateSubmission?: boolean;
   @IsOptional() @IsArray() @IsUUID("4", { each: true }) assigneeUserIds?: string[];
 }

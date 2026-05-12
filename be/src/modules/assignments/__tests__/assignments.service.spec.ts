@@ -4,6 +4,7 @@ import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { In } from "typeorm";
 import { dataSource } from "../../../config/data-source.js";
 import { GroupsService } from "../../groups/groups.service.js";
+import { CalendarEvent } from "../../calendar/calendar-event.entity.js";
 import { GroupMember } from "../../groups/group-member.entity.js";
 import { Notification } from "../../notifications/notification.entity.js";
 import { User } from "../../users/user.entity.js";
@@ -61,6 +62,25 @@ describe("AssignmentsService", () => {
     expect(detail.metadata.algorithmsHiddenUntilSubmit).toBe(true);
     expect(detail.assigneeUserIds).toEqual([owner.id]);
     expect(detail.isAssignedToMe).toBe(false);
+  });
+
+  it("create는 KST 기준 날짜로 calendar_events.event_date를 저장한다", async () => {
+    const owner = await makeUser(testSuffix("owner-kst-event"));
+    const group = await groups.create(owner.id, { name: `캘린더 그룹 ${testSuffix("g")}` });
+    const dueAt = new Date("2026-05-12T15:00:00.000Z");
+
+    const assignment = await assignments.create(group.id, owner.id, {
+      title: "KST 날짜 경계",
+      problemUrl: "https://www.acmicpc.net/problem/1000",
+      dueAt,
+      allowLateSubmission: true,
+    });
+
+    const event = await dataSource.getRepository(CalendarEvent).findOneByOrFail({
+      assignmentId: assignment.id,
+    });
+
+    expect(event.eventDate).toBe("2026-05-13");
   });
 
   it("update는 URL 변경 시 분석 상태를 PENDING으로 재설정한다", async () => {

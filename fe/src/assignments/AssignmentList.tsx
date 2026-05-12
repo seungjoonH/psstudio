@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatKstDateTime } from "../i18n/formatDateTime";
 import { useI18n } from "../i18n/I18nProvider";
 import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
 import { dueBadgeTone } from "../lib/dueBadgeTone";
@@ -92,7 +93,7 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
                 }
               >
                 <Badge tone={dueTone}>
-                  {showDueAt && !item.isLate ? due.toLocaleString() : statusLabel}
+                  {showDueAt && !item.isLate ? formatKstDateTime(due, locale) : statusLabel}
                 </Badge>
               </button>
               {item.hasMySubmission !== undefined ? (

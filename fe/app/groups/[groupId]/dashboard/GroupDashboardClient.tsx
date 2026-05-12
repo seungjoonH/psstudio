@@ -3,6 +3,11 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
+import {
+  formatKstPseudoDateKey,
+  getKstDateKey,
+  toKstPseudoDate,
+} from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { Badge } from "../../../../src/ui/Badge";
@@ -88,16 +93,20 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
 
   const analysis = useMemo(() => {
     const now = new Date();
-    const cutoff = new Date(now.getTime() - (rangeDays - 1) * 24 * 3600 * 1000);
-    cutoff.setHours(0, 0, 0, 0);
-    const filtered = submissions.filter((submission) => new Date(submission.createdAt) >= cutoff);
+    const nowPseudo = toKstPseudoDate(now) ?? new Date(now.getTime());
+    const cutoff = new Date(nowPseudo);
+    cutoff.setUTCHours(0, 0, 0, 0);
+    cutoff.setUTCDate(cutoff.getUTCDate() - (rangeDays - 1));
 
     const dailyBuckets = new Map<string, number>();
     for (let i = 0; i < rangeDays; i += 1) {
-      const d = new Date(cutoff.getTime() + i * 24 * 3600 * 1000);
-      dailyBuckets.set(toDateKey(d), 0);
+      const d = new Date(cutoff);
+      d.setUTCDate(cutoff.getUTCDate() + i);
+      dailyBuckets.set(formatKstPseudoDateKey(d), 0);
     }
     const dailyKeys = Array.from(dailyBuckets.keys());
+    const dailyKeySet = new Set(dailyKeys);
+    const filtered = submissions.filter((submission) => dailyKeySet.has(getKstDateKey(submission.createdAt)));
     const memberDailyBuckets = new Map<string, Map<string, number>>();
     for (const member of members) {
       memberDailyBuckets.set(
@@ -106,7 +115,7 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       );
     }
     for (const submission of filtered) {
-      const key = toDateKey(new Date(submission.createdAt));
+      const key = getKstDateKey(submission.createdAt);
       dailyBuckets.set(key, (dailyBuckets.get(key) ?? 0) + 1);
       const memberBucket = memberDailyBuckets.get(submission.authorUserId);
       if (memberBucket !== undefined) {
@@ -147,14 +156,14 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       if (!submission.isLate) stat.onTimeRate += 1;
       if (submission.isLate) totalLate += 1;
       stat.assignmentSet.add(submission.assignmentId);
-      stat.daySet.add(toDateKey(new Date(submission.createdAt)));
+      stat.daySet.add(getKstDateKey(submission.createdAt));
     }
     const memberStats: MemberStat[] = Array.from(byMember.values()).map((stat) => {
       const solvedAssignments = stat.assignmentSet.size;
       const submissionCount = stat.submissionCount;
       const onTimeRate = submissionCount === 0 ? 0 : (stat.onTimeRate / submissionCount) * 100;
       const activeDays = stat.daySet.size;
-      const streak = calcStreak(stat.daySet, now);
+      const streak = calcStreak(stat.daySet, nowPseudo);
       return {
         userId: stat.userId,
         nickname: stat.nickname,
@@ -685,20 +694,13 @@ function PieChart({ slices }: { slices: PieSlice[] }) {
   );
 }
 
-function toDateKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 function calcStreak(daySet: Set<string>, now: Date): number {
   let streak = 0;
   const cursor = new Date(now);
-  cursor.setHours(0, 0, 0, 0);
-  while (daySet.has(toDateKey(cursor))) {
+  cursor.setUTCHours(0, 0, 0, 0);
+  while (daySet.has(formatKstPseudoDateKey(cursor))) {
     streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
   return streak;
 }

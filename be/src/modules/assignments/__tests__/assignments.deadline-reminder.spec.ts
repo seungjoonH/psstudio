@@ -101,6 +101,28 @@ describe("AssignmentsService deadline reminder scheduling", () => {
     expect(scheduledDueAt.toISOString()).toBe(nextDueAt.toISOString());
   });
 
+  it("KST 경계 시각도 UTC ISO 그대로 deadline reminder job에 전달한다", async () => {
+    const owner = await makeUser(testSuffix("owner-kst-boundary"));
+    const group = await groups.create(owner.id, { name: `리마인더 경계 ${testSuffix("g")}` });
+    const dueAt = new Date("2026-05-13T14:59:00.000Z");
+
+    const assignment = await assignments.create(group.id, owner.id, {
+      title: "KST 23:59 리마인더",
+      problemUrl: "https://www.acmicpc.net/problem/1003",
+      dueAt,
+      allowLateSubmission: true,
+    });
+
+    expect(syncDeadlineReminderJobsMock).toHaveBeenCalledWith(assignment.id, expect.any(Date));
+    const calls = syncDeadlineReminderJobsMock.mock.calls as unknown[][];
+    const scheduledDueAt = calls[0]?.[1];
+    expect(scheduledDueAt).toBeInstanceOf(Date);
+    if (!(scheduledDueAt instanceof Date)) {
+      throw new Error("scheduledDueAt should be a Date");
+    }
+    expect(scheduledDueAt.toISOString()).toBe("2026-05-13T14:59:00.000Z");
+  });
+
   it("delete는 기존 deadline reminder job을 제거한다", async () => {
     const owner = await makeUser(testSuffix("owner-delete"));
     const group = await groups.create(owner.id, { name: `리마인더 삭제 ${testSuffix("g")}` });

@@ -3,6 +3,7 @@
 // 초대 코드·초대 링크를 한 화면에서 관리합니다.
 import { useState } from "react";
 import type { InviteCodeResponse, InviteLinkRow } from "../../../../src/invites/server";
+import { formatKstDateTime } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { Badge } from "../../../../src/ui/Badge";
 import { SubmitButton } from "../../../../src/ui/SubmitButton";
@@ -23,7 +24,7 @@ type Props = {
 };
 
 export function InviteManageClient({ groupId, inviteCode, links, actions }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [tab, setTab] = useState<"code" | "links">("code");
 
   return (
@@ -66,7 +67,7 @@ export function InviteManageClient({ groupId, inviteCode, links, actions }: Prop
                   <div className={styles.linkMeta}>
                     <Badge tone="success">{t("invite.links.active")}</Badge>
                     <span>
-                      {t("invite.links.created", { date: new Date(l.createdAt).toLocaleString() })}
+                      {t("invite.links.created", { date: formatKstDateTime(l.createdAt, locale) })}
                     </span>
                   </div>
                 </div>

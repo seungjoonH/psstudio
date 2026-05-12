@@ -5,6 +5,7 @@ import type { MeResponse } from "@psstudio/shared";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
 import type { HomeRecentNotification } from "../src/auth/api.server";
+import { formatKstDateTime } from "../src/i18n/formatDateTime";
 import { LoginClient } from "./login/LoginClient";
 import { useI18n } from "../src/i18n/I18nProvider";
 import { buildCls } from "../src/lib/buildCls";
@@ -54,15 +55,6 @@ type Props = {
   /** 미제출 과제 전체 개수(히어로 통계). 칸반 todoItems는 최대 4건만 넘깁니다. */
   todoTotal?: number;
 };
-
-function formatDateTime(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 function getDaysLeft(dueAt: string): number {
   const now = Date.now();
@@ -214,7 +206,7 @@ export function HomeClient({
                         <span className={styles.listTitle}>{s.title}</span>
                         <span className={styles.listMeta}>
                           <Badge tone="neutral">{resolveShikiLanguage(s.language)}</Badge>
-                          <span className={styles.listTime}>{formatDateTime(s.createdAt, locale)}</span>
+                          <span className={styles.listTime}>{formatKstDateTime(s.createdAt, locale)}</span>
                         </span>
                       </div>
                     </Link>
@@ -268,7 +260,7 @@ export function HomeClient({
                   const card = (
                     <div className={styles.feedMain}>
                       <span className={styles.notifTitle}>{n.title}</span>
-                      <span className={styles.listTime}>{formatDateTime(n.createdAt, locale)}</span>
+                      <span className={styles.listTime}>{formatKstDateTime(n.createdAt, locale)}</span>
                     </div>
                   );
                   const rowLinkClass = styles.feedRow;

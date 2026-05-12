@@ -3,6 +3,13 @@ import { redirect } from "next/navigation";
 import { fetchMeServer } from "../../../../src/auth/api.server";
 import { listAssignments } from "../../../../src/assignments/server";
 import { getGroup, listGroupMembers } from "../../../../src/groups/server";
+import {
+  createKstPseudoDate,
+  formatKstPseudoDateKey,
+  fromKstPseudoDateToUtcIso,
+  getKstDateKey,
+  toKstPseudoDate,
+} from "../../../../src/i18n/formatDateTime";
 import { listSubmissions } from "../../../../src/submissions/server";
 import { AppShell } from "../../../../src/shell/AppShell";
 import { ErrorState } from "../../../../src/ui/states/ErrorState";
@@ -18,43 +25,30 @@ type Props = {
   searchParams?: Promise<{ view?: string; date?: string }>;
 };
 
-const dayKey = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
-const toDateOnly = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-};
-
 const getStartOfWeek = (date: Date): Date => {
   const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
   return start;
 };
 
 const addDays = (date: Date, days: number): Date => {
   const next = new Date(date);
-  next.setDate(next.getDate() + days);
+  next.setUTCDate(next.getUTCDate() + days);
   return next;
 };
 
 const getMonthGridStart = (baseDate: Date): Date => {
-  const first = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+  const first = createKstPseudoDate(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 1);
   return getStartOfWeek(first);
 };
 
 const parseDateParam = (value: string | undefined): Date => {
-  if (value === undefined) return new Date();
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return new Date();
-  return parsed;
+  const fallback = toKstPseudoDate(new Date());
+  if (fallback === null) return createKstPseudoDate(1970, 1, 1);
+  if (value === undefined) return fallback;
+  const parsed = toKstPseudoDate(value);
+  return parsed ?? fallback;
 };
 
 export default async function GroupCalendarPage({ params, searchParams }: Props) {
@@ -92,7 +86,7 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
     const canCreate = group.myRole === "OWNER" || group.myRole === "MANAGER";
 
     const grouped = assignmentsWithSubmitter.reduce<Record<string, typeof assignmentsWithSubmitter>>((acc, item) => {
-      const key = dayKey(new Date(item.dueAt));
+      const key = getKstDateKey(item.dueAt);
       acc[key] = acc[key] ?? [];
       acc[key].push(item);
       return acc;
@@ -102,19 +96,26 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
     const weekStart = getStartOfWeek(baseDate);
     const weekDays = Array.from({ length: 7 }, (_, idx) => addDays(weekStart, idx));
     const days = view === "week" ? weekDays : monthDays;
-    const prevDate = view === "week" ? addDays(baseDate, -7) : new Date(baseDate.getFullYear(), baseDate.getMonth() - 1, 1);
-    const nextDate = view === "week" ? addDays(baseDate, 7) : new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1);
-    const isToday = (date: Date) => dayKey(date) === dayKey(new Date());
+    const prevDate =
+      view === "week"
+        ? addDays(baseDate, -7)
+        : createKstPseudoDate(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1);
+    const nextDate =
+      view === "week"
+        ? addDays(baseDate, 7)
+        : createKstPseudoDate(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 2, 1);
+    const todayKey = getKstDateKey(new Date());
+    const isToday = (date: Date) => formatKstPseudoDateKey(date) === todayKey;
 
     const calendarCells = days.map((day) => {
-      const key = dayKey(day);
+      const key = formatKstPseudoDateKey(day);
       const items = grouped[key] ?? [];
-      const isOutsideMonth = view === "month" && day.getMonth() !== baseDate.getMonth();
+      const isOutsideMonth = view === "month" && day.getUTCMonth() !== baseDate.getUTCMonth();
       return {
         dateKey: key,
-        dateIso: day.toISOString(),
-        dueDateForNew: toDateOnly(day),
-        dayNumber: day.getDate(),
+        dateIso: `${key}T00:00:00.000Z`,
+        dueDateForNew: key,
+        dayNumber: day.getUTCDate(),
         isOutsideMonth,
         isToday: isToday(day),
         assignments: items.map((a) => ({
@@ -154,9 +155,9 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
             <GroupCalendarClient
               groupId={groupId}
               view={view}
-              baseDateIso={baseDate.toISOString()}
-              prevDateIso={prevDate.toISOString()}
-              nextDateIso={nextDate.toISOString()}
+              baseDateIso={fromKstPseudoDateToUtcIso(baseDate)}
+              prevDateIso={fromKstPseudoDateToUtcIso(prevDate)}
+              nextDateIso={fromKstPseudoDateToUtcIso(nextDate)}
               canCreate={canCreate}
               members={members}
               cells={calendarCells}
