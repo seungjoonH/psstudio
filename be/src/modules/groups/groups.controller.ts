@@ -287,7 +287,7 @@ export class GroupsController {
   ) {
     const role = await this.groups.requireRole(groupId, me.id);
     if (!canPerform(role, "GROUP_MEMBER_ROLE_CHANGE")) throw new ForbiddenException();
-    await this.groups.setMemberRole(groupId, userId, body.role);
+    await this.groups.setMemberRole(groupId, me.id, userId, body.role);
     return { success: true, data: { ok: true } };
   }
 
@@ -318,7 +318,7 @@ export class GroupsController {
   ) {
     const role = await this.groups.requireRole(groupId, me.id);
     if (!canPerform(role, "GROUP_MEMBER_KICK")) throw new ForbiddenException();
-    await this.groups.removeMember(groupId, userId);
+    await this.groups.removeMember(groupId, me.id, userId);
     return { success: true, data: { ok: true } };
   }
 }

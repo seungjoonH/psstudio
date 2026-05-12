@@ -6,9 +6,15 @@ import type {
   AssignmentDto,
   DeletionImpact,
 } from "../../../../../../src/assignments/server";
+import {
+  AssignmentAssigneePicker,
+  isAssigneeSelectionValid,
+  type AssignmentAssigneeMember,
+} from "../../../../../../src/assignments/AssignmentAssigneePicker";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
 import { Button } from "../../../../../../src/ui/Button";
 import { Icon } from "../../../../../../src/ui/Icon";
+import { Input } from "../../../../../../src/ui/Input";
 import { SubmitButton } from "../../../../../../src/ui/SubmitButton";
 import { Modal } from "../../../../../../src/ui/Modal";
 import { SegmentedControl } from "../../../../../../src/ui/SegmentedControl";
@@ -19,7 +25,10 @@ import styles from "./AssignmentSettingsClient.module.css";
 
 type Actions = {
   update: (formData: FormData) => Promise<void>;
-  autofill: (problemUrl: string) => Promise<{ title: string; hint: string; algorithms: string[]; difficulty: string }>;
+  autofill: (
+    problemUrl: string,
+    uiLocale: string,
+  ) => Promise<{ title: string; hint: string; algorithms: string[]; difficulty: string }>;
   deleteAssignment: (formData: FormData) => Promise<void>;
 };
 
@@ -28,6 +37,9 @@ type Props = {
   assignment: AssignmentDto;
   impact: DeletionImpact;
   actions: Actions;
+  members: AssignmentAssigneeMember[];
+  meUserId: string;
+  myRole: "OWNER" | "MANAGER";
 };
 
 function toLocalDateTimeInput(iso: string): string {
@@ -37,9 +49,18 @@ function toLocalDateTimeInput(iso: string): string {
   return local.toISOString().slice(0, 16);
 }
 
-export function AssignmentSettingsClient({ groupId, assignment, impact, actions }: Props) {
-  const { t } = useI18n();
+export function AssignmentSettingsClient({
+  groupId,
+  assignment,
+  impact,
+  actions,
+  members,
+  meUserId,
+  myRole,
+}: Props) {
+  const { t, locale } = useI18n();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteConfirmTitle, setDeleteConfirmTitle] = useState("");
   const [title, setTitle] = useState(assignment.title);
   const [problemUrl, setProblemUrl] = useState(assignment.problemUrl);
   const [hint, setHint] = useState(assignment.hintPlain);
@@ -57,6 +78,9 @@ export function AssignmentSettingsClient({ groupId, assignment, impact, actions 
   const [algorithmsHiddenUntilSubmit, setAlgorithmsHiddenUntilSubmit] = useState(
     assignment.metadata.algorithmsHiddenUntilSubmit ?? true,
   );
+  const [selectedAssigneeUserIds, setSelectedAssigneeUserIds] = useState(
+    assignment.assigneeUserIds,
+  );
   const [autofillLoading, setAutofillLoading] = useState(false);
   const [autoFillError, setAutoFillError] = useState<string | null>(null);
 
@@ -65,12 +89,23 @@ export function AssignmentSettingsClient({ groupId, assignment, impact, actions 
     rev: impact.reviewCount,
     cmt: impact.commentCount,
   };
+  const hasRequiredFields =
+    title.trim().length > 0 &&
+    problemUrl.trim().length > 0 &&
+    difficulty.trim().length > 0 &&
+    algorithms
+      .split(",")
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0).length > 0;
+  const isSaveDisabled =
+    !hasRequiredFields || !isAssigneeSelectionValid(myRole, meUserId, selectedAssigneeUserIds);
+  const isDeleteConfirmMatched = deleteConfirmTitle === assignment.title;
 
   const inferAutofill = async () => {
     try {
       setAutofillLoading(true);
       setAutoFillError(null);
-      const result = await actions.autofill(problemUrl);
+      const result = await actions.autofill(problemUrl, locale);
       if (result.title.trim().length > 0) setTitle(result.title);
       if (result.hint.trim().length > 0) setHint(result.hint);
       if (result.difficulty.trim().length > 0) setDifficulty(result.difficulty);
@@ -171,6 +206,12 @@ export function AssignmentSettingsClient({ groupId, assignment, impact, actions 
             </div>
 
             <div className={styles.rightCol}>
+              <AssignmentAssigneePicker
+                members={members}
+                meUserId={meUserId}
+                initialSelectedUserIds={assignment.assigneeUserIds}
+                onSelectionChange={setSelectedAssigneeUserIds}
+              />
               <section className={styles.scheduleSection}>
                 <h3 className={styles.sectionTitle}>{t("assignment.new.scheduleTitle")}</h3>
                 <div
@@ -276,13 +317,22 @@ export function AssignmentSettingsClient({ groupId, assignment, impact, actions 
             </div>
           </div>
           <div className={styles.submitRow}>
-            <SubmitButton variant="primary">{t("assignment.settings.save")}</SubmitButton>
+            <SubmitButton variant="primary" disabled={isSaveDisabled}>
+              {t("assignment.settings.save")}
+            </SubmitButton>
           </div>
         </form>
       </section>
 
       <section className={styles.section}>
-        <Button type="button" variant="danger" onClick={() => setConfirmOpen(true)}>
+        <Button
+          type="button"
+          variant="danger"
+          onClick={() => {
+            setDeleteConfirmTitle("");
+            setConfirmOpen(true);
+          }}
+        >
           {t("assignment.settings.deleteBtn")}
         </Button>
       </section>
@@ -290,24 +340,42 @@ export function AssignmentSettingsClient({ groupId, assignment, impact, actions 
       <Modal
         open={confirmOpen}
         title={t("assignment.settings.modalTitle")}
-        onClose={() => setConfirmOpen(false)}
+        onClose={() => {
+          setConfirmOpen(false);
+          setDeleteConfirmTitle("");
+        }}
         footer={
           <div className={styles.modalFooter}>
-            <Button type="button" variant="secondary" onClick={() => setConfirmOpen(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setConfirmOpen(false);
+                setDeleteConfirmTitle("");
+              }}
+            >
               {t("assignment.settings.modalCancel")}
             </Button>
             <form action={actions.deleteAssignment}>
-              <input type="hidden" name="confirmTitle" value={assignment.title} />
-              <SubmitButton variant="danger">
+              <input type="hidden" name="confirmTitle" value={deleteConfirmTitle} />
+              <SubmitButton variant="danger" disabled={!isDeleteConfirmMatched}>
                 {t("assignment.settings.modalConfirm")}
               </SubmitButton>
             </form>
           </div>
         }
       >
-        <p style={{ margin: 0 }}>
-          {t("assignment.settings.modalBody", { title: assignment.title, ...counts })}
-        </p>
+        <div className={styles.modalBody}>
+          <p className={styles.modalText}>
+            {t("assignment.settings.modalBody", { title: assignment.title, ...counts })}
+          </p>
+          <Input
+            value={deleteConfirmTitle}
+            onChange={(event) => setDeleteConfirmTitle(event.target.value)}
+            placeholder={assignment.title}
+            label={t("assignment.settings.modalInputLabel", { title: assignment.title })}
+          />
+        </div>
       </Modal>
     </div>
   );

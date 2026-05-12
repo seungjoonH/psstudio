@@ -1,7 +1,7 @@
 // 과제 설정/메타데이터 수정/삭제 페이지입니다.
 import { redirect } from "next/navigation";
 import { fetchMeServer } from "../../../../../../src/auth/api.server";
-import { getGroup } from "../../../../../../src/groups/server";
+import { getGroup, listGroupMembers } from "../../../../../../src/groups/server";
 import { getAssignment, getDeletionImpact } from "../../../../../../src/assignments/server";
 import { AppShell } from "../../../../../../src/shell/AppShell";
 import { ErrorState } from "../../../../../../src/ui/states/ErrorState";
@@ -22,10 +22,11 @@ export default async function AssignmentSettingsPage({ params }: Props) {
   if (me === null) redirect("/login");
 
   try {
-    const [group, a, impact] = await Promise.all([
+    const [group, a, impact, members] = await Promise.all([
       getGroup(groupId),
       getAssignment(assignmentId),
       getDeletionImpact(assignmentId).catch(() => ({ submissionCount: 0, reviewCount: 0, commentCount: 0 })),
+      listGroupMembers(groupId),
     ]);
     if (group.myRole !== "OWNER" && group.myRole !== "MANAGER") {
       return (
@@ -43,6 +44,9 @@ export default async function AssignmentSettingsPage({ params }: Props) {
           groupId={groupId}
           assignment={a}
           impact={impact}
+          members={members}
+          meUserId={me.id}
+          myRole={group.myRole}
           actions={{
             update: updateAssignmentCombinedAction.bind(null, groupId, assignmentId),
             autofill: autofillAssignmentAction.bind(null, groupId),

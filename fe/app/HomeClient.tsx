@@ -11,14 +11,16 @@ import { buildCls } from "../src/lib/buildCls";
 import { dueBadgeTone } from "../src/lib/dueBadgeTone";
 import { notificationUsesAssignmentGlyph } from "../src/lib/notificationUsesAssignmentGlyph";
 import { notificationActorDisplayName } from "../src/lib/notificationActorDisplayName";
+import { useNotificationStream } from "../src/notifications/useNotificationStream";
 import { resolveShikiLanguage } from "../src/lib/shikiLanguage";
-import { formatAssignmentAlgorithmLabel } from "../src/assignments/algorithmLabels";
+import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "../src/assignments/algorithmLabels";
 import { AssignmentNotificationGlyph } from "../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../src/ui/DeadlineSoonNotificationGlyph";
 import { Badge } from "../src/ui/Badge";
 import { DifficultyBadge } from "../src/ui/DifficultyBadge";
 import { Icon } from "../src/ui/Icon";
 import { UserAvatar } from "../src/ui/UserAvatar";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 type RecentSubmission = {
@@ -78,6 +80,14 @@ export function HomeClient({
   todoTotal,
 }: Props) {
   const { locale, t } = useI18n();
+  const router = useRouter();
+
+  useNotificationStream(
+    () => {
+      router.refresh();
+    },
+    { enabled: me !== null },
+  );
 
   if (me === null) {
     return <LoginClient apiBase={loginApiBase} />;
@@ -145,20 +155,18 @@ export function HomeClient({
                             <div className={styles.todoTitleStrip}>
                               <div className={styles.todoTitleLeft}>
                                 <span className={styles.kanbanItemTitle}>
-                                  <Icon name="book" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
+                                  <Icon name="task" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
                                   <span className={styles.kanbanItemTitleText}>{item.title}</span>
                                 </span>
-                                <Badge tone="neutral" chipIndex={0}>
-                                  {item.groupName}
-                                </Badge>
                               </div>
                               <span className={styles.todoTitleDue}>
                                 <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
                               </span>
                             </div>
                             <div className={styles.todoMetaRow}>
+                              <span className={styles.todoGroupInline}>{item.groupName}</span>
                               <Badge tone="neutral" chipIndex={1}>
-                                {item.platform}
+                                {formatProblemPlatformLabel(locale, item.platform)}
                               </Badge>
                               <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
                             </div>
@@ -185,7 +193,7 @@ export function HomeClient({
         <article className={styles.column} aria-labelledby="home-done-title">
           <header className={styles.columnHead}>
             <span className={`${styles.cardIcon} ${styles.doneIcon}`} aria-hidden>
-              <Icon name="check" size={16} />
+              <Icon name="done" size={16} />
             </span>
             <div>
               <h2 id="home-done-title" className={styles.cardTitle}>

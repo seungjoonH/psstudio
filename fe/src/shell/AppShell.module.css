@@ -90,6 +90,33 @@
     border-color var(--ui-duration) var(--ui-ease);
 }
 
+.navIconWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navUnreadBadge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  border: 2px solid var(--color-surface);
+}
+
 .navLink:active {
   transform: translateY(var(--ui-press-y)) scale(var(--ui-press-scale));
   opacity: 1;
@@ -156,10 +183,6 @@
   margin: 0;
   font-size: 20px;
   letter-spacing: -0.02em;
-}
-
-.unreadBadge {
-  flex: none;
 }
 
 .subtitle {

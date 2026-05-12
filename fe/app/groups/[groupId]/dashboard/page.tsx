@@ -43,6 +43,7 @@ export default async function GroupDashboardPage({ params }: Props) {
       platform: assignment.platform,
       dueAt: assignment.dueAt,
       isLate: assignment.isLate,
+      assigneeUserIds: assignment.assigneeUserIds,
     }));
     const memberRows: DashboardMember[] = members.map((member) => ({
       userId: member.userId,

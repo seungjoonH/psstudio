@@ -66,10 +66,14 @@
   color: var(--color-muted);
   background: transparent;
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 .iconNavBtn:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   background: var(--ui-hover-fill-muted);
   color: var(--color-text);
 }
@@ -109,9 +113,14 @@
   color: var(--color-text);
   font-size: 13px;
   text-decoration: none;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
 }
 
 .todayLink:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   background: var(--ui-hover-bg);
   border-color: var(--ui-hover-border);
 }
@@ -330,6 +339,31 @@
   min-width: 0;
 }
 
+.assignmentRowSolved {
+  background: color-mix(in oklab, var(--color-success) 16%, var(--color-surface));
+}
+
+.assignmentRowLate {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-success) 16%, var(--color-surface)) 0 12px,
+      color-mix(in oklab, var(--color-muted) 12%, var(--color-surface)) 12px 24px
+    );
+}
+
+.assignmentRowUnsolved {
+  background: color-mix(in oklab, var(--color-danger) 14%, var(--color-surface));
+}
+
+.assignmentRowOverdue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+}
+
+.assignmentRowNeutral {
+  background: var(--color-surface-muted);
+}
+
 .assignmentPill {
   display: block;
   padding: 8px 10px;
@@ -337,6 +371,31 @@
 }
 
 .dayCellHit:hover .assignmentRow {
+  background: var(--ui-hover-fill-muted);
+}
+
+.dayCellHit:hover .assignmentRowSolved {
+  background: color-mix(in oklab, var(--color-success) 22%, var(--color-surface));
+}
+
+.dayCellHit:hover .assignmentRowLate {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-success) 22%, var(--color-surface)) 0 12px,
+      color-mix(in oklab, var(--color-muted) 17%, var(--color-surface)) 12px 24px
+    );
+}
+
+.dayCellHit:hover .assignmentRowUnsolved {
+  background: color-mix(in oklab, var(--color-danger) 20%, var(--color-surface));
+}
+
+.dayCellHit:hover .assignmentRowOverdue {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface));
+}
+
+.dayCellHit:hover .assignmentRowNeutral {
   background: var(--ui-hover-fill-muted);
 }
 
@@ -364,8 +423,32 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--color-primary) 85%, var(--color-text));
   flex-shrink: 0;
+}
+
+.assignmentDotSolved {
+  background: var(--color-success);
+}
+
+.assignmentDotLate {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--color-success) 0 2px,
+      color-mix(in oklab, var(--color-muted) 82%, var(--color-surface)) 2px 4px
+    );
+}
+
+.assignmentDotUnsolved {
+  background: var(--color-danger);
+}
+
+.assignmentDotOverdue {
+  background: color-mix(in oklab, var(--color-muted) 82%, var(--color-surface));
+}
+
+.assignmentDotNeutral {
+  background: color-mix(in oklab, var(--color-primary) 85%, var(--color-text));
 }
 
 .modalEmpty {
@@ -397,12 +480,69 @@
   background: var(--color-surface-muted);
   text-decoration: none;
   color: inherit;
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.modalAssignmentLinkSolved {
+  background: color-mix(in oklab, #22c55e 18%, var(--color-surface));
+  border-color: color-mix(in oklab, #22c55e 35%, var(--color-border));
+}
+
+.modalAssignmentLinkLate {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, #22c55e 18%, var(--color-surface)) 0 14px,
+      color-mix(in oklab, var(--color-muted) 12%, var(--color-surface)) 14px 28px
+    );
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.modalAssignmentLinkUnsolved {
+  background: color-mix(in oklab, #ef4444 16%, var(--color-surface));
+  border-color: color-mix(in oklab, #ef4444 35%, var(--color-border));
+}
+
+.modalAssignmentLinkOverdue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+}
+
+.modalAssignmentLinkNeutral {
+  background: var(--color-surface-muted);
 }
 
 .modalAssignmentLink:hover {
-  background: var(--ui-hover-fill-muted);
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
+}
+
+.modalAssignmentLinkSolved:hover {
+  background: color-mix(in oklab, #22c55e 22%, var(--color-surface));
+}
+
+.modalAssignmentLinkLate:hover {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, #22c55e 22%, var(--color-surface)) 0 14px,
+      color-mix(in oklab, var(--color-muted) 17%, var(--color-surface)) 14px 28px
+    );
+}
+
+.modalAssignmentLinkUnsolved:hover {
+  background: color-mix(in oklab, #ef4444 20%, var(--color-surface));
+}
+
+.modalAssignmentLinkOverdue:hover {
+  background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface));
+}
+
+.modalAssignmentLinkNeutral:hover {
+  background: var(--ui-hover-fill-muted);
 }
 
 .modalAssignmentTitle {
@@ -411,9 +551,78 @@
   color: var(--color-text);
 }
 
+.modalAssignmentHead {
+  display: grid;
+  gap: 6px;
+}
+
+.modalAssignmentTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modalTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modalMyBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 16px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-primary) 88%, var(--color-text));
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .modalAssignmentDue {
   font-size: 12px;
   color: var(--color-muted);
+}
+
+.modalAssigneeGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+  margin-top: 6px;
+}
+
+.modalAssigneeGroup {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.modalAssigneeGroupSolved {
+  grid-column: 1;
+}
+
+.modalAssigneeGroupUnsolved {
+  grid-column: 2;
+}
+
+.modalAssigneeLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.modalAvatarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 @media (max-width: 900px) {

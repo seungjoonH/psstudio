@@ -67,10 +67,14 @@
   color: var(--color-muted);
   background: transparent;
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 .iconNavBtn:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   background: var(--ui-hover-fill-muted);
   color: var(--color-text);
 }
@@ -110,9 +114,14 @@
   color: var(--color-text);
   font-size: 13px;
   text-decoration: none;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
 }
 
 .todayLink:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   background: var(--ui-hover-bg);
   border-color: var(--ui-hover-border);
 }
@@ -398,10 +407,14 @@
   background: var(--color-surface-muted);
   text-decoration: none;
   color: inherit;
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 .modalAssignmentLink:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   background: var(--ui-hover-fill-muted);
   border-color: var(--ui-hover-border);
 }

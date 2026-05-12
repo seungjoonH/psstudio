@@ -18,6 +18,7 @@
 }
 
 .row:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
   background: var(--ui-hover-bg);
 }
@@ -29,6 +30,7 @@
 }
 
 .rowPastDue:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
   background: color-mix(in oklab, var(--color-muted) 17%, var(--color-surface));
 }

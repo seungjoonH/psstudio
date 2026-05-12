@@ -1,7 +1,7 @@
 // 과제 생성 페이지입니다.
 import { redirect } from "next/navigation";
 import { fetchMeServer } from "../../../../../src/auth/api.server";
-import { getGroup } from "../../../../../src/groups/server";
+import { getGroup, listGroupMembers } from "../../../../../src/groups/server";
 import { AppShell } from "../../../../../src/shell/AppShell";
 import { ErrorState } from "../../../../../src/ui/states/ErrorState";
 import { autofillAssignmentAction, createAssignmentAction } from "../actions";
@@ -23,8 +23,9 @@ export default async function NewAssignmentPage({ params, searchParams }: Props)
   if (me === null) redirect("/login");
 
   let group: Awaited<ReturnType<typeof getGroup>>;
+  let members: Awaited<ReturnType<typeof listGroupMembers>>;
   try {
-    group = await getGroup(groupId);
+    [group, members] = await Promise.all([getGroup(groupId), listGroupMembers(groupId)]);
   } catch (error) {
     return (
       <AppShell titleKey="assignment.new.fallbackTitle">
@@ -61,6 +62,9 @@ export default async function NewAssignmentPage({ params, searchParams }: Props)
           autofillAction={autofillAssignmentAction.bind(null, groupId)}
           defaultDueTime={group.rules.defaultDeadlineTime}
           initialDueDate={query.dueDate}
+          members={members}
+          meUserId={me.id}
+          myRole={group.myRole}
         />
       </div>
     </AppShell>

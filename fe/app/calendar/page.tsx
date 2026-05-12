@@ -34,8 +34,17 @@ export default async function CalendarPage() {
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
   const all = await Promise.all(
     allRaw.map(async (item) => {
-      const mine = await listSubmissions(item.id, { authorId: me.id, sort: "createdAtDesc" });
-      return { ...item, hasMySubmission: mine.length > 0 };
+      const submissions = await listSubmissions(item.id, { sort: "createdAtDesc" });
+      const submitterIds = Array.from(new Set(submissions.map((submission) => submission.authorUserId)));
+      const hasMyLateSubmission = submissions.some(
+        (submission) => submission.authorUserId === me.id && submission.isLate,
+      );
+      return {
+        ...item,
+        hasMySubmission: submitterIds.includes(me.id),
+        hasMyLateSubmission,
+        submitterIds,
+      };
     }),
   );
 
@@ -51,7 +60,9 @@ export default async function CalendarPage() {
             title: item.title,
             dueAt: item.dueAt,
             isLate: item.isLate,
+            isAssignedToMe: item.isAssignedToMe,
             hasMySubmission: item.hasMySubmission,
+            hasMyLateSubmission: item.hasMyLateSubmission,
             platform: item.platform,
             difficulty: item.difficulty,
             groupName: item.groupName,
@@ -59,6 +70,9 @@ export default async function CalendarPage() {
             algorithms: item.metadata.algorithms ?? [],
             algorithmsHiddenUntilSubmit: item.metadata.algorithmsHiddenUntilSubmit ?? true,
             analysisStatus: item.analysisStatus,
+            submitterIds: item.submitterIds,
+            assigneeUserIds: item.assigneeUserIds,
+            assignees: item.assignees,
           }))}
           mode="calendar"
         />

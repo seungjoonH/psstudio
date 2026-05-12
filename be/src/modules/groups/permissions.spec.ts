@@ -19,6 +19,12 @@ describe("canPerform", () => {
     expect(canPerform("MANAGER", "ASSIGNMENT_CREATE")).toBe(true);
   });
 
+  it("역할 변경은 OWNER만 허용한다", () => {
+    expect(canPerform("OWNER", "GROUP_MEMBER_ROLE_CHANGE")).toBe(true);
+    expect(canPerform("MANAGER", "GROUP_MEMBER_ROLE_CHANGE")).toBe(false);
+    expect(canPerform("MEMBER", "GROUP_MEMBER_ROLE_CHANGE")).toBe(false);
+  });
+
   it("OWNER만 그룹 코드 재발급을 허용한다", () => {
     expect(canPerform("OWNER", "GROUP_INVITE_CODE_REGEN")).toBe(true);
     expect(canPerform("MANAGER", "GROUP_INVITE_CODE_REGEN")).toBe(false);

@@ -18,6 +18,13 @@ function coerceUiLocale(value: string): Locale {
   return LOCALES.includes(value as Locale) ? (value as Locale) : "ko";
 }
 
+function parseAssigneeUserIds(formData: FormData): string[] {
+  return formData
+    .getAll("assigneeUserIds")
+    .map((value) => String(value).trim())
+    .filter((value) => value.length > 0);
+}
+
 export async function createAssignmentAction(groupId: string, formData: FormData): Promise<void> {
   const title = String(formData.get("title") ?? "").trim();
   const hint = String(formData.get("hint") ?? "");
@@ -31,6 +38,7 @@ export async function createAssignmentAction(groupId: string, formData: FormData
   const hintHiddenUntilSubmit = formData.get("hintHiddenUntilSubmit") === "on";
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
+  const assigneeUserIds = parseAssigneeUserIds(formData);
   if (title.length === 0 || problemUrl.length === 0 || dueAtLocal.length === 0) return;
   const created = await createAssignment(groupId, {
     title,
@@ -38,6 +46,7 @@ export async function createAssignmentAction(groupId: string, formData: FormData
     problemUrl,
     dueAt: new Date(dueAtLocal).toISOString(),
     allowLateSubmission,
+    assigneeUserIds,
   });
   await updateAssignmentMetadata(created.id, {
     algorithms: algorithms.length > 0 ? algorithms : undefined,
@@ -51,10 +60,13 @@ export async function createAssignmentAction(groupId: string, formData: FormData
 export async function autofillAssignmentAction(
   groupId: string,
   problemUrl: string,
+  uiLocale: string,
 ): Promise<{ title: string; hint: string; algorithms: string[]; difficulty: string }> {
   const url = problemUrl.trim();
   if (url.length === 0) throw new Error("Enter a problem URL first.");
-  return autofillAssignment(groupId, { problemUrl: url });
+  const locale = coerceUiLocale(uiLocale);
+  const acceptLanguage = locale === "ko" ? "ko-KR,ko;q=0.95,en;q=0.4" : "en-US,en;q=0.95,ko;q=0.4";
+  return autofillAssignment(groupId, { problemUrl: url }, { acceptLanguage });
 }
 
 export async function updateAssignmentAction(
@@ -67,12 +79,14 @@ export async function updateAssignmentAction(
   const problemUrl = String(formData.get("problemUrl") ?? "").trim();
   const dueAtLocal = String(formData.get("dueAt") ?? "").trim();
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
+  const assigneeUserIds = parseAssigneeUserIds(formData);
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
     hint,
     problemUrl: problemUrl.length > 0 ? problemUrl : undefined,
     dueAt: dueAtLocal.length > 0 ? new Date(dueAtLocal).toISOString() : undefined,
     allowLateSubmission,
+    assigneeUserIds,
   });
   revalidatePath(`/groups/${groupId}/assignments/${assignmentId}`);
 }
@@ -94,6 +108,7 @@ export async function updateAssignmentCombinedAction(
     .filter((tag) => tag.length > 0);
   const hintHiddenUntilSubmit = formData.get("hintHiddenUntilSubmit") === "on";
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
+  const assigneeUserIds = parseAssigneeUserIds(formData);
 
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
@@ -101,6 +116,7 @@ export async function updateAssignmentCombinedAction(
     problemUrl: problemUrl.length > 0 ? problemUrl : undefined,
     dueAt: dueAtLocal.length > 0 ? new Date(dueAtLocal).toISOString() : undefined,
     allowLateSubmission,
+    assigneeUserIds,
   });
   await updateAssignmentMetadata(assignmentId, {
     algorithms: algorithms.length > 0 ? algorithms : [],

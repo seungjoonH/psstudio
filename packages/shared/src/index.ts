@@ -4,6 +4,7 @@ export * from "./api/error-codes.js";
 export * from "./domain/roles.js";
 export * from "./domain/oauth.js";
 export * from "./domain/assignment.js";
+export * from "./domain/deadline-reminder.js";
 export * from "./domain/submission.js";
 export * from "./domain/notification.js";
 export * from "./domain/feedback-policy.js";

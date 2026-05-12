@@ -68,6 +68,12 @@ function formatReviewReplyThreadTitleKo(actorNickname: string): string {
   return `${actorNickname}님이 리뷰 스레드에 답글을 달았습니다.`;
 }
 
+function formatDeadlineSoonTitleKo(leadTimeMinutes?: number): string {
+  if (leadTimeMinutes === 60) return "과제 마감까지 1시간 남았습니다.";
+  if (leadTimeMinutes === 1440) return "과제 마감까지 24시간 남았습니다.";
+  return "과제 마감이 다가오고 있습니다.";
+}
+
 function resolveNotificationTitle(type: string, payload: Record<string, unknown>): string {
   const candidates = [payload.title, payload.message, payload.text, payload.body];
   for (const candidate of candidates) {
@@ -78,6 +84,9 @@ function resolveNotificationTitle(type: string, payload: Record<string, unknown>
       }
       return title;
     }
+  }
+  if (type === NOTIFICATION_TYPES.DEADLINE_SOON) {
+    return formatDeadlineSoonTitleKo(pickInt(payload, "leadTimeMinutes"));
   }
   return type;
 }
@@ -100,7 +109,11 @@ function resolveNotificationHref(type: string, payload: Record<string, unknown>)
   const submissionId = pickStr(payload, "submissionId");
   const versionNo = pickInt(payload, "versionNo");
 
-  if (type === NOTIFICATION_TYPES.ASSIGNMENT_CREATED && groupId !== undefined && assignmentId !== undefined) {
+  if (
+    (type === NOTIFICATION_TYPES.ASSIGNMENT_CREATED || type === NOTIFICATION_TYPES.DEADLINE_SOON) &&
+    groupId !== undefined &&
+    assignmentId !== undefined
+  ) {
     return `/groups/${groupId}/assignments/${assignmentId}`;
   }
 
@@ -163,6 +176,7 @@ async function buildMeNotificationListItems(rows: Notification[]): Promise<
     id: string;
     type: string;
     title: string;
+    isRead: boolean;
     createdAt: string;
     href: string | null;
     actorNickname: string | null;
@@ -271,6 +285,7 @@ async function buildMeNotificationListItems(rows: Notification[]): Promise<
       id: row.id,
       type: row.type,
       title,
+      isRead: row.isRead,
       createdAt: row.createdAt.toISOString(),
       href: resolveNotificationHref(row.type, payload),
       actorNickname,
@@ -315,6 +330,32 @@ export class UsersController {
       success: true,
       data: await buildMeNotificationListItems(rows),
     };
+  }
+
+  @Get("me/notifications/unread-count")
+  async getUnreadNotificationCount(@CurrentUser() me: { id: string }) {
+    await this.usersService.ensureInitialized();
+    const count = await dataSource.getRepository(Notification).count({
+      where: { recipientUserId: me.id, deletedAt: IsNull(), isRead: false },
+    });
+    return {
+      success: true,
+      data: { count },
+    };
+  }
+
+  @Patch("me/notifications/read-all")
+  async markAllNotificationsRead(@CurrentUser() me: { id: string }) {
+    await this.usersService.ensureInitialized();
+    await dataSource
+      .createQueryBuilder()
+      .update(Notification)
+      .set({ isRead: true, readAt: () => "CURRENT_TIMESTAMP" })
+      .where("recipient_user_id = :userId", { userId: me.id })
+      .andWhere("deleted_at IS NULL")
+      .andWhere("is_read = false")
+      .execute();
+    return { success: true, data: { ok: true } };
   }
 
   @Delete("me/notifications")

@@ -73,7 +73,7 @@ export default async function HomePage() {
           return { ...item, hasMySubmission: mine.length > 0 };
         }),
     )
-  ).filter((item) => !item.hasMySubmission);
+  ).filter((item) => item.isAssignedToMe && !item.hasMySubmission);
   const todoTotal = todoPending.length;
   const nowMs = Date.now();
   const todoItems = [...todoPending]

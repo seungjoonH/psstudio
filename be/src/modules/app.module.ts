@@ -6,6 +6,7 @@ import { EmailModule } from "./email/email.module.js";
 import { GroupsModule } from "./groups/groups.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { InvitesModule } from "./invites/invites.module.js";
+import { NotificationsModule } from "./notifications/notifications.module.js";
 import { ReactionsModule } from "./reactions/reactions.module.js";
 import { ReviewsModule } from "./reviews/reviews.module.js";
 import { SubmissionsModule } from "./submissions/submissions.module.js";
@@ -18,6 +19,7 @@ import { UsersModule } from "./users/users.module.js";
     UsersModule,
     GroupsModule,
     InvitesModule,
+    NotificationsModule,
     AssignmentsModule,
     SubmissionsModule,
     ReactionsModule,

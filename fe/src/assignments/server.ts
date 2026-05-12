@@ -24,6 +24,13 @@ export type AssignmentDto = {
   };
   analysisStatus: string;
   isLate: boolean;
+  assigneeUserIds: string[];
+  assignees: Array<{
+    userId: string;
+    nickname: string;
+    profileImageUrl: string;
+  }>;
+  isAssignedToMe: boolean;
   hasMySubmission?: boolean;
 };
 
@@ -56,6 +63,7 @@ export function createAssignment(
     problemUrl: string;
     dueAt: string;
     allowLateSubmission: boolean;
+    assigneeUserIds?: string[];
   },
 ): Promise<AssignmentDto> {
   return apiFetch(`/api/v1/groups/${groupId}/assignments`, { method: "POST", json: body });
@@ -69,6 +77,7 @@ export function updateAssignment(
     problemUrl: string;
     dueAt: string;
     allowLateSubmission: boolean;
+    assigneeUserIds: string[];
   }>,
 ): Promise<AssignmentDto> {
   return apiFetch(`/api/v1/assignments/${assignmentId}`, { method: "PATCH", json: body });
@@ -102,9 +111,15 @@ export function deleteAssignment(assignmentId: string, confirmTitle: string): Pr
 export function autofillAssignment(
   groupId: string,
   body: { problemUrl: string },
+  options?: { acceptLanguage?: string },
 ): Promise<AssignmentAutofillDto> {
+  const extraHeaders: Record<string, string> = {};
+  if (options?.acceptLanguage !== undefined && options.acceptLanguage.length > 0) {
+    extraHeaders["Accept-Language"] = options.acceptLanguage;
+  }
   return apiFetch(`/api/v1/groups/${groupId}/assignments/autofill`, {
     method: "POST",
+    headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
     json: body,
   });
 }

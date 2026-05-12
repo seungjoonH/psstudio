@@ -4,10 +4,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { Badge } from "../../../../src/ui/Badge";
+import { DifficultyBadge } from "../../../../src/ui/DifficultyBadge";
 import { InlineAddButton } from "../../../../src/ui/InlineAddButton";
 import { Modal } from "../../../../src/ui/Modal";
+import { UserAvatar } from "../../../../src/ui/UserAvatar";
 import styles from "./page.module.css";
+
+type CalendarGridAssignee = {
+  userId: string;
+  nickname: string;
+  profileImageUrl: string;
+};
 
 export type CalendarGridAssignment = {
   id: string;
@@ -19,6 +29,12 @@ export type CalendarGridAssignment = {
   algorithms: string[];
   submitterIds: string[];
   hasMySubmission: boolean;
+  hasLateSubmission: boolean;
+  assigneeUserIds: string[];
+  assignees: CalendarGridAssignee[];
+  solvedAssignees: CalendarGridAssignee[];
+  unsolvedAssignees: CalendarGridAssignee[];
+  isAssignedToMe: boolean;
 };
 
 export type CalendarGridCell = {
@@ -37,6 +53,19 @@ type Props = {
   cells: CalendarGridCell[];
   gridClassName: string;
 };
+
+function getAssignmentTone(
+  assignment: CalendarGridAssignment,
+): "solved" | "late" | "unsolved" | "overdue" {
+  const isPastDue = new Date(assignment.dueAt).getTime() < Date.now();
+  const isSolved =
+    assignment.assignees.length > 0
+      ? assignment.unsolvedAssignees.length === 0
+      : assignment.submitterIds.length > 0;
+
+  if (!isSolved) return isPastDue ? "overdue" : "unsolved";
+  return assignment.hasLateSubmission ? "late" : "solved";
+}
 
 export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: Props) {
   const { t, locale } = useI18n();
@@ -106,20 +135,50 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
               </header>
 
               <ul className={styles.assignmentList}>
-                {cell.assignments.map((assignment) => (
-                  <li key={assignment.id} className={styles.assignmentRow}>
-                    <span className={styles.assignmentPill}>
-                      <span className={styles.assignmentTitle}>{assignment.title}</span>
-                    </span>
-                  </li>
-                ))}
+                {cell.assignments.map((assignment) => {
+                  const tone = getAssignmentTone(assignment);
+                  return (
+                    <li
+                      key={assignment.id}
+                      className={[
+                        styles.assignmentRow,
+                        tone === "solved"
+                          ? styles.assignmentRowSolved
+                          : tone === "late"
+                            ? styles.assignmentRowLate
+                            : tone === "overdue"
+                              ? styles.assignmentRowOverdue
+                              : styles.assignmentRowUnsolved,
+                      ].join(" ")}
+                    >
+                      <span className={styles.assignmentPill}>
+                        <span className={styles.assignmentTitle}>{assignment.title}</span>
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
 
               {cell.assignments.length > 0 ? (
                 <div className={styles.dotRow} aria-hidden>
-                  {cell.assignments.map((assignment) => (
-                    <span key={assignment.id} className={styles.assignmentDot} />
-                  ))}
+                  {cell.assignments.map((assignment) => {
+                    const tone = getAssignmentTone(assignment);
+                    return (
+                      <span
+                        key={assignment.id}
+                        className={[
+                          styles.assignmentDot,
+                          tone === "solved"
+                            ? styles.assignmentDotSolved
+                            : tone === "late"
+                              ? styles.assignmentDotLate
+                              : tone === "overdue"
+                                ? styles.assignmentDotOverdue
+                                : styles.assignmentDotUnsolved,
+                        ].join(" ")}
+                      />
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -134,21 +193,83 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
         ) : null}
         {selected !== null && selected.assignments.length > 0 ? (
           <ul className={styles.modalAssignmentList}>
-            {selected.assignments.map((assignment) => (
-              <li key={assignment.id} className={styles.modalAssignmentRow}>
-                <Link
-                  href={`/groups/${groupId}/assignments/${assignment.id}`}
-                  className={styles.modalAssignmentLink}
-                  onClick={() => closeModal()}
-                >
-                  <span className={styles.modalAssignmentTitle}>{assignment.title}</span>
-                  <span className={styles.modalAssignmentDue}>
-                    {t("groupCalendar.modalDueLabel")}{" "}
-                    {new Date(assignment.dueAt).toLocaleString(localeTag)}
-                  </span>
-                </Link>
-              </li>
-            ))}
+            {selected.assignments.map((assignment) => {
+              const platformLabel = formatProblemPlatformLabel(locale, assignment.platform);
+              const tone = getAssignmentTone(assignment);
+              return (
+                <li key={assignment.id} className={styles.modalAssignmentRow}>
+                  <Link
+                    href={`/groups/${groupId}/assignments/${assignment.id}`}
+                    className={[
+                      styles.modalAssignmentLink,
+                      tone === "solved"
+                        ? styles.modalAssignmentLinkSolved
+                        : tone === "late"
+                          ? styles.modalAssignmentLinkLate
+                          : tone === "overdue"
+                            ? styles.modalAssignmentLinkOverdue
+                            : styles.modalAssignmentLinkUnsolved,
+                    ].join(" ")}
+                    onClick={() => closeModal()}
+                  >
+                    <div className={styles.modalAssignmentHead}>
+                      <div className={styles.modalAssignmentTop}>
+                        <span className={styles.modalAssignmentTitle}>{assignment.title}</span>
+                        {assignment.isAssignedToMe ? (
+                          <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
+                        ) : null}
+                      </div>
+                      <div className={styles.modalTagRow}>
+                        <Badge tone="neutral">{platformLabel}</Badge>
+                        <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                      </div>
+                    </div>
+                    <span className={styles.modalAssignmentDue}>
+                      {t("groupCalendar.modalDueLabel")}{" "}
+                      {new Date(assignment.dueAt).toLocaleString(localeTag)}
+                    </span>
+                    {assignment.isAssignedToMe ? (
+                      <div className={styles.modalAssigneeGroups}>
+                        {assignment.solvedAssignees.length > 0 ? (
+                          <div
+                            className={[styles.modalAssigneeGroup, styles.modalAssigneeGroupSolved].join(" ")}
+                          >
+                            <span className={styles.modalAssigneeLabel}>{t("groupCalendar.modalSolvedAssignees")}</span>
+                            <div className={styles.modalAvatarRow}>
+                              {assignment.solvedAssignees.map((assignee) => (
+                                <UserAvatar
+                                  key={`${assignment.id}-solved-${assignee.userId}`}
+                                  nickname={assignee.nickname}
+                                  imageUrl={assignee.profileImageUrl}
+                                  size={26}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        {assignment.unsolvedAssignees.length > 0 ? (
+                          <div
+                            className={[styles.modalAssigneeGroup, styles.modalAssigneeGroupUnsolved].join(" ")}
+                          >
+                            <span className={styles.modalAssigneeLabel}>{t("groupCalendar.modalUnsolvedAssignees")}</span>
+                            <div className={styles.modalAvatarRow}>
+                              {assignment.unsolvedAssignees.map((assignee) => (
+                                <UserAvatar
+                                  key={`${assignment.id}-unsolved-${assignee.userId}`}
+                                  nickname={assignee.nickname}
+                                  imageUrl={assignee.profileImageUrl}
+                                  size={26}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </Modal>

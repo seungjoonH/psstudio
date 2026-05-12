@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import type { GroupMember } from "../../../../src/groups/server";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { Button } from "../../../../src/ui/Button";
 import { Chip } from "../../../../src/ui/Chip";
 import { Input } from "../../../../src/ui/Input";
@@ -20,7 +21,7 @@ type FilterState = {
   solvedFilter: SolvedFilter;
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
-  selectedSubmitterIds: string[];
+  selectedAssigneeIds: string[];
 };
 
 type Props = {
@@ -65,7 +66,7 @@ export function GroupCalendarClient({
     solvedFilter: "all",
     selectedPlatforms: [],
     selectedAlgorithms: [],
-    selectedSubmitterIds: [],
+    selectedAssigneeIds: [],
   };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(emptyFilter);
@@ -83,7 +84,7 @@ export function GroupCalendarClient({
       ).sort((a, b) => a.localeCompare(b)),
     [flatAssignments],
   );
-  const submitterOptions = useMemo(
+  const assigneeOptions = useMemo(
     () =>
       members
         .map((member) => ({ userId: member.userId, nickname: member.nickname }))
@@ -112,15 +113,12 @@ export function GroupCalendarClient({
           return false;
         }
         if (
-          appliedFilter.selectedSubmitterIds.length > 0 &&
-          !appliedFilter.selectedSubmitterIds.some((id) => assignment.submitterIds.includes(id))
+          appliedFilter.selectedAssigneeIds.length > 0 &&
+          !appliedFilter.selectedAssigneeIds.some((id) => assignment.assigneeUserIds.includes(id))
         ) {
           return false;
         }
-        const isSolved =
-          appliedFilter.selectedSubmitterIds.length > 0
-            ? appliedFilter.selectedSubmitterIds.some((id) => assignment.submitterIds.includes(id))
-            : assignment.hasMySubmission;
+        const isSolved = assignment.hasMySubmission;
         if (appliedFilter.solvedFilter === "solved" && !isSolved) return false;
         if (appliedFilter.solvedFilter === "unsolved" && isSolved) return false;
         return true;
@@ -133,7 +131,7 @@ export function GroupCalendarClient({
     (appliedFilter.solvedFilter !== "all" ? 1 : 0) +
     (appliedFilter.selectedPlatforms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedAlgorithms.length > 0 ? 1 : 0) +
-    (appliedFilter.selectedSubmitterIds.length > 0 ? 1 : 0);
+    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0);
 
   const openFilterModal = () => {
     setDraftFilter(appliedFilter);
@@ -171,8 +169,8 @@ export function GroupCalendarClient({
       </header>
 
       <div className={styles.activeChipRow}>
-        {appliedFilter.selectedSubmitterIds.map((id) => {
-          const member = submitterOptions.find((option) => option.userId === id);
+        {appliedFilter.selectedAssigneeIds.map((id) => {
+          const member = assigneeOptions.find((option) => option.userId === id);
           if (member === undefined) return null;
           return (
             <Chip
@@ -181,7 +179,7 @@ export function GroupCalendarClient({
               onClick={() =>
                 setAppliedFilter((prev) => ({
                   ...prev,
-                  selectedSubmitterIds: prev.selectedSubmitterIds.filter((item) => item !== id),
+                  selectedAssigneeIds: prev.selectedAssigneeIds.filter((item) => item !== id),
                 }))
               }
             >
@@ -200,7 +198,7 @@ export function GroupCalendarClient({
               }))
             }
           >
-            {platform}
+            {formatProblemPlatformLabel(locale, platform)}
           </Chip>
         ))}
         {appliedFilter.selectedAlgorithms.map((algorithm) => (
@@ -283,18 +281,18 @@ export function GroupCalendarClient({
             placeholder={t("assignment.list.searchTitlePlaceholder")}
           />
           <div className={styles.filterSection}>
-            <p className={styles.filterLabel}>{t("assignment.list.submitter")}</p>
+            <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
             <div className={styles.chipRow}>
-              {submitterOptions.map((member) => (
+              {assigneeOptions.map((member) => (
                 <Chip
                   key={member.userId}
-                  active={draftFilter.selectedSubmitterIds.includes(member.userId)}
+                  active={draftFilter.selectedAssigneeIds.includes(member.userId)}
                   onClick={() =>
                     setDraftFilter((prev) => ({
                       ...prev,
-                      selectedSubmitterIds: prev.selectedSubmitterIds.includes(member.userId)
-                        ? prev.selectedSubmitterIds.filter((item) => item !== member.userId)
-                        : [...prev.selectedSubmitterIds, member.userId],
+                      selectedAssigneeIds: prev.selectedAssigneeIds.includes(member.userId)
+                        ? prev.selectedAssigneeIds.filter((item) => item !== member.userId)
+                        : [...prev.selectedAssigneeIds, member.userId],
                     }))
                   }
                 >
@@ -342,7 +340,7 @@ export function GroupCalendarClient({
                     }))
                   }
                 >
-                  {platform}
+                  {formatProblemPlatformLabel(locale, platform)}
                 </Chip>
               ))}
             </div>

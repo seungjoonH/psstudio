@@ -20,4 +20,4 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=builder /app /app
-CMD ["pnpm", "--filter", "worker", "exec", "node", "src/main.js"]
+CMD ["pnpm", "--filter", "worker", "start"]

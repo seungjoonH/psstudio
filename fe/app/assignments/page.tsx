@@ -14,6 +14,14 @@ type Props = {
   searchParams?: Promise<{ view?: string }>;
 };
 
+function getAssignmentSortBucket(item: {
+  dueAt: string;
+  hasMySubmission?: boolean;
+}): 0 | 1 | 2 {
+  if (item.hasMySubmission === true) return 2;
+  return new Date(item.dueAt).getTime() < Date.now() ? 0 : 1;
+}
+
 export default async function AssignmentsPage({ searchParams }: Props) {
   const query = (await searchParams) ?? {};
   const me = await fetchMeServer();
@@ -35,28 +43,51 @@ export default async function AssignmentsPage({ searchParams }: Props) {
         groupId: chunk.groupId,
         groupName: chunk.groupName,
       })),
-    )
-    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+    );
   const all = await Promise.all(
     allRaw.map(async (item) => {
-      const mine = await listSubmissions(item.id, { authorId: me.id, sort: "createdAtDesc" });
-      return { ...item, hasMySubmission: mine.length > 0 };
+      const submissions = await listSubmissions(item.id, { sort: "createdAtDesc" });
+      const submitterIds = Array.from(new Set(submissions.map((submission) => submission.authorUserId)));
+      const hasMyLateSubmission = submissions.some(
+        (submission) => submission.authorUserId === me.id && submission.isLate,
+      );
+      return {
+        ...item,
+        hasMySubmission: submitterIds.includes(me.id),
+        hasMyLateSubmission,
+        submitterIds,
+      };
     }),
   );
+  const sorted = [...all].sort((a, b) => {
+    const bucketA = getAssignmentSortBucket(a);
+    const bucketB = getAssignmentSortBucket(b);
+    const bucketDiff = bucketA - bucketB;
+    if (bucketDiff !== 0) return bucketDiff;
+
+    if (bucketA !== 2) {
+      const dueDiff = new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+      if (dueDiff !== 0) return dueDiff;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <AppShell titleKey="assignments.title" subtitleKey="assignments.subtitle">
-      {all.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyState titleKey="assignments.emptyTitle" descriptionKey="assignments.emptyDesc" />
       ) : (
         <AssignmentsOverviewClient
-          items={all.map((item) => ({
+          items={sorted.map((item) => ({
             id: item.id,
             href: `/groups/${item.groupId}/assignments/${item.id}`,
             title: item.title,
             dueAt: item.dueAt,
             isLate: item.isLate,
+            isAssignedToMe: item.isAssignedToMe,
             hasMySubmission: item.hasMySubmission,
+            hasMyLateSubmission: item.hasMyLateSubmission,
             platform: item.platform,
             difficulty: item.difficulty,
             groupName: item.groupName,
@@ -64,6 +95,9 @@ export default async function AssignmentsPage({ searchParams }: Props) {
             algorithms: item.metadata.algorithms ?? [],
             algorithmsHiddenUntilSubmit: item.metadata.algorithmsHiddenUntilSubmit ?? true,
             analysisStatus: item.analysisStatus,
+            submitterIds: item.submitterIds,
+            assigneeUserIds: item.assigneeUserIds,
+            assignees: item.assignees,
           }))}
           mode={query.view === "calendar" ? "calendar" : "list"}
         />

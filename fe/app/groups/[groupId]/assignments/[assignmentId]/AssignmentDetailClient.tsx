@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { dueBadgeTone } from "../../../../../src/lib/dueBadgeTone";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../../../../src/i18n/I18nProvider";
+import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "../../../../../src/assignments/algorithmLabels";
 import type { AssignmentDto, CohortAnalysisDto } from "../../../../../src/assignments/server";
 import type { SubmissionListItemDto } from "../../../../../src/submissions/server";
 import { AppShell } from "../../../../../src/shell/AppShell";
@@ -48,28 +49,28 @@ function formatRemainingHms(ms: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-function formatProblemRef(problemUrl: string, platform: string): string {
+function formatProblemRef(problemUrl: string, platformLabel: string): string {
   try {
     const u = new URL(problemUrl);
     const host = u.hostname;
     if (host.includes("programmers")) {
       const m = u.pathname.match(/lessons\/(\d+)/);
-      return m !== null ? `${platform} · ${m[1]}` : platform;
+      return m !== null ? `${platformLabel} · ${m[1]}` : platformLabel;
     }
     if (host.includes("acmicpc")) {
       const parts = u.pathname.split("/").filter(Boolean);
       const id = parts[parts.length - 1];
-      return id !== undefined ? `${platform} ${id}` : platform;
+      return id !== undefined ? `${platformLabel} ${id}` : platformLabel;
     }
     if (host.includes("leetcode")) {
       const segs = u.pathname.split("/").filter(Boolean);
       const slug = segs[1];
-      return slug !== undefined ? `${platform} · ${slug}` : platform;
+      return slug !== undefined ? `${platformLabel} · ${slug}` : platformLabel;
     }
   } catch {
     /* ignore */
   }
-  return platform;
+  return platformLabel;
 }
 
 export function AssignmentDetailClient({
@@ -148,7 +149,8 @@ export function AssignmentDetailClient({
     }
   }, [autoMoveToCohortPage, cohort.status, router, assignmentBase]);
 
-  const problemRef = formatProblemRef(a.problemUrl, a.platform);
+  const platformLabel = formatProblemPlatformLabel(uiLocale, a.platform);
+  const problemRef = formatProblemRef(a.problemUrl, platformLabel);
   const daysLeft = useMemo(() => Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000))), [due]);
   const dueLabel = a.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
   const dueTone = dueBadgeTone(a.isLate, daysLeft);
@@ -223,13 +225,13 @@ export function AssignmentDetailClient({
             <div className={styles.heroTop}>
               <div className={styles.badgeRow}>
                 <Badge tone="neutral" chipIndex={1}>
-                  {a.platform}
+                  {platformLabel}
                 </Badge>
                 <DifficultyBadge platform={a.platform} difficulty={a.difficulty} />
                 {canSeeAlgorithms && (a.metadata.algorithms?.length ?? 0) > 0
                   ? a.metadata.algorithms?.map((tag) => (
                       <Badge key={tag} tone="neutral" chipIndex={3}>
-                        {tag}
+                        {formatAssignmentAlgorithmLabel(uiLocale, tag)}
                       </Badge>
                     ))
                   : null}
@@ -238,7 +240,7 @@ export function AssignmentDetailClient({
                     <div className={styles.algorithmsBlurUnder} aria-hidden="true">
                       {a.metadata.algorithms?.map((tag) => (
                         <Badge key={tag} tone="neutral" chipIndex={3}>
-                          {tag}
+                          {formatAssignmentAlgorithmLabel(uiLocale, tag)}
                         </Badge>
                       ))}
                     </div>
@@ -276,6 +278,22 @@ export function AssignmentDetailClient({
               </div>
             </div>
             <p className={styles.problemRef}>{problemRef}</p>
+            {a.assignees.length > 0 ? (
+              <div className={styles.assigneeStrip}>
+                <div className={styles.assigneeStripHead}>{t("assignment.detail.assignees")}</div>
+                <div className={styles.assigneeAvatarRow}>
+                  {a.assignees.map((assignee) => (
+                    <UserAvatar
+                      key={assignee.userId}
+                      nickname={assignee.nickname}
+                      imageUrl={assignee.profileImageUrl}
+                      size={30}
+                      className={styles.assigneeAvatar}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className={styles.myStrip}>
               <div className={styles.myStripHead}>{t("assignment.detail.mySubmissionHeading")}</div>

@@ -24,6 +24,7 @@ import groupsExploreStyles from "./groups/GroupsExploreMock.module.css";
 import homeStyles from "./home/HomeDashboardMock.module.css";
 import nf from "./notifications/NotificationsListMock.module.css";
 import { useI18n } from "../../../src/i18n/I18nProvider";
+import { formatProblemPlatformLabel } from "../../../src/assignments/algorithmLabels";
 import { AI_TUTOR_PROFILE_IMAGE_URL } from "../../../src/lib/aiTutorProfileImageUrl";
 import { buildCls } from "../../../src/lib/buildCls";
 import { formatCalendarWeekRangeLabel } from "../../../src/lib/formatCalendarWeekRangeLabel";
@@ -546,7 +547,7 @@ const LANDING_TODO_MOCKS = [
   {
     titleKey: "landing.mockKanbanTodo3Title",
     groupKey: "landing.mockKanbanTodo3Group",
-    platformKey: "landing.mockKanbanTodo3Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockKanbanTodo3Difficulty",
     algoKey: "landing.mockKanbanTodo3Algo",
     dueIsoKey: "landing.mockKanbanTodo3DueIso",
@@ -557,7 +558,7 @@ const LANDING_TODO_MOCKS = [
   {
     titleKey: "landing.mockKanbanTodo4Title",
     groupKey: "landing.mockKanbanTodo4Group",
-    platformKey: "landing.mockKanbanTodo4Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockKanbanTodo4Difficulty",
     algoKey: "landing.mockKanbanTodo4Algo",
     dueIsoKey: "landing.mockKanbanTodo4DueIso",
@@ -567,7 +568,7 @@ const LANDING_TODO_MOCKS = [
   {
     titleKey: "landing.mockKanbanTodo1Title",
     groupKey: "landing.mockKanbanTodo1Group",
-    platformKey: "landing.mockKanbanTodo1Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockKanbanTodo1Difficulty",
     algoKey: "landing.mockKanbanTodo1Algo",
     dueIsoKey: "landing.mockKanbanTodo1DueIso",
@@ -661,7 +662,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                   const rawDaysLeft = Math.max(0, Math.ceil((dueMs - now) / (24 * 60 * 60 * 1000)));
                   const displayDays = Math.min(10, rawDaysLeft);
                   const dueTone = dueBadgeTone(todoLate, displayDays);
-                  const platformLabel = t(row.platformKey);
+                  const platformLabel = formatProblemPlatformLabel(locale, row.platform);
                   return (
                     <li key={row.titleKey}>
                       <div
@@ -672,7 +673,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                             <div className={h.todoTitleStrip}>
                               <div className={h.todoTitleLeft}>
                                 <span className={buildCls(h.kanbanItemTitle, styles.psProblemTitle)}>
-                                  <Icon name="book" size={14} className={h.kanbanItemTitleIcon} aria-hidden />
+                                  <Icon name="task" size={14} className={h.kanbanItemTitleIcon} aria-hidden />
                                   <span className={h.kanbanItemTitleText}>{t(row.titleKey)}</span>
                                 </span>
                                 <Badge tone="neutral" chipIndex={0}>
@@ -687,7 +688,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
                               <Badge tone="neutral" chipIndex={1}>
                                 {platformLabel}
                               </Badge>
-                              <DifficultyBadge platform={platformLabel} difficulty={t(row.difficultyKey)} />
+                              <DifficultyBadge platform={row.platform} difficulty={t(row.difficultyKey)} />
                             </div>
                             <div className={h.todoMetaRow}>
                               <Badge tone="neutral">{t(row.algoKey)}</Badge>
@@ -705,7 +706,7 @@ export function MiniHomeKanban({ ariaLabel }: { ariaLabel: string }) {
           <article className={h.column}>
             <header className={h.columnHead}>
               <span className={buildCls(h.cardIcon, h.doneIcon)} aria-hidden>
-                <Icon name="check" size={16} />
+                <Icon name="done" size={16} />
               </span>
               <div>
                 <h3 className={h.cardTitle}>{t("home.kanban.doneTitle")}</h3>
@@ -992,7 +993,7 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
             <li key={row.nameKey} className={gx.card}>
               <div className={gx.cardLink}>
                 <strong className={gx.groupName}>
-                  <Icon name="users" size={16} className={gx.groupNameIcon} aria-hidden />
+                  <Icon name="group" size={16} className={gx.groupNameIcon} aria-hidden />
                   {t(row.nameKey)}
                 </strong>
                 <p className={gx.groupDescription}>{desc}</p>
@@ -1028,28 +1029,28 @@ export function MiniGroupsStrip({ ariaLabel }: { ariaLabel: string }) {
 const LANDING_ASSIGNMENT_SHOWCASE = [
   {
     titleKey: "landing.mockAssignShow1Title",
-    platformKey: "landing.mockAssignShow1Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockAssignShow1Difficulty",
     dueOffsetDays: 10,
     solved: false,
   },
   {
     titleKey: "landing.mockAssignShow2Title",
-    platformKey: "landing.mockAssignShow2Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockAssignShow2Difficulty",
     dueOffsetDays: 3,
     solved: true,
   },
   {
     titleKey: "landing.mockAssignShow3Title",
-    platformKey: "landing.mockAssignShow3Platform",
+    platform: "BOJ",
     difficultyKey: "landing.mockAssignShow3Difficulty",
     dueOffsetDays: 1,
     solved: false,
   },
   {
     titleKey: "landing.mockAssignShow4Title",
-    platformKey: "landing.mockAssignShow4Platform",
+    platform: "Programmers",
     difficultyKey: "landing.mockAssignShow4Difficulty",
     dueOffsetDays: -2,
     solved: false,
@@ -1057,7 +1058,7 @@ const LANDING_ASSIGNMENT_SHOWCASE = [
 ] as const;
 
 export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const a = assignStyles;
   const assignShowRowsSorted = useMemo(() => {
     const anchor = Date.now();
@@ -1084,7 +1085,7 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
           const daysLeft = Math.min(10, Math.max(0, Math.ceil((due.getTime() - now) / (24 * 3600 * 1000))));
           const isLate = due.getTime() < now;
           const dueTone = dueBadgeTone(isLate, daysLeft);
-          const platform = t(row.platformKey);
+          const platformLabel = formatProblemPlatformLabel(locale, row.platform);
           return (
             <li
               key={row.titleKey}
@@ -1095,14 +1096,14 @@ export function MiniAssignmentShowcase({ ariaLabel }: { ariaLabel: string }) {
                   <div className={a.headMain}>
                     <div className={a.titleRow}>
                       <span className={a.title}>
-                        <Icon name="book" size={16} className={a.titleIcon} />
+                        <Icon name="task" size={16} className={a.titleIcon} />
                         <span className={styles.psProblemTitle}>{t(row.titleKey)}</span>
                       </span>
                       <div className={a.titleNear}>
                         <Badge tone="neutral" chipIndex={1}>
-                          {platform}
+                          {platformLabel}
                         </Badge>
-                        <DifficultyBadge platform={platform} difficulty={t(row.difficultyKey)} />
+                        <DifficultyBadge platform={row.platform} difficulty={t(row.difficultyKey)} />
                       </div>
                     </div>
                   </div>

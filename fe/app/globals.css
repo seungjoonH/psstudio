@@ -32,6 +32,7 @@
   --ui-duration: 0.18s;
   --ui-duration-fast: 0.12s;
   --ui-ease: cubic-bezier(0.33, 1, 0.68, 1);
+  --ui-hover-lift-y: -1px;
   --ui-press-y: 0.5px;
   --ui-press-scale: 0.985;
   /* 제출 diff 등: 라이트는 파스텔 틴트 */
@@ -165,6 +166,14 @@ textarea:focus-visible {
       outline-color var(--ui-duration) var(--ui-ease);
   }
 
+  button:not(:disabled):hover,
+  [role="button"]:not([aria-disabled="true"]):hover,
+  input[type="submit"]:not(:disabled):hover,
+  input[type="button"]:not(:disabled):hover,
+  input[type="reset"]:not(:disabled):hover {
+    transform: translateY(var(--ui-hover-lift-y));
+  }
+
   button:not(:disabled):active,
   [role="button"]:not([aria-disabled="true"]):active,
   input[type="submit"]:not(:disabled):active,
@@ -175,11 +184,16 @@ textarea:focus-visible {
 
   a[href] {
     transition:
+      transform var(--ui-duration) var(--ui-ease),
       opacity var(--ui-duration) var(--ui-ease),
       color var(--ui-duration) var(--ui-ease),
       filter var(--ui-duration) var(--ui-ease),
       background-color var(--ui-duration) var(--ui-ease),
       border-color var(--ui-duration) var(--ui-ease);
+  }
+
+  a[href]:hover {
+    transform: translateY(var(--ui-hover-lift-y));
   }
 
   a[href]:active {

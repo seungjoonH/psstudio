@@ -48,7 +48,6 @@ export function canPerform(role: GroupRole | null, permission: Permission): bool
     case "GROUP_INVITE_REVOKE":
     case "GROUP_JOIN_REQUEST_DECIDE":
     case "GROUP_MEMBER_KICK":
-    case "GROUP_MEMBER_ROLE_CHANGE":
     case "ASSIGNMENT_CREATE":
     case "ASSIGNMENT_UPDATE":
     case "ASSIGNMENT_DELETE":
@@ -60,6 +59,8 @@ export function canPerform(role: GroupRole | null, permission: Permission): bool
     case "ANNOUNCEMENT_DELETE":
     case "COMMUNITY_POST_DELETE_ANY":
       return hasAtLeastRole(role, "MANAGER");
+    case "GROUP_MEMBER_ROLE_CHANGE":
+      return role === "OWNER";
     case "GROUP_INVITE_CODE_REGEN":
       return role === "OWNER";
     case "GROUP_DELETE":

@@ -107,7 +107,19 @@ const EN_LABELS: Record<string, string> = {
   네트워크플로우: "Network Flow",
 };
 
+const PLATFORM_LABELS: Record<string, { ko: string; en: string }> = {
+  BOJ: { ko: "백준", en: "BOJ" },
+  Programmers: { ko: "프로그래머스", en: "Programmers" },
+  LeetCode: { ko: "리트코드", en: "LeetCode" },
+};
+
 export function formatAssignmentAlgorithmLabel(locale: "ko" | "en", keyword: string): string {
   if (locale === "ko") return keyword;
   return EN_LABELS[keyword] ?? keyword;
+}
+
+export function formatProblemPlatformLabel(locale: "ko" | "en", platform: string): string {
+  const label = PLATFORM_LABELS[platform];
+  if (label === undefined) return platform;
+  return locale === "ko" ? label.ko : label.en;
 }

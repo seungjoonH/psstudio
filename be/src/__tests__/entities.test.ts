@@ -5,6 +5,7 @@ import { AiAnalysis } from "../modules/submissions/ai-analysis.entity.js";
 import { AiTokenBalance } from "../modules/ai-tokens/ai-token-balance.entity.js";
 import { Announcement } from "../modules/board/announcement.entity.js";
 import { Assignment } from "../modules/assignments/assignment.entity.js";
+import { AssignmentAssignee } from "../modules/assignments/assignment-assignee.entity.js";
 import { AssignmentCohortAnalysisMember } from "../modules/assignments/assignment-cohort-analysis-member.entity.js";
 import { AssignmentCohortAnalysis } from "../modules/assignments/assignment-cohort-analysis.entity.js";
 import { AssignmentPolicyOverride } from "../modules/assignments/assignment-policy-override.entity.js";
@@ -34,6 +35,7 @@ const ALL = [
   ["group_email_invites", GroupEmailInvite],
   ["join_requests", JoinRequest],
   ["assignments", Assignment],
+  ["assignment_assignees", AssignmentAssignee],
   ["assignment_cohort_analyses", AssignmentCohortAnalysis],
   ["assignment_cohort_analysis_members", AssignmentCohortAnalysisMember],
   ["assignment_policy_overrides", AssignmentPolicyOverride],

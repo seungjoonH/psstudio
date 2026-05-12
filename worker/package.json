@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env.local --watch src/main.js",
-    "start": "node --env-file=.env.local src/main.js",
+    "dev": "node --env-file=.env.local --watch --import tsx src/main.js",
+    "start": "node --env-file=.env.local --import tsx src/main.js",
     "typecheck": "echo \"worker is JS-only for Phase 0~7; typecheck deferred to Phase 10\"",
     "lint": "echo \"worker lint deferred\"",
     "test": "vitest run",
@@ -12,6 +12,13 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.9",
+    "tsx": "^4.20.6",
     "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@psstudio/shared": "workspace:^",
+    "bullmq": "^5.76.8",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.1"
   }
 }

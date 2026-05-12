@@ -1,7 +1,6 @@
 "use client";
 
 // 그룹 상세 화면의 멤버 목록과 관리 액션을 그립니다.
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "../../../src/i18n/I18nProvider";
@@ -42,6 +41,7 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
   const { t } = useI18n();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [codeModalOpen, setCodeModalOpen] = useState(false);
+  const [transferTarget, setTransferTarget] = useState<GroupMember | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [creatorRole, setCreatorRole] = useState(group.rules.assignmentCreatorRoles);
@@ -50,16 +50,23 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
   const [joinLinkOn, setJoinLinkOn] = useState(group.joinMethods.link);
   const searchParams = useSearchParams();
 
-  const firstInviteUrl = links[0]?.url ?? "";
-
   const myRole = group.myRole;
-  const canManage = myRole === "OWNER" || myRole === "MANAGER";
   const isOwner = myRole === "OWNER";
+  const isManager = myRole === "MANAGER";
+  const canManage = isOwner || isManager;
   const creatorRoleOptions = useMemo(
     () => [
       { value: "OWNER_ONLY", label: t("groupNew.rules.creator.ownerOnly") },
       { value: "OWNER_AND_MANAGER", label: t("groupNew.rules.creator.both") },
     ],
+    [t],
+  );
+  const roleLabels = useMemo(
+    () => ({
+      OWNER: t("group.role.owner"),
+      MANAGER: t("group.role.manager"),
+      MEMBER: t("group.role.member"),
+    }),
     [t],
   );
 
@@ -113,33 +120,44 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                       />
                       <div>
                         <div className={styles.nameRow}>
-                          <span className={styles.nickname}>{m.nickname}</span>
-                          <Badge tone={m.role === "OWNER" ? "warning" : "neutral"}>{m.role}</Badge>
-                          {m.userId === meId ? <Badge tone="success">{t("group.meBadge")}</Badge> : null}
+                          <div className={styles.nameMain}>
+                            <span className={styles.nickname}>{m.nickname}</span>
+                            {m.userId === meId ? <span className={styles.meBadge}>{t("group.meBadge")}</span> : null}
+                          </div>
+                          <Badge
+                            tone={m.role === "OWNER" ? "warning" : "neutral"}
+                            className={styles.roleBadge}
+                          >
+                            {roleLabels[m.role]}
+                          </Badge>
                         </div>
                       </div>
                     </div>
-                    {canManage && m.userId !== meId && m.role !== "OWNER" ? (
+                    {(isOwner || (isManager && m.role === "MEMBER")) && m.userId !== meId ? (
                       <div className={styles.memberActions}>
-                        {m.role === "MEMBER" ? (
+                        {isOwner && m.role === "MEMBER" ? (
                           <form action={() => actions.changeRole(group.id, m.userId, "MANAGER")}>
                             <SubmitButton variant="secondary" className={styles.memberActionBtn}>
                               {t("group.member.promote")}
                             </SubmitButton>
                           </form>
-                        ) : (
+                        ) : null}
+                        {isOwner && m.role === "MANAGER" ? (
                           <form action={() => actions.changeRole(group.id, m.userId, "MEMBER")}>
                             <SubmitButton variant="secondary" className={styles.memberActionBtn}>
                               {t("group.member.demote")}
                             </SubmitButton>
                           </form>
-                        )}
+                        ) : null}
                         {isOwner ? (
-                          <form action={() => actions.transferOwner(group.id, m.userId)}>
-                            <SubmitButton variant="secondary" className={styles.memberActionBtn}>
-                              {t("group.member.transfer")}
-                            </SubmitButton>
-                          </form>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className={styles.memberActionBtn}
+                            onClick={() => setTransferTarget(m)}
+                          >
+                            {t("group.member.transfer")}
+                          </Button>
                         ) : null}
                         <form action={() => actions.removeMember(group.id, m.userId)}>
                           <SubmitButton variant="danger" className={styles.memberActionBtn}>
@@ -215,37 +233,39 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                             checked={joinCodeOn}
                             onCheckedChange={setJoinCodeOn}
                             icon={<Icon name="key" size={16} />}
+                            className={styles.joinMethodSwitch}
                           >
                             {t("groupNew.join.code")}
                           </Switch>
-                          <button
-                            type="button"
-                            className={styles.copyBtn}
-                            disabled={!joinCodeOn}
-                            title={!joinCodeOn ? t("group.copyCodeDisabledOff") : undefined}
-                            aria-label={
-                              !joinCodeOn
-                                ? t("group.copyCodeDisabledOff")
-                                : codeCopied
-                                  ? t("group.copyDoneAria")
-                                  : t("group.copyGroupCodeAria")
-                            }
-                            onClick={async () => {
-                              if (!joinCodeOn) return;
-                              try {
-                                await navigator.clipboard.writeText(group.groupCode);
-                                setCodeCopied(true);
-                              } catch {
-                                setCodeCopied(false);
-                              }
-                            }}
-                          >
-                            <Icon name={codeCopied ? "check" : "copy"} size={16} />
-                          </button>
                         </div>
                         <div className={styles.joinMethodValue}>
-                          <span className={styles.joinValueLabel}>{t("group.groupCode")}</span>
-                          <code className={styles.code}>{group.groupCode}</code>
+                          <div className={styles.joinValueContent}>
+                            <code className={styles.code}>{group.groupCode}</code>
+                            <button
+                              type="button"
+                              className={styles.copyBtn}
+                              disabled={!joinCodeOn}
+                              title={!joinCodeOn ? t("group.copyCodeDisabledOff") : undefined}
+                              aria-label={
+                                !joinCodeOn
+                                  ? t("group.copyCodeDisabledOff")
+                                  : codeCopied
+                                    ? t("group.copyDoneAria")
+                                    : t("group.copyGroupCodeAria")
+                              }
+                              onClick={async () => {
+                                if (!joinCodeOn) return;
+                                try {
+                                  await navigator.clipboard.writeText(group.groupCode);
+                                  setCodeCopied(true);
+                                } catch {
+                                  setCodeCopied(false);
+                                }
+                              }}
+                            >
+                              <Icon name={codeCopied ? "check" : "copy"} size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <div className={styles.joinMethodBlock}>
@@ -255,49 +275,41 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                             checked={joinLinkOn}
                             onCheckedChange={setJoinLinkOn}
                             icon={<Icon name="link" size={16} />}
+                            className={styles.joinMethodSwitch}
                           >
                             {t("groupNew.join.link")}
                           </Switch>
-                          <button
-                            type="button"
-                            className={styles.copyBtn}
-                            disabled={!joinLinkOn || firstInviteUrl.length === 0}
-                            title={
-                              !joinLinkOn
-                                ? t("group.copyLinkDisabledOff")
-                                : firstInviteUrl.length === 0
-                                  ? t("group.copyLinkDisabledEmpty")
-                                  : undefined
-                            }
-                            aria-label={
-                              !joinLinkOn
-                                ? t("group.copyLinkDisabledOff")
-                                : firstInviteUrl.length === 0
-                                  ? t("group.copyLinkDisabledEmpty")
-                                  : copiedLinkId === "primary"
-                                    ? t("group.copyDoneAria")
-                                    : t("group.copyInviteLinkAria")
-                            }
-                            onClick={async () => {
-                              if (!joinLinkOn || firstInviteUrl.length === 0) return;
-                              try {
-                                await navigator.clipboard.writeText(firstInviteUrl);
-                                setCopiedLinkId("primary");
-                              } catch {
-                                setCopiedLinkId(null);
-                              }
-                            }}
-                          >
-                            <Icon name={copiedLinkId === "primary" ? "check" : "copy"} size={16} />
-                          </button>
                         </div>
                         <div className={styles.joinMethodValue}>
-                          <span className={styles.joinValueLabel}>{t("invite.links.cardHeading")}</span>
                           {links.length > 0 ? (
                             <ul className={styles.joinLinkUrlList}>
                               {links.map((l) => (
                                 <li key={l.id} className={styles.joinLinkUrlItem}>
                                   <code className={styles.code}>{l.url}</code>
+                                  <button
+                                    type="button"
+                                    className={styles.copyBtn}
+                                    disabled={!joinLinkOn}
+                                    title={!joinLinkOn ? t("group.copyLinkDisabledOff") : undefined}
+                                    aria-label={
+                                      !joinLinkOn
+                                        ? t("group.copyLinkDisabledOff")
+                                        : copiedLinkId === l.id
+                                          ? t("group.copyDoneAria")
+                                          : t("group.copyInviteLinkAria")
+                                    }
+                                    onClick={async () => {
+                                      if (!joinLinkOn) return;
+                                      try {
+                                        await navigator.clipboard.writeText(l.url);
+                                        setCopiedLinkId(l.id);
+                                      } catch {
+                                        setCopiedLinkId(null);
+                                      }
+                                    }}
+                                  >
+                                    <Icon name={copiedLinkId === l.id ? "check" : "copy"} size={16} />
+                                  </button>
                                 </li>
                               ))}
                             </ul>
@@ -378,6 +390,7 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                         defaultValue={group.rules.assignmentCreatorRoles}
                         aria-label={t("group.settings.assignmentCreator")}
                         options={creatorRoleOptions}
+                        className={styles.creatorRoleSegments}
                       />
                       <span className={styles.caption}>
                         {creatorRole === "OWNER_ONLY"
@@ -394,12 +407,7 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
             </form>
           ) : null}
 
-          <div className={styles.divider} />
-
           <div className={styles.bottomActions}>
-            <Link href="/groups" className={styles.toolbarLinkMuted}>
-              {t("group.links.list")}
-            </Link>
             {!isOwner ? (
               <form action={() => actions.leaveGroup(group.id)}>
                 <SubmitButton variant="secondary">{t("group.settings.leave")}</SubmitButton>
@@ -454,6 +462,34 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
         }
       >
         <p className={styles.modalBody}>{t("group.codeModal.body")}</p>
+      </Modal>
+
+      <Modal
+        open={transferTarget !== null}
+        title={t("group.transferModal.title")}
+        onClose={() => setTransferTarget(null)}
+        footer={
+          <div className={styles.modalFooter}>
+            <Button variant="secondary" type="button" onClick={() => setTransferTarget(null)}>
+              {t("common.cancel")}
+            </Button>
+            <form
+              action={async () => {
+                if (transferTarget === null) return;
+                await actions.transferOwner(group.id, transferTarget.userId);
+                setTransferTarget(null);
+              }}
+            >
+              <SubmitButton variant="danger">{t("group.transferModal.confirm")}</SubmitButton>
+            </form>
+          </div>
+        }
+      >
+        {transferTarget !== null ? (
+          <p className={styles.modalBody}>
+            {t("group.transferModal.body", { name: transferTarget.nickname })}
+          </p>
+        ) : null}
       </Modal>
     </div>
   );

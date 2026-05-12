@@ -237,6 +237,31 @@
   min-width: 0;
 }
 
+.assignmentRowSolved {
+  background: color-mix(in oklab, #22c55e 16%, var(--color-surface));
+}
+
+.assignmentRowLate {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, #22c55e 16%, var(--color-surface)) 0 12px,
+      color-mix(in oklab, var(--color-muted) 12%, var(--color-surface)) 12px 24px
+    );
+}
+
+.assignmentRowUnsolved {
+  background: color-mix(in oklab, #ef4444 16%, var(--color-surface));
+}
+
+.assignmentRowOverdue {
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+}
+
+.assignmentRowNeutral {
+  background: var(--color-surface-muted);
+}
+
 .assignmentPill {
   display: block;
   padding: 8px 10px;
@@ -300,12 +325,119 @@
   color: inherit;
 }
 
+.modalAssignmentLinkSolved {
+  border-color: color-mix(in oklab, #22c55e 30%, var(--color-border));
+  background: color-mix(in oklab, #22c55e 12%, var(--color-surface));
+}
+
+.modalAssignmentLinkLate {
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, #22c55e 12%, var(--color-surface)) 0 14px,
+      color-mix(in oklab, var(--color-muted) 12%, var(--color-surface)) 14px 28px
+    );
+}
+
+.modalAssignmentLinkUnsolved {
+  border-color: color-mix(in oklab, #ef4444 32%, var(--color-border));
+  background: color-mix(in oklab, #ef4444 12%, var(--color-surface));
+}
+
+.modalAssignmentLinkOverdue {
+  border-color: color-mix(in oklab, var(--color-muted) 22%, var(--color-border));
+  background: color-mix(in oklab, var(--color-muted) 12%, var(--color-surface));
+}
+
+.modalAssignmentLinkNeutral {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.modalAssigneeGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+  margin-top: 6px;
+}
+
+.modalAssigneeGroup {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.modalAssigneeGroupSolved {
+  grid-column: 1;
+}
+
+.modalAssigneeGroupUnsolved {
+  grid-column: 2;
+}
+
+.modalAssigneeLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.modalAvatarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .modalAssignmentTitle {
   font-size: 15px;
   font-weight: 700;
 }
 
+.modalAssignmentHead {
+  display: grid;
+  gap: 6px;
+}
+
+.modalAssignmentTop {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .modalAssignmentMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modalAssignmentGroup {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.modalMyBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 16px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-primary) 88%, var(--color-text));
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.modalAssignmentDue {
   font-size: 12px;
   color: var(--color-muted);
 }

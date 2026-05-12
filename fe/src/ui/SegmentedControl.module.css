@@ -62,11 +62,13 @@
 }
 
 .segment:hover .radio:not(:checked) + .face {
+  transform: translateY(var(--ui-hover-lift-y));
   color: var(--color-text);
   background: var(--ui-hover-fill-muted);
 }
 
 .segment:hover .radio:checked + .face {
+  transform: translateY(var(--ui-hover-lift-y));
   filter: brightness(0.96);
 }
 

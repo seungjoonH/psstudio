@@ -73,10 +73,17 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
       assignments.map(async (assignment) => {
         const submissions = await listSubmissions(assignment.id, { sort: "createdAtDesc" });
         const submitterIds = Array.from(new Set(submissions.map((submission) => submission.authorUserId)));
+        const lateSubmitterIds = Array.from(
+          new Set(submissions.filter((submission) => submission.isLate).map((submission) => submission.authorUserId)),
+        );
         return {
           ...assignment,
           submitterIds,
           hasMySubmission: submitterIds.includes(me.id),
+          hasLateSubmission:
+            assignment.assigneeUserIds.length > 0
+              ? assignment.assigneeUserIds.some((userId) => lateSubmitterIds.includes(userId))
+              : lateSubmitterIds.length > 0,
         };
       }),
     );
@@ -123,6 +130,12 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
               : (a.metadata.algorithms ?? []),
           submitterIds: a.submitterIds,
           hasMySubmission: a.hasMySubmission ?? false,
+          hasLateSubmission: a.hasLateSubmission ?? false,
+          assigneeUserIds: a.assigneeUserIds,
+          assignees: a.assignees,
+          solvedAssignees: a.assignees.filter((assignee) => a.submitterIds.includes(assignee.userId)),
+          unsolvedAssignees: a.assignees.filter((assignee) => !a.submitterIds.includes(assignee.userId)),
+          isAssignedToMe: a.isAssignedToMe,
         })),
       };
     });

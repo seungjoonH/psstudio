@@ -7,6 +7,11 @@ import {
   ASSIGNMENT_ALGORITHM_KEYWORDS,
   formatAssignmentAlgorithmLabel,
 } from "../../../../../src/assignments/algorithmLabels";
+import {
+  AssignmentAssigneePicker,
+  isAssigneeSelectionValid,
+  type AssignmentAssigneeMember,
+} from "../../../../../src/assignments/AssignmentAssigneePicker";
 import { Button } from "../../../../../src/ui/Button";
 import { SubmitButton } from "../../../../../src/ui/SubmitButton";
 import { Icon } from "../../../../../src/ui/Icon";
@@ -16,9 +21,15 @@ import styles from "./page.module.css";
 
 type Props = {
   action: (formData: FormData) => Promise<void>;
-  autofillAction: (problemUrl: string) => Promise<{ title: string; hint: string; algorithms: string[]; difficulty: string }>;
+  autofillAction: (
+    problemUrl: string,
+    uiLocale: string,
+  ) => Promise<{ title: string; hint: string; algorithms: string[]; difficulty: string }>;
   defaultDueTime: string;
   initialDueDate?: string;
+  members: AssignmentAssigneeMember[];
+  meUserId: string;
+  myRole: "OWNER" | "MANAGER";
 };
 
 const DAY_OPTIONS = ["1", "3", "7", "14"] as const;
@@ -169,7 +180,15 @@ const computeDueAtByWeekday = (weekday: string, dueTime: string): Date => {
   return next;
 };
 
-export function NewAssignmentForm({ action, autofillAction, defaultDueTime, initialDueDate }: Props) {
+export function NewAssignmentForm({
+  action,
+  autofillAction,
+  defaultDueTime,
+  initialDueDate,
+  members,
+  meUserId,
+  myRole,
+}: Props) {
   const { t, locale } = useI18n();
   const [title, setTitle] = useState("");
   const [problemUrl, setProblemUrl] = useState("");
@@ -184,6 +203,9 @@ export function NewAssignmentForm({ action, autofillAction, defaultDueTime, init
   const [scheduleMode, setScheduleMode] = useState<"days" | "weekday">("days");
   const [periodDays, setPeriodDays] = useState<(typeof DAY_OPTIONS)[number] | null>("7");
   const [weekday, setWeekday] = useState<(typeof WEEKDAY_OPTIONS)[number] | null>("2");
+  const [selectedAssigneeUserIds, setSelectedAssigneeUserIds] = useState(() =>
+    members.map((member) => member.userId),
+  );
   const [dueAtLocal, setDueAtLocal] = useState(() => {
     const time = normalizeDueTime(defaultDueTime);
     if (initialDueDate !== undefined && isValidDateOnly(initialDueDate)) {
@@ -212,7 +234,7 @@ export function NewAssignmentForm({ action, autofillAction, defaultDueTime, init
     try {
       setAutofillLoading(true);
       setAutoFillError(null);
-      const result = await autofillAction(problemUrl);
+      const result = await autofillAction(problemUrl, locale);
       if (result.title.trim().length > 0) setTitle(result.title);
       if (result.hint.trim().length > 0) setHint(result.hint);
       if (result.difficulty.trim().length > 0) setDifficulty(result.difficulty);
@@ -238,6 +260,13 @@ export function NewAssignmentForm({ action, autofillAction, defaultDueTime, init
     value,
     label: t(`assignment.new.weekdayOption.${value}`),
   }));
+  const hasRequiredFields =
+    title.trim().length > 0 &&
+    problemUrl.trim().length > 0 &&
+    difficulty.trim().length > 0 &&
+    algorithms.length > 0;
+  const isSubmitDisabled =
+    !hasRequiredFields || !isAssigneeSelectionValid(myRole, meUserId, selectedAssigneeUserIds);
 
   return (
     <form action={action} className={styles.form}>
@@ -360,6 +389,11 @@ export function NewAssignmentForm({ action, autofillAction, defaultDueTime, init
         </div>
 
         <div className={styles.rightCol}>
+          <AssignmentAssigneePicker
+            members={members}
+            meUserId={meUserId}
+            onSelectionChange={setSelectedAssigneeUserIds}
+          />
           <section className={styles.scheduleSection}>
             <h3 className={styles.sectionTitle}>{t("assignment.new.scheduleTitle")}</h3>
             <div
@@ -498,7 +532,7 @@ export function NewAssignmentForm({ action, autofillAction, defaultDueTime, init
         </div>
       </div>
       <div className={styles.submitRow}>
-        <SubmitButton variant="primary">
+        <SubmitButton variant="primary" disabled={isSubmitDisabled}>
           {t("assignment.new.submit")}
         </SubmitButton>
       </div>

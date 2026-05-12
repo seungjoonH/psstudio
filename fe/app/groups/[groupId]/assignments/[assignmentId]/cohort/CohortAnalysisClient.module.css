@@ -22,10 +22,13 @@
   font-weight: 600;
   color: var(--color-primary);
   text-decoration: none;
-  transition: filter var(--ui-duration) var(--ui-ease);
+  transition:
+    transform var(--ui-duration) var(--ui-ease),
+    filter var(--ui-duration) var(--ui-ease);
 }
 
 .back:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   text-decoration: underline;
   filter: brightness(0.94);
 }

@@ -12,6 +12,7 @@ import { AssignmentCohortReportLocale1785000000000 } from "../../migrations/1785
 import { ClearAssignmentCohortAnalyses1786000000000 } from "../../migrations/1786000000000-clear-assignment-cohort-analyses.js";
 import { ClearAssignmentCohortAnalysesData1787000000000 } from "../../migrations/1787000000000-clear-assignment-cohort-analyses-data.js";
 import { RemoveTranslationCohortTargetLang1788000000000 } from "../../migrations/1788000000000-remove-translation-cohort-target-lang.js";
+import { AssignmentAssignees1789000000000 } from "../../migrations/1789000000000-assignment-assignees.js";
 import { ENV } from "./env.js";
 import { AiTokenBalance } from "../modules/ai-tokens/ai-token-balance.entity.js";
 import { Announcement } from "../modules/board/announcement.entity.js";
@@ -24,6 +25,7 @@ import { Submission } from "../modules/submissions/submission.entity.js";
 import { SubmissionDiff } from "../modules/submissions/submission-diff.entity.js";
 import { SubmissionVersion } from "../modules/submissions/submission-version.entity.js";
 import { Assignment } from "../modules/assignments/assignment.entity.js";
+import { AssignmentAssignee } from "../modules/assignments/assignment-assignee.entity.js";
 import { AssignmentCohortAnalysisMember } from "../modules/assignments/assignment-cohort-analysis-member.entity.js";
 import { AssignmentCohortAnalysis } from "../modules/assignments/assignment-cohort-analysis.entity.js";
 import { AssignmentPolicyOverride } from "../modules/assignments/assignment-policy-override.entity.js";
@@ -47,6 +49,7 @@ export const ENTITIES = [
   GroupEmailInvite,
   JoinRequest,
   Assignment,
+  AssignmentAssignee,
   AssignmentCohortAnalysis,
   AssignmentCohortAnalysisMember,
   AssignmentPolicyOverride,
@@ -80,6 +83,7 @@ export const MIGRATIONS = [
   ClearAssignmentCohortAnalyses1786000000000,
   ClearAssignmentCohortAnalysesData1787000000000,
   RemoveTranslationCohortTargetLang1788000000000,
+  AssignmentAssignees1789000000000,
 ];
 
 export const dataSource = new DataSource({

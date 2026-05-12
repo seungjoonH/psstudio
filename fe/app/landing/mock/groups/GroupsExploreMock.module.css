@@ -26,7 +26,6 @@
   box-sizing: border-box;
   /* 랜딩 목업: 칸반 feed와 동일한 흰색계열 패널 */
   background: var(--color-surface-paper);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-text) 5%, transparent);
   transition:
     transform var(--ui-duration) var(--ui-ease),
     border-color var(--ui-duration) var(--ui-ease),
@@ -34,7 +33,7 @@
 }
 
 .card:hover {
-  transform: translateY(-2px);
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
   background: var(--ui-hover-bg);
 }

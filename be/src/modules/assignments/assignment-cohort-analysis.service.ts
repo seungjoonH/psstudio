@@ -1,6 +1,6 @@
 // 과제 제출 코드 AI 비교 분석 트리거·파이프라인·조회를 담당하는 서비스입니다.
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { type DataSource, In, IsNull } from "typeorm";
+import { type DataSource, type EntityManager, In, IsNull } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { requestLlmChat } from "../ai/llm-chat-client.js";
@@ -465,17 +465,17 @@ export class AssignmentCohortAnalysisService {
         base.artifacts = { submissions: [] };
         base.includedSubmissions = [];
       } else {
-        const submissionIds = members.map((m) => m.submissionId);
-        const versionIds = members.map((m) => m.submissionVersionId);
+        const submissionIds = members.map((m: AssignmentCohortAnalysisMember) => m.submissionId);
+        const versionIds = members.map((m: AssignmentCohortAnalysisMember) => m.submissionVersionId);
         const subs = await this.ds.getRepository(Submission).find({ where: { id: In(submissionIds) } });
-        const subById = new Map(subs.map((s) => [s.id, s]));
+        const subById = new Map<string, Submission>(subs.map((s: Submission) => [s.id, s]));
         const vers = await this.ds.getRepository(SubmissionVersion).find({ where: { id: In(versionIds) } });
-        const verNoById = new Map(vers.map((v) => [v.id, v.versionNo]));
-        const authorIds = [...new Set(subs.map((s) => s.authorUserId))];
+        const verNoById = new Map<string, number>(vers.map((v: SubmissionVersion) => [v.id, v.versionNo]));
+        const authorIds = [...new Set(subs.map((s: Submission) => s.authorUserId))];
         const users = authorIds.length > 0 ? await this.ds.getRepository(User).find({ where: { id: In(authorIds) } }) : [];
-        const nick = new Map(users.map((u) => [u.id, u.nickname]));
-        const profile = new Map(users.map((u) => [u.id, u.profileImageUrl]));
-        base.includedSubmissions = members.map((m) => {
+        const nick = new Map<string, string>(users.map((u: User) => [u.id, u.nickname]));
+        const profile = new Map<string, string>(users.map((u: User) => [u.id, u.profileImageUrl]));
+        base.includedSubmissions = members.map((m: AssignmentCohortAnalysisMember) => {
           const s = subById.get(m.submissionId);
           const author = s?.authorUserId ?? "";
           return {
@@ -596,7 +596,7 @@ export class AssignmentCohortAnalysisService {
       const authorIds = [...new Set(versionRows.map((v) => v.submission.authorUserId))];
       const authors =
         authorIds.length > 0 ? await this.ds.getRepository(User).find({ where: { id: In(authorIds) } }) : [];
-      const nickByUserId = new Map(authors.map((u) => [u.id, u.nickname]));
+      const nickByUserId = new Map<string, string>(authors.map((u: User) => [u.id, u.nickname]));
 
       const reportLocale: CohortReportLocale =
         analysis.reportLocale === "en" || analysis.reportLocale === "ko" ? analysis.reportLocale : "ko";
@@ -701,7 +701,7 @@ export class AssignmentCohortAnalysisService {
       const reportMarkdown = parseResult.reportMarkdown;
       const { artifacts } = parseResult;
 
-      await this.ds.transaction(async (tx) => {
+      await this.ds.transaction(async (tx: EntityManager) => {
         await tx.getRepository(AssignmentCohortAnalysisMember).delete({ cohortAnalysisId: analysisId });
         for (const { submission, version } of versionRows) {
           await tx.getRepository(AssignmentCohortAnalysisMember).save(

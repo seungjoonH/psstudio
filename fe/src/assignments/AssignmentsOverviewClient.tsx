@@ -5,15 +5,18 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import { AssignmentList, type AssignmentListItem } from "./AssignmentList";
-import { formatAssignmentAlgorithmLabel } from "./algorithmLabels";
+import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
 import { buildCls } from "../lib/buildCls";
 import { formatCalendarWeekRangeLabel } from "../lib/formatCalendarWeekRangeLabel";
+import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Chip } from "../ui/Chip";
+import { DifficultyBadge } from "../ui/DifficultyBadge";
 import { Icon } from "../ui/Icon";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
 import { SegmentedControl } from "../ui/SegmentedControl";
+import { UserAvatar } from "../ui/UserAvatar";
 import { EmptyState } from "../ui/states/EmptyState";
 import styles from "./AssignmentsOverviewClient.module.css";
 
@@ -22,6 +25,14 @@ type CalendarView = "week" | "month";
 
 type OverviewItem = AssignmentListItem & {
   groupId: string;
+  hasMyLateSubmission?: boolean;
+  submitterIds: string[];
+  assigneeUserIds: string[];
+  assignees: Array<{
+    userId: string;
+    nickname: string;
+    profileImageUrl: string;
+  }>;
 };
 
 type FilterState = {
@@ -30,6 +41,7 @@ type FilterState = {
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
   selectedGroupIds: string[];
+  selectedAssigneeIds: string[];
 };
 
 type Props = {
@@ -45,6 +57,23 @@ type CalendarCell = {
   isToday: boolean;
   assignments: OverviewItem[];
 };
+
+function getCalendarAssignmentTone(
+  assignment: OverviewItem,
+): "solved" | "late" | "unsolved" | "overdue" | "neutral" {
+  if (!assignment.isAssignedToMe) return "neutral";
+  const isPastDue = new Date(assignment.dueAt).getTime() < Date.now();
+  if (!assignment.hasMySubmission) return isPastDue ? "overdue" : "unsolved";
+  return assignment.hasMyLateSubmission ? "late" : "solved";
+}
+
+function getCalendarAssignmentAssigneeBuckets(assignment: OverviewItem) {
+  const submitterIdSet = new Set(assignment.submitterIds);
+  return {
+    solvedAssignees: assignment.assignees.filter((assignee) => submitterIdSet.has(assignee.userId)),
+    unsolvedAssignees: assignment.assignees.filter((assignee) => !submitterIdSet.has(assignee.userId)),
+  };
+}
 
 const getVisibleAlgorithms = (item: OverviewItem): string[] => {
   const hidden = item.algorithmsHiddenUntilSubmit ?? true;
@@ -86,6 +115,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     selectedPlatforms: [],
     selectedAlgorithms: [],
     selectedGroupIds: [],
+    selectedAssigneeIds: [],
   };
 
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
@@ -113,6 +143,17 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       ),
     [items],
   );
+  const assigneeOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          items
+            .flatMap((item) => item.assignees)
+            .map((assignee) => [assignee.userId, { userId: assignee.userId, nickname: assignee.nickname }]),
+        ).values(),
+      ).sort((a, b) => a.nickname.localeCompare(b.nickname)),
+    [items],
+  );
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = appliedFilter.query.trim().toLowerCase();
@@ -138,6 +179,12 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       ) {
         return false;
       }
+      if (
+        appliedFilter.selectedAssigneeIds.length > 0 &&
+        !appliedFilter.selectedAssigneeIds.some((id) => item.assigneeUserIds.includes(id))
+      ) {
+        return false;
+      }
       if (appliedFilter.solvedFilter === "solved" && item.hasMySubmission !== true) return false;
       if (appliedFilter.solvedFilter === "unsolved" && item.hasMySubmission === true) return false;
       return true;
@@ -149,7 +196,8 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     (appliedFilter.solvedFilter !== "all" ? 1 : 0) +
     (appliedFilter.selectedPlatforms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedAlgorithms.length > 0 ? 1 : 0) +
-    (appliedFilter.selectedGroupIds.length > 0 ? 1 : 0);
+    (appliedFilter.selectedGroupIds.length > 0 ? 1 : 0) +
+    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0);
 
   const groupedByDate = useMemo(() => {
     return filteredItems.reduce<Record<string, OverviewItem[]>>((acc, item) => {
@@ -256,6 +304,24 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       </div>
 
       <div className={styles.activeChipRow}>
+        {appliedFilter.selectedAssigneeIds.map((userId) => {
+          const option = assigneeOptions.find((item) => item.userId === userId);
+          if (option === undefined) return null;
+          return (
+            <Chip
+              key={userId}
+              className={styles.activeChip}
+              onClick={() =>
+                setAppliedFilter((prev) => ({
+                  ...prev,
+                  selectedAssigneeIds: prev.selectedAssigneeIds.filter((id) => id !== userId),
+                }))
+              }
+            >
+              {option.nickname}
+            </Chip>
+          );
+        })}
         {appliedFilter.selectedGroupIds.map((groupId) => {
           const option = groupOptions.find((item) => item.groupId === groupId);
           if (option === undefined) return null;
@@ -285,7 +351,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
               }))
             }
           >
-            {platform}
+            {formatProblemPlatformLabel(locale, platform)}
           </Chip>
         ))}
         {appliedFilter.selectedAlgorithms.map((algorithm) => (
@@ -416,11 +482,28 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                     </span>
                   </header>
                   <ul className={styles.assignmentList}>
-                    {cell.assignments.map((assignment) => (
-                      <li key={assignment.id} className={styles.assignmentRow}>
-                        <span className={styles.assignmentPill}>{assignment.title}</span>
-                      </li>
-                    ))}
+                    {cell.assignments.map((assignment) => {
+                      const tone = getCalendarAssignmentTone(assignment);
+                      return (
+                        <li
+                          key={assignment.id}
+                          className={buildCls(
+                            styles.assignmentRow,
+                            tone === "solved"
+                              ? styles.assignmentRowSolved
+                              : tone === "late"
+                                ? styles.assignmentRowLate
+                                : tone === "overdue"
+                                  ? styles.assignmentRowOverdue
+                                  : tone === "unsolved"
+                                    ? styles.assignmentRowUnsolved
+                                    : styles.assignmentRowNeutral,
+                          )}
+                        >
+                          <span className={styles.assignmentPill}>{assignment.title}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </button>
               </section>
@@ -473,6 +556,27 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
             </div>
           </div>
           <div className={styles.filterSection}>
+            <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
+            <div className={styles.chipRow}>
+              {assigneeOptions.map((assignee) => (
+                <Chip
+                  key={assignee.userId}
+                  active={draftFilter.selectedAssigneeIds.includes(assignee.userId)}
+                  onClick={() =>
+                    setDraftFilter((prev) => ({
+                      ...prev,
+                      selectedAssigneeIds: prev.selectedAssigneeIds.includes(assignee.userId)
+                        ? prev.selectedAssigneeIds.filter((item) => item !== assignee.userId)
+                        : [...prev.selectedAssigneeIds, assignee.userId],
+                    }))
+                  }
+                >
+                  {assignee.nickname}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div className={styles.filterSection}>
             <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
             <div className={styles.chipRow}>
               <Chip
@@ -511,7 +615,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                     }))
                   }
                 >
-                  {platform}
+                  {formatProblemPlatformLabel(locale, platform)}
                 </Chip>
               ))}
             </div>
@@ -559,18 +663,101 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
         ) : null}
         {selectedDateCell !== null && selectedDateCell.assignments.length > 0 ? (
           <ul className={styles.modalAssignmentList}>
-            {selectedDateCell.assignments.map((assignment) => (
-              <li key={assignment.id} className={styles.modalAssignmentRow}>
-                <Link
-                  href={assignment.href}
-                  className={styles.modalAssignmentLink}
-                  onClick={() => setSelectedDateCell(null)}
-                >
-                  <span className={styles.modalAssignmentTitle}>{assignment.title}</span>
-                  <span className={styles.modalAssignmentMeta}>{assignment.groupName}</span>
-                </Link>
-              </li>
-            ))}
+            {selectedDateCell.assignments.map((assignment) => {
+              const { solvedAssignees, unsolvedAssignees } =
+                getCalendarAssignmentAssigneeBuckets(assignment);
+              const tone = getCalendarAssignmentTone(assignment);
+              const platformLabel = formatProblemPlatformLabel(locale, assignment.platform);
+              return (
+                <li key={assignment.id} className={styles.modalAssignmentRow}>
+                  <Link
+                    href={assignment.href}
+                    className={buildCls(
+                      styles.modalAssignmentLink,
+                      tone === "solved"
+                        ? styles.modalAssignmentLinkSolved
+                        : tone === "late"
+                          ? styles.modalAssignmentLinkLate
+                          : tone === "overdue"
+                            ? styles.modalAssignmentLinkOverdue
+                        : tone === "unsolved"
+                          ? styles.modalAssignmentLinkUnsolved
+                          : styles.modalAssignmentLinkNeutral,
+                    )}
+                    onClick={() => setSelectedDateCell(null)}
+                  >
+                    <div className={styles.modalAssignmentHead}>
+                      <div className={styles.modalAssignmentTop}>
+                        <span className={styles.modalAssignmentTitle}>{assignment.title}</span>
+                        {assignment.isAssignedToMe ? (
+                          <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
+                        ) : null}
+                      </div>
+                      <div className={styles.modalAssignmentMeta}>
+                        {assignment.groupName ? (
+                          <span className={styles.modalAssignmentGroup}>{assignment.groupName}</span>
+                        ) : null}
+                        <Badge tone="neutral" chipIndex={1}>
+                          {platformLabel}
+                        </Badge>
+                        <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                      </div>
+                    </div>
+                    <span className={styles.modalAssignmentDue}>
+                      {t("groupCalendar.modalDueLabel")} {new Date(assignment.dueAt).toLocaleString(localeTag)}
+                    </span>
+                    {assignment.isAssignedToMe ? (
+                      <div className={styles.modalAssigneeGroups}>
+                        {solvedAssignees.length > 0 ? (
+                          <div
+                            className={buildCls(
+                              styles.modalAssigneeGroup,
+                              styles.modalAssigneeGroupSolved,
+                            )}
+                          >
+                            <span className={styles.modalAssigneeLabel}>
+                              {t("groupCalendar.modalSolvedAssignees")}
+                            </span>
+                            <div className={styles.modalAvatarRow}>
+                              {solvedAssignees.map((assignee) => (
+                                <UserAvatar
+                                  key={`${assignment.id}-solved-${assignee.userId}`}
+                                  nickname={assignee.nickname}
+                                  imageUrl={assignee.profileImageUrl}
+                                  size={26}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        {unsolvedAssignees.length > 0 ? (
+                          <div
+                            className={buildCls(
+                              styles.modalAssigneeGroup,
+                              styles.modalAssigneeGroupUnsolved,
+                            )}
+                          >
+                            <span className={styles.modalAssigneeLabel}>
+                              {t("groupCalendar.modalUnsolvedAssignees")}
+                            </span>
+                            <div className={styles.modalAvatarRow}>
+                              {unsolvedAssignees.map((assignee) => (
+                                <UserAvatar
+                                  key={`${assignment.id}-unsolved-${assignee.userId}`}
+                                  nickname={assignee.nickname}
+                                  imageUrl={assignee.profileImageUrl}
+                                  size={26}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </Modal>

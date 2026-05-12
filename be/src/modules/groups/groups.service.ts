@@ -15,6 +15,7 @@ import { CommunityPost } from "../board/community-post.entity.js";
 import { PostComment } from "../board/post-comment.entity.js";
 import { Comment } from "../comments/comment.entity.js";
 import { Assignment } from "../assignments/assignment.entity.js";
+import { AssignmentAssignee } from "../assignments/assignment-assignee.entity.js";
 import { AssignmentPolicyOverride } from "../assignments/assignment-policy-override.entity.js";
 import { ProblemAnalysis } from "../assignments/problem-analysis.entity.js";
 import { CalendarEvent } from "../calendar/calendar-event.entity.js";
@@ -110,6 +111,24 @@ export class GroupsService {
     if (!this.ds.isInitialized) await this.ds.initialize();
   }
 
+  private async removeUserFromAssignmentAssignees(
+    groupId: string,
+    userId: string,
+    tx: EntityManager,
+  ): Promise<void> {
+    const assignmentIds = (
+      await tx.getRepository(Assignment).find({
+        where: { groupId, deletedAt: IsNull() },
+        select: ["id"],
+      })
+    ).map((assignment) => assignment.id);
+    if (assignmentIds.length === 0) return;
+    await tx.getRepository(AssignmentAssignee).delete({
+      userId,
+      assignmentId: In(assignmentIds),
+    });
+  }
+
   async listMyGroups(userId: string): Promise<ListGroupItem[]> {
     await this.ensureInitialized();
     const memberships = await this.ds.getRepository(GroupMember).find({
@@ -158,6 +177,9 @@ export class GroupsService {
         .select("a.group_id", "groupId")
         .addSelect("COUNT(*)", "cnt")
         .from("assignments", "a")
+        .innerJoin("assignment_assignees", "aa", 'aa.assignment_id = a.id AND aa.user_id = :uid', {
+          uid: userId,
+        })
         .where("a.group_id IN (:...gids)", { gids: groupIds })
         .andWhere("a.deleted_at IS NULL")
         .andWhere(
@@ -168,7 +190,6 @@ export class GroupsService {
             AND s.deleted_at IS NULL
           )`,
         )
-        .setParameter("uid", userId)
         .groupBy("a.group_id")
         .getRawMany<{ groupId: string; cnt: string }>();
 
@@ -447,8 +468,15 @@ export class GroupsService {
     return m.role as GroupRole;
   }
 
-  async setMemberRole(groupId: string, targetUserId: string, role: GroupRole): Promise<void> {
+  async setMemberRole(groupId: string, actorUserId: string, targetUserId: string, role: GroupRole): Promise<void> {
     await this.ensureInitialized();
+    const actor = await this.getMembership(groupId, actorUserId);
+    if (actor === null) {
+      throw new ForbiddenException("그룹 멤버가 아닙니다.");
+    }
+    if (actor.role !== "OWNER") {
+      throw new ForbiddenException("그룹장만 역할을 변경할 수 있습니다.");
+    }
     const m = await this.getMembership(groupId, targetUserId);
     if (m === null) throw new NotFoundException("멤버를 찾을 수 없습니다.");
     if (role === "OWNER") {
@@ -490,27 +518,54 @@ export class GroupsService {
     });
   }
 
-  async removeMember(groupId: string, targetUserId: string): Promise<void> {
+  async removeMember(groupId: string, actorUserId: string, targetUserId: string): Promise<void> {
     await this.ensureInitialized();
-    const m = await this.getMembership(groupId, targetUserId);
-    if (m === null) throw new NotFoundException("멤버를 찾을 수 없습니다.");
-    if (m.role === "OWNER") {
-      throw new BadRequestException("그룹장은 강퇴할 수 없습니다. 위임 후 진행하세요.");
-    }
-    m.leftAt = new Date();
-    await this.ds.getRepository(GroupMember).save(m);
+    await this.ds.transaction(async (tx) => {
+      const memberRepo = tx.getRepository(GroupMember);
+      const actor = await memberRepo.findOne({
+        where: { groupId, userId: actorUserId, leftAt: IsNull() },
+      });
+      if (actor === null) {
+        throw new ForbiddenException("그룹 멤버가 아닙니다.");
+      }
+      const m = await memberRepo.findOne({
+        where: { groupId, userId: targetUserId, leftAt: IsNull() },
+      });
+      if (m === null) throw new NotFoundException("멤버를 찾을 수 없습니다.");
+      if (actor.userId === m.userId) {
+        throw new BadRequestException("자기 자신은 강퇴할 수 없습니다. 탈퇴를 사용하세요.");
+      }
+      if (actor.role === "MEMBER") {
+        throw new ForbiddenException("멤버를 강퇴할 권한이 없습니다.");
+      }
+      if (m.role === "OWNER") {
+        throw new BadRequestException("그룹장은 강퇴할 수 없습니다. 위임 후 진행하세요.");
+      }
+      if (actor.role === "MANAGER" && m.role !== "MEMBER") {
+        throw new ForbiddenException("관리자는 그룹원만 강퇴할 수 있습니다.");
+      }
+      m.leftAt = new Date();
+      await memberRepo.save(m);
+      await this.removeUserFromAssignmentAssignees(groupId, targetUserId, tx);
+    });
     await this.refreshMemberCount(groupId);
   }
 
   async leaveSelf(groupId: string, userId: string): Promise<void> {
     await this.ensureInitialized();
-    const m = await this.getMembership(groupId, userId);
-    if (m === null) throw new NotFoundException("이미 멤버가 아닙니다.");
-    if (m.role === "OWNER") {
-      throw new ConflictException("그룹장은 탈퇴할 수 없습니다. 위임 후 진행하거나 그룹을 삭제하세요.");
-    }
-    m.leftAt = new Date();
-    await this.ds.getRepository(GroupMember).save(m);
+    await this.ds.transaction(async (tx) => {
+      const memberRepo = tx.getRepository(GroupMember);
+      const m = await memberRepo.findOne({
+        where: { groupId, userId, leftAt: IsNull() },
+      });
+      if (m === null) throw new NotFoundException("이미 멤버가 아닙니다.");
+      if (m.role === "OWNER") {
+        throw new ConflictException("그룹장은 탈퇴할 수 없습니다. 위임 후 진행하거나 그룹을 삭제하세요.");
+      }
+      m.leftAt = new Date();
+      await memberRepo.save(m);
+      await this.removeUserFromAssignmentAssignees(groupId, userId, tx);
+    });
     await this.refreshMemberCount(groupId);
   }
 }

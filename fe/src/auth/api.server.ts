@@ -30,6 +30,7 @@ export type HomeRecentNotification = {
   id: string;
   type: string;
   title: string;
+  isRead: boolean;
   createdAt: string;
   href: string | null;
   actorNickname: string | null;
@@ -57,6 +58,7 @@ export async function fetchRecentNotificationsServer(limit = 5): Promise<HomeRec
     id: String(raw.id ?? ""),
     type: typeof raw.type === "string" ? raw.type : "",
     title: String(raw.title ?? ""),
+    isRead: raw.isRead === true,
     createdAt: String(raw.createdAt ?? ""),
     href: typeof raw.href === "string" && raw.href.length > 0 ? raw.href : null,
     actorNickname: typeof raw.actorNickname === "string" ? raw.actorNickname : null,
@@ -65,6 +67,27 @@ export async function fetchRecentNotificationsServer(limit = 5): Promise<HomeRec
         ? raw.actorProfileImageUrl
         : null,
   }));
+}
+
+export async function fetchUnreadNotificationCountServer(): Promise<number> {
+  const res = await fetch(`${apiBase()}/api/v1/users/me/notifications/unread-count`, {
+    cache: "no-store",
+    headers: { cookie: await buildCookieHeader() },
+  });
+  if (res.status === 401) return 0;
+  if (!res.ok) return 0;
+  const body = (await res.json()) as { success: boolean; data?: { count?: unknown } };
+  return typeof body.data?.count === "number" ? body.data.count : 0;
+}
+
+export async function markAllNotificationsReadServer(): Promise<void> {
+  const res = await fetch(`${apiBase()}/api/v1/users/me/notifications/read-all`, {
+    method: "PATCH",
+    cache: "no-store",
+    headers: { cookie: await buildCookieHeader() },
+  });
+  if (res.status === 401) throw new Error("로그인이 필요합니다.");
+  if (!res.ok) throw new Error("알림 읽음 처리에 실패했습니다.");
 }
 
 export async function deleteNotificationServer(notificationId: string): Promise<void> {

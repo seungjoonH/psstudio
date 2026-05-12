@@ -10,7 +10,7 @@ type Props = {
 export function AssignmentNotificationGlyph({ className }: Props) {
   return (
     <span className={buildCls(styles.root, className)} aria-hidden>
-      <Icon name="book" size={20} />
+      <Icon name="task" size={20} />
     </span>
   );
 }

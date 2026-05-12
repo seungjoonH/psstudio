@@ -21,10 +21,10 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsUUID,
   IsUrl,
   MaxLength,
   MinLength,
-  ValidateNested,
 } from "class-validator";
 import type { ProblemPlatform } from "@psstudio/shared";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
@@ -41,6 +41,7 @@ class CreateAssignmentBody {
   @IsUrl({ require_protocol: true }) problemUrl!: string;
   @IsDateString() dueAt!: string;
   @IsBoolean() allowLateSubmission!: boolean;
+  @IsOptional() @IsArray() @IsUUID("4", { each: true }) assigneeUserIds?: string[];
 }
 
 class UpdateAssignmentBody {
@@ -49,6 +50,7 @@ class UpdateAssignmentBody {
   @IsOptional() @IsUrl({ require_protocol: true }) problemUrl?: string;
   @IsOptional() @IsDateString() dueAt?: string;
   @IsOptional() @IsBoolean() allowLateSubmission?: boolean;
+  @IsOptional() @IsArray() @IsUUID("4", { each: true }) assigneeUserIds?: string[];
 }
 
 class UpdateMetadataBody {
@@ -68,6 +70,17 @@ class AutofillAssignmentBody {
   @IsUrl({ require_protocol: true }) problemUrl!: string;
 }
 
+type AutofillHintLocale = "ko" | "en";
+
+function normalizeAutofillHintLocale(acceptLanguage?: string): AutofillHintLocale {
+  const first = acceptLanguage
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
+  if (first?.startsWith("en")) return "en";
+  return "ko";
+}
+
 function serialize(a: Awaited<ReturnType<AssignmentsService["getById"]>>) {
   return {
     id: a.id,
@@ -84,6 +97,9 @@ function serialize(a: Awaited<ReturnType<AssignmentsService["getById"]>>) {
     metadata: a.metadata,
     analysisStatus: a.analysisStatus,
     isLate: a.isLate,
+    assigneeUserIds: a.assigneeUserIds,
+    assignees: a.assignees,
+    isAssignedToMe: a.isAssignedToMe,
   };
 }
 
@@ -100,7 +116,7 @@ export class AssignmentsController {
   @Get("api/v1/groups/:groupId/assignments")
   async list(@CurrentUser() me: { id: string }, @Param("groupId") groupId: string) {
     await this.groups.requireRole(groupId, me.id);
-    return { success: true, data: (await this.assignments.list(groupId)).map(serialize) };
+    return { success: true, data: (await this.assignments.list(groupId, me.id)).map(serialize) };
   }
 
   @Post("api/v1/groups/:groupId/assignments")
@@ -117,8 +133,9 @@ export class AssignmentsController {
       problemUrl: body.problemUrl,
       dueAt: new Date(body.dueAt),
       allowLateSubmission: body.allowLateSubmission,
-    });
-    return { success: true, data: serialize(await this.assignments.getById(a.id)) };
+      assigneeUserIds: body.assigneeUserIds,
+    }, role);
+    return { success: true, data: serialize(await this.assignments.getById(a.id, me.id)) };
   }
 
   @Post("api/v1/groups/:groupId/assignments/autofill")
@@ -126,15 +143,22 @@ export class AssignmentsController {
     @CurrentUser() me: { id: string },
     @Param("groupId") groupId: string,
     @Body() body: AutofillAssignmentBody,
+    @Headers("accept-language") acceptLanguage?: string,
   ) {
     const role = await this.groups.requireRole(groupId, me.id);
     if (!canPerform(role, "ASSIGNMENT_CREATE")) throw new ForbiddenException();
-    return { success: true, data: await this.assignments.autofillFromAi(body.problemUrl) };
+    return {
+      success: true,
+      data: await this.assignments.autofillFromAi(
+        body.problemUrl,
+        normalizeAutofillHintLocale(acceptLanguage),
+      ),
+    };
   }
 
   @Get("api/v1/assignments/:assignmentId")
   async getOne(@CurrentUser() me: { id: string }, @Param("assignmentId") assignmentId: string) {
-    const a = await this.assignments.getById(assignmentId);
+    const a = await this.assignments.getById(assignmentId, me.id);
     await this.groups.requireRole(a.groupId, me.id);
     return { success: true, data: serialize(a) };
   }
@@ -178,8 +202,9 @@ export class AssignmentsController {
       problemUrl: body.problemUrl,
       dueAt: body.dueAt === undefined ? undefined : new Date(body.dueAt),
       allowLateSubmission: body.allowLateSubmission,
-    });
-    return { success: true, data: serialize(await this.assignments.getById(assignmentId)) };
+      assigneeUserIds: body.assigneeUserIds,
+    }, me.id, role);
+    return { success: true, data: serialize(await this.assignments.getById(assignmentId, me.id)) };
   }
 
   @Patch("api/v1/assignments/:assignmentId/metadata")
@@ -192,7 +217,7 @@ export class AssignmentsController {
     const role = await this.groups.requireRole(a.groupId, me.id);
     if (!canPerform(role, "ASSIGNMENT_METADATA_EDIT")) throw new ForbiddenException();
     await this.assignments.updateMetadata(assignmentId, body);
-    return { success: true, data: serialize(await this.assignments.getById(assignmentId)) };
+    return { success: true, data: serialize(await this.assignments.getById(assignmentId, me.id)) };
   }
 
   @Get("api/v1/assignments/:assignmentId/deletion-impact")

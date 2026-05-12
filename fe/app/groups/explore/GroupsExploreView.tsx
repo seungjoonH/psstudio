@@ -43,7 +43,7 @@ export function GroupsExploreView({ groups }: Props) {
               <li key={group.id} className={styles.card}>
                 <Link href={`/groups/${group.id}`} className={styles.cardLink}>
                   <strong className={styles.groupName}>
-                    <Icon name="users" size={16} className={styles.groupNameIcon} />
+                    <Icon name="group" size={16} className={styles.groupNameIcon} />
                     {group.name}
                   </strong>
                   <p className={styles.groupDescription}>

@@ -1,7 +1,7 @@
 // 과제와 문제 메타데이터를 관리하는 서비스입니다.
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { NOTIFICATION_TYPES, type ProblemPlatform } from "@psstudio/shared";
-import { type DataSource, IsNull, In } from "typeorm";
+import { NOTIFICATION_TYPES, type GroupRole, type ProblemPlatform } from "@psstudio/shared";
+import { In, IsNull, type DataSource, type EntityManager } from "typeorm";
 import { dataSource } from "../../config/data-source.js";
 import { ENV } from "../../config/env.js";
 import { requestLlmChat } from "../ai/llm-chat-client.js";
@@ -16,7 +16,13 @@ import { AiAnalysis } from "../submissions/ai-analysis.entity.js";
 import { Submission } from "../submissions/submission.entity.js";
 import { SubmissionDiff } from "../submissions/submission-diff.entity.js";
 import { SubmissionVersion } from "../submissions/submission-version.entity.js";
+import { User } from "../users/user.entity.js";
+import {
+  removeAssignmentDeadlineReminderJobs,
+  syncAssignmentDeadlineReminderJobs,
+} from "../../shared/queues/deadline-reminder.queue.js";
 import { Assignment } from "./assignment.entity.js";
+import { AssignmentAssignee } from "./assignment-assignee.entity.js";
 import { AssignmentPolicyOverride } from "./assignment-policy-override.entity.js";
 import { ProblemAnalysis, type ProblemMetadata } from "./problem-analysis.entity.js";
 import { extractOfficialProblemTitle } from "./problem-official-title.js";
@@ -41,6 +47,15 @@ export type AssignmentDetail = {
   metadata: ProblemMetadata;
   analysisStatus: string;
   isLate: boolean;
+  assigneeUserIds: string[];
+  assignees: AssignmentAssigneePreview[];
+  isAssignedToMe: boolean;
+};
+
+export type AssignmentAssigneePreview = {
+  userId: string;
+  nickname: string;
+  profileImageUrl: string;
 };
 
 export type DeletionImpact = {
@@ -118,6 +133,23 @@ const ALGORITHM_KEYWORDS = [
   "네트워크플로우",
 ] as const;
 
+const AUTOFILL_FETCH_USER_AGENTS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/125.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:125.0) Gecko/20100101 Firefox/125.0",
+] as const;
+
+type LeetCodeQuestionPayload = {
+  title: string;
+  difficulty: string;
+  contentHtml: string;
+  exampleTestcaseList: string[];
+  hasCodeSnippets: boolean;
+};
+
+type AutofillHintLocale = "ko" | "en";
+
 function solvedAcLevelToBojCode(level: number): string {
   if (!Number.isInteger(level) || level < 1 || level > 30) return "";
   const tierCodes = ["B", "S", "G", "P", "D", "R"] as const;
@@ -160,12 +192,18 @@ function normalizeDifficulty(platform: ProblemPlatform, rawDifficulty: string): 
   return raw;
 }
 
+function pickAutofillUserAgent(): string {
+  const idx = Math.floor(Math.random() * AUTOFILL_FETCH_USER_AGENTS.length);
+  return AUTOFILL_FETCH_USER_AGENTS[idx] ?? AUTOFILL_FETCH_USER_AGENTS[0];
+}
+
 async function fetchText(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "psstudio-autofill/1.0",
-        Accept: "text/html,application/xhtml+xml,application/json",
+        "User-Agent": pickAutofillUserAgent(),
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
       },
     });
     if (!res.ok) return "";
@@ -224,6 +262,152 @@ function sliceBetweenMarkers(source: string, startMarker: string, endMarkers: st
   return from.slice(0, end).trim();
 }
 
+function sliceUntilMarkers(source: string, endMarkers: string[]): string {
+  let end = source.length;
+  for (const marker of endMarkers) {
+    const idx = source.indexOf(marker);
+    if (idx >= 0) end = Math.min(end, idx);
+  }
+  return source.slice(0, end).trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractLeetCodeQuestionPayload(html: string): LeetCodeQuestionPayload | null {
+  if (html.length === 0) return null;
+  const nextDataMatch = html.match(
+    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/i,
+  );
+  if (nextDataMatch === null) return null;
+
+  let nextData: unknown;
+  try {
+    nextData = JSON.parse(nextDataMatch[1]);
+  } catch {
+    return null;
+  }
+
+  const stack: unknown[] = [nextData];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!isRecord(current)) continue;
+
+    const question = current.question;
+    if (isRecord(question)) {
+      const rawTitle =
+        typeof question.translatedTitle === "string" && question.translatedTitle.trim().length > 0
+          ? question.translatedTitle
+          : typeof question.title === "string"
+            ? question.title
+            : "";
+      const rawContent =
+        typeof question.translatedContent === "string" && question.translatedContent.trim().length > 0
+          ? question.translatedContent
+          : typeof question.content === "string"
+            ? question.content
+            : "";
+      const difficulty = typeof question.difficulty === "string" ? question.difficulty : "";
+      const exampleTestcaseList = Array.isArray(question.exampleTestcaseList)
+        ? question.exampleTestcaseList
+            .map((item) => (typeof item === "string" ? item.trim() : ""))
+            .filter((item) => item.length > 0)
+        : [];
+      const hasCodeSnippets = Array.isArray(question.codeSnippets) && question.codeSnippets.length > 0;
+      if (rawTitle.trim().length > 0 && rawContent.trim().length > 0) {
+        return {
+          title: rawTitle.trim(),
+          difficulty,
+          contentHtml: rawContent,
+          exampleTestcaseList,
+          hasCodeSnippets,
+        };
+      }
+    }
+
+    for (const value of Object.values(current)) {
+      if (Array.isArray(value)) {
+        for (const item of value) stack.push(item);
+        continue;
+      }
+      stack.push(value);
+    }
+  }
+
+  return null;
+}
+
+function buildLeetCodeAiContext(html: string): string {
+  const payload = extractLeetCodeQuestionPayload(html);
+  if (payload === null) return "";
+
+  const plain = sanitizeAiInputText(htmlToPlainText(payload.contentHtml));
+  if (plain.length === 0) return "";
+
+  const problem = sliceUntilMarkers(plain, [
+    "Example 1:",
+    "Example 1",
+    "Input:",
+    "Input",
+    "Constraints:",
+    "Constraints",
+    "Follow-up:",
+    "Follow-up",
+  ]);
+  const input =
+    sliceBetweenMarkers(plain, "Input:", [
+      "Output:",
+      "Explanation:",
+      "Example 2:",
+      "Example 2",
+      "Constraints:",
+      "Constraints",
+      "Follow-up:",
+      "Follow-up",
+    ]) ||
+    sliceBetweenMarkers(plain, "Input", [
+      "Output",
+      "Explanation",
+      "Example 2",
+      "Constraints",
+      "Follow-up",
+    ]) ||
+    (payload.exampleTestcaseList[0] ?? "");
+  const output =
+    sliceBetweenMarkers(plain, "Output:", [
+      "Explanation:",
+      "Example 2:",
+      "Example 2",
+      "Constraints:",
+      "Constraints",
+      "Follow-up:",
+      "Follow-up",
+    ]) ||
+    sliceBetweenMarkers(plain, "Output", [
+      "Explanation",
+      "Example 2",
+      "Constraints",
+      "Follow-up",
+    ]);
+  const constraints =
+    sliceBetweenMarkers(plain, "Constraints:", ["Follow-up:", "Follow-up"]) ||
+    sliceBetweenMarkers(plain, "Constraints", ["Follow-up", "Follow-up:"]);
+  const difficulty = normalizeDifficulty("LeetCode", payload.difficulty);
+
+  return [
+    `제목: ${payload.title}`,
+    difficulty.length > 0 ? `난이도: ${difficulty}` : "",
+    problem.length > 0 ? `문제: ${problem}` : "",
+    input.length > 0 ? `입력: ${input}` : "",
+    output.length > 0 ? `출력: ${output}` : "",
+    constraints.length > 0 ? `제한: ${constraints}` : "",
+  ]
+    .filter((part) => part.length > 0)
+    .join("\n")
+    .trim();
+}
+
 function buildAiProblemContexts(platform: ProblemPlatform, html: string): string[] {
   const plain = sanitizeAiInputText(htmlToPlainText(html));
   const contexts: string[] = [];
@@ -236,6 +420,11 @@ function buildAiProblemContexts(platform: ProblemPlatform, html: string): string
       "프로그래머스 K-Digital Training",
     ]);
     if (focused.length > 0) contexts.push(focused);
+  }
+
+  if (platform === "LeetCode") {
+    const structured = buildLeetCodeAiContext(html);
+    if (structured.length > 0) contexts.push(structured);
   }
 
   if (plain.length > 0) contexts.push(plain);
@@ -262,6 +451,12 @@ function hasProblemContent(platform: ProblemPlatform, html: string): boolean {
   if (platform === "Programmers" && hasProgrammersProblemSignature(html)) {
     return true;
   }
+  if (platform === "LeetCode") {
+    const payload = extractLeetCodeQuestionPayload(html);
+    if (payload !== null) {
+      return payload.contentHtml.trim().length > 0 || payload.hasCodeSnippets || payload.exampleTestcaseList.length > 0;
+    }
+  }
 
   const hasEditorSignal =
     lowerHtml.includes("class=\"code-editor\"") ||
@@ -271,7 +466,7 @@ function hasProblemContent(platform: ProblemPlatform, html: string): boolean {
   if (hasEditorSignal) return true;
 
   const plain = htmlToPlainText(html).toLowerCase();
-  return plain.includes("입력") && plain.includes("출력");
+  return (plain.includes("입력") && plain.includes("출력")) || (plain.includes("input") && plain.includes("output"));
 }
 
 function getProgrammersDifficultyFromHtml(html: string): string {
@@ -298,6 +493,91 @@ function getBojDifficultyFromHtml(html: string): string {
   return "";
 }
 
+function getLeetCodeDifficultyFromHtml(html: string): string {
+  const payload = extractLeetCodeQuestionPayload(html);
+  if (payload === null) return "";
+  return normalizeDifficulty("LeetCode", payload.difficulty);
+}
+
+function buildAutofillSystemPrompt(locale: AutofillHintLocale): string {
+  if (locale === "en") {
+    return [
+      "You are an algorithm assignment autofill assistant.",
+      "If the page content is not actually available, never guess.",
+      'Return JSON only in this shape: {"status":"ok|unavailable","title":"...","hint":"...","algorithms":["..."],"difficulty":"...","reason":"..."}.',
+      "The hint must be a solving approach hint, not a copy or summary of the original statement.",
+      "algorithms must contain at least one item.",
+      'For Programmers, BOJ, and LeetCode, the server extracts the official problem title from HTML, so title must be an empty string "".',
+      "Only Other platform may fill title with a one-line assignment title.",
+      "Write hint and reason in English.",
+    ].join(" ");
+  }
+
+  return [
+    "너는 알고리즘 과제 자동 입력 도우미다.",
+    "내용을 확인할 수 없으면 절대 추측하지 않는다.",
+    '반드시 JSON만 출력한다. 형식: {"status":"ok|unavailable","title":"...","hint":"...","algorithms":["..."],"difficulty":"...","reason":"..."}.',
+    "hint는 문제 원문 요약이 아니라 풀이 접근 힌트로 작성한다.",
+    "algorithms는 반드시 1개 이상 반환한다.",
+    '과제 제목(title)은 Programmers·BOJ·LeetCode에서는 서버가 문제 페이지 HTML에서 공식 명칭을 추출하므로, 해당 플랫폼일 때는 title을 반드시 빈 문자열 "" 로 둔다.',
+    "Other 플랫폼만 title에 한 줄 과제명을 적는다.",
+    "hint와 reason은 반드시 한국어로 작성한다.",
+  ].join(" ");
+}
+
+function buildAutofillUserPrompt(
+  locale: AutofillHintLocale,
+  problemUrl: string,
+  platform: ProblemPlatform,
+  contextText: string,
+): string {
+  if (locale === "en") {
+    const titleRule =
+      platform === "Other"
+        ? "Write title as a one-line assignment title in English, and write hint in English. Keep algorithms as the allowed tokens."
+        : 'Keep title as "" only because the server extracts the official problem title from HTML. Fill hint and algorithms only.';
+    return [
+      `Problem URL: ${problemUrl}`,
+      `Platform: ${platform}`,
+      `Problem page text excerpt:\n${contextText}`,
+      "Note: the text above already passed the server-side problem-page validation.",
+      "Ignore network warnings, login prompts, and execution UI noise if present, and rely only on the actual problem statement.",
+      titleRule,
+      "Write hint and reason in English.",
+      'The hint must explain "how to approach solving this problem".',
+      "algorithms must contain at least one item.",
+      `algorithms must use only one or more of these exact tokens: ${ALGORITHM_KEYWORDS.join(", ")}.`,
+      "Write difficulty in the platform format below.",
+      "- BOJ: B1~R5",
+      "- Programmers: Lv. 0~Lv. 5",
+      "- LeetCode: Easy/Medium/Hard",
+      'Important: return status as "unavailable" only when the actual problem content is effectively missing. Otherwise return status as "ok".',
+    ].join("\n");
+  }
+
+  const titleRule =
+    platform === "Other"
+      ? "한국어로 title(과제명 한 줄)·hint·algorithms를 채워라."
+      : 'title 필드는 "" 로만 두어라(공식 문제명은 서버가 HTML에서 추출한다). hint·algorithms만 채워라.';
+  return [
+    `문제 URL: ${problemUrl}`,
+    `플랫폼: ${platform}`,
+    `문제 페이지 본문(일부):\n${contextText}`,
+    "참고: 위 본문은 서버의 사전 검증을 통과한 문제 페이지 텍스트다.",
+    "네트워크 경고, 로그인 문구, 실행 UI 문구가 섞여 있으면 무시하고 문제 본문만 근거로 판단해라.",
+    titleRule,
+    "hint와 reason은 한국어로 작성해라.",
+    'hint는 "이 문제를 어떤 방식으로 풀면 되는지"를 안내하는 힌트여야 한다.',
+    "algorithms는 반드시 1개 이상 넣어라.",
+    `algorithms는 아래 목록 중에서만 고르고 정확히 같은 문자열로 반환해라.\n${ALGORITHM_KEYWORDS.join(", ")}`,
+    "난이도는 플랫폼 규칙에 맞춰 작성해.",
+    "- BOJ: B1~R5",
+    "- Programmers: Lv. 0~Lv. 5",
+    "- LeetCode: Easy/Medium/Hard",
+    '중요: 문제 본문이 사실상 비어 있는 경우에만 status를 unavailable로 반환하고, 그 외에는 status를 ok로 반환해라.',
+  ].join("\n");
+}
+
 @Injectable()
 export class AssignmentsService {
   private get ds(): DataSource {
@@ -308,63 +588,182 @@ export class AssignmentsService {
     if (!this.ds.isInitialized) await this.ds.initialize();
   }
 
-  async list(groupId: string): Promise<AssignmentDetail[]> {
-    await this.ensureInitialized();
-    const items = await this.ds
-      .getRepository(Assignment)
-      .find({ where: { groupId, deletedAt: IsNull() }, order: { dueAt: "DESC" } });
+  private async resolveAssigneeSnapshot(
+    groupId: string,
+    requestedUserIds: string[] | undefined,
+    tx: EntityManager,
+  ): Promise<string[]> {
+    const activeMembers = await tx.getRepository(GroupMember).find({
+      where: { groupId, leftAt: IsNull() },
+      order: { joinedAt: "ASC" },
+    });
+    const activeUserIds = activeMembers.map((member: GroupMember) => member.userId);
+    if (requestedUserIds === undefined) return activeUserIds;
+    const uniqueUserIds = Array.from(new Set(requestedUserIds.map((value) => value.trim()).filter((value) => value.length > 0)));
+    if (uniqueUserIds.length === 0) {
+      throw new BadRequestException("대상자는 최소 1명이어야 합니다.");
+    }
+    const activeUserIdSet = new Set(activeUserIds);
+    const invalidUserId = uniqueUserIds.find((userId) => !activeUserIdSet.has(userId));
+    if (invalidUserId !== undefined) {
+      throw new BadRequestException("현재 그룹 멤버만 대상자로 지정할 수 있습니다.");
+    }
+    return uniqueUserIds;
+  }
+
+  private ensureAssigneeActorConstraint(
+    actorUserId: string,
+    actorRole: GroupRole,
+    assigneeUserIds: string[],
+  ): void {
+    if (assigneeUserIds.length === 0) {
+      throw new BadRequestException("대상자는 최소 1명이어야 합니다.");
+    }
+    if (actorRole === "MANAGER" && !assigneeUserIds.includes(actorUserId)) {
+      throw new BadRequestException("과제 대상자 구성이 올바르지 않습니다.");
+    }
+  }
+
+  private async setAssigneeSnapshot(
+    assignmentId: string,
+    assigneeUserIds: string[],
+    tx: EntityManager,
+  ): Promise<void> {
+    const assigneeRepo = tx.getRepository(AssignmentAssignee);
+    await assigneeRepo.delete({ assignmentId });
+    if (assigneeUserIds.length === 0) return;
+    await assigneeRepo.save(
+      assigneeRepo.create(
+        assigneeUserIds.map((userId) => ({
+          assignmentId,
+          userId,
+        })),
+      ),
+    );
+  }
+
+  private async notifyAssignmentCreatedRecipients(
+    assignment: Assignment,
+    recipientUserIds: string[],
+  ): Promise<void> {
+    const uniqueRecipientUserIds = Array.from(new Set(recipientUserIds));
+    if (uniqueRecipientUserIds.length === 0) return;
+    const group = await this.ds.getRepository(Group).findOne({ where: { id: assignment.groupId } });
+    const groupName = (group?.name ?? "그룹").trim() || "그룹";
+    const title = `${groupName} 그룹에서 "${assignment.title}" 과제가 등록되었습니다.`;
+    const notifRepo = this.ds.getRepository(Notification);
+    await notifRepo.save(
+      notifRepo.create(
+        uniqueRecipientUserIds.map((recipientUserId) => ({
+          recipientUserId,
+          type: NOTIFICATION_TYPES.ASSIGNMENT_CREATED,
+          payload: {
+            title,
+            groupId: assignment.groupId,
+            assignmentId: assignment.id,
+          },
+        })),
+      ),
+    );
+  }
+
+  private async buildAssignmentDetails(
+    items: Assignment[],
+    viewerUserId?: string,
+  ): Promise<AssignmentDetail[]> {
     if (items.length === 0) return [];
-    const analyses = await this.ds
-      .getRepository(ProblemAnalysis)
-      .find({ where: { assignmentId: In(items.map((i) => i.id)) } });
-    const analysisMap = new Map(analyses.map((a) => [a.assignmentId, a]));
+    const assignmentIds = items.map((item) => item.id);
+    const [analyses, assigneeRows] = await Promise.all([
+      this.ds.getRepository(ProblemAnalysis).find({ where: { assignmentId: In(assignmentIds) } }),
+      this.ds.getRepository(AssignmentAssignee).find({
+        where: { assignmentId: In(assignmentIds) },
+        order: { createdAt: "ASC" },
+      }),
+    ]);
+    const assigneeUserIds = Array.from(new Set(assigneeRows.map((row: AssignmentAssignee) => row.userId)));
+    const assigneeUsers =
+      assigneeUserIds.length === 0
+        ? []
+        : await this.ds.getRepository(User).find({
+            where: { id: In(assigneeUserIds) },
+            select: ["id", "nickname", "profileImageUrl"],
+            withDeleted: true,
+          });
+    const analysisMap = new Map<string, ProblemAnalysis>(
+      analyses.map((analysis: ProblemAnalysis) => [analysis.assignmentId, analysis]),
+    );
+    const assigneeUserMap = new Map<string, Pick<User, "id" | "nickname" | "profileImageUrl">>(
+      assigneeUsers.map((user: Pick<User, "id" | "nickname" | "profileImageUrl">) => [user.id, user]),
+    );
+    const assigneeMap = new Map<
+      string,
+      {
+        assigneeUserIds: string[];
+        assignees: AssignmentAssigneePreview[];
+      }
+    >();
+    for (const row of assigneeRows) {
+      const current = assigneeMap.get(row.assignmentId) ?? {
+        assigneeUserIds: [],
+        assignees: [],
+      };
+      current.assigneeUserIds.push(row.userId);
+      const user = assigneeUserMap.get(row.userId);
+      if (user !== undefined) {
+        current.assignees.push({
+          userId: user.id,
+          nickname: user.nickname,
+          profileImageUrl: user.profileImageUrl,
+        });
+      }
+      assigneeMap.set(row.assignmentId, current);
+    }
     const now = Date.now();
-    return items.map((a) => {
-      const an = analysisMap.get(a.id);
+    return items.map((assignment) => {
+      const analysis = analysisMap.get(assignment.id);
+      const assignee = assigneeMap.get(assignment.id) ?? {
+        assigneeUserIds: [],
+        assignees: [],
+      };
       return {
-        id: a.id,
-        groupId: a.groupId,
-        title: a.title,
-        hintPlain: a.hintPlain,
-        problemUrl: a.problemUrl,
-        platform: a.platform,
-        difficulty: a.difficulty,
-        dueAt: a.dueAt,
-        allowLateSubmission: a.allowLateSubmission,
-        createdByUserId: a.createdByUserId,
-        createdAt: a.createdAt,
-        metadata: an?.metadata ?? {},
-        analysisStatus: an?.status ?? "NONE",
-        isLate: a.dueAt.getTime() < now,
+        id: assignment.id,
+        groupId: assignment.groupId,
+        title: assignment.title,
+        hintPlain: assignment.hintPlain,
+        problemUrl: assignment.problemUrl,
+        platform: assignment.platform,
+        difficulty: assignment.difficulty,
+        dueAt: assignment.dueAt,
+        allowLateSubmission: assignment.allowLateSubmission,
+        createdByUserId: assignment.createdByUserId,
+        createdAt: assignment.createdAt,
+        metadata: analysis?.metadata ?? {},
+        analysisStatus: analysis?.status ?? "NONE",
+        isLate: assignment.dueAt.getTime() < now,
+        assigneeUserIds: assignee.assigneeUserIds,
+        assignees: assignee.assignees,
+        isAssignedToMe:
+          viewerUserId !== undefined ? assignee.assigneeUserIds.includes(viewerUserId) : false,
       };
     });
   }
 
-  async getById(assignmentId: string): Promise<AssignmentDetail> {
+  async list(groupId: string, viewerUserId?: string): Promise<AssignmentDetail[]> {
     await this.ensureInitialized();
-    const a = await this.ds
+    const items = await this.ds
+      .getRepository(Assignment)
+      .find({ where: { groupId, deletedAt: IsNull() }, order: { dueAt: "DESC" } });
+    return this.buildAssignmentDetails(items, viewerUserId);
+  }
+
+  async getById(assignmentId: string, viewerUserId?: string): Promise<AssignmentDetail> {
+    await this.ensureInitialized();
+    const assignment = await this.ds
       .getRepository(Assignment)
       .findOne({ where: { id: assignmentId, deletedAt: IsNull() } });
-    if (a === null) throw new NotFoundException("과제를 찾을 수 없습니다.");
-    const an = await this.ds
-      .getRepository(ProblemAnalysis)
-      .findOne({ where: { assignmentId } });
-    return {
-      id: a.id,
-      groupId: a.groupId,
-      title: a.title,
-      hintPlain: a.hintPlain,
-      problemUrl: a.problemUrl,
-      platform: a.platform,
-      difficulty: a.difficulty,
-      dueAt: a.dueAt,
-      allowLateSubmission: a.allowLateSubmission,
-      createdByUserId: a.createdByUserId,
-      createdAt: a.createdAt,
-      metadata: an?.metadata ?? {},
-      analysisStatus: an?.status ?? "NONE",
-      isLate: a.dueAt.getTime() < Date.now(),
-    };
+    if (assignment === null) throw new NotFoundException("과제를 찾을 수 없습니다.");
+    const [detail] = await this.buildAssignmentDetails([assignment], viewerUserId);
+    return detail;
   }
 
   async create(
@@ -376,11 +775,16 @@ export class AssignmentsService {
       problemUrl: string;
       dueAt: Date;
       allowLateSubmission: boolean;
+      assigneeUserIds?: string[];
     },
+    actorRole: GroupRole = "OWNER",
   ): Promise<Assignment> {
     await this.ensureInitialized();
     const parsed = parseProblemUrl(body.problemUrl);
-    const assignment = await this.ds.transaction(async (tx) => {
+    let assigneeUserIds: string[] = [];
+    const assignment = await this.ds.transaction(async (tx: EntityManager) => {
+      assigneeUserIds = await this.resolveAssigneeSnapshot(groupId, body.assigneeUserIds, tx);
+      this.ensureAssigneeActorConstraint(creatorId, actorRole, assigneeUserIds);
       const repo = tx.getRepository(Assignment);
       const row = await repo.save(
         repo.create({
@@ -394,6 +798,7 @@ export class AssignmentsService {
           createdByUserId: creatorId,
         }),
       );
+      await this.setAssigneeSnapshot(row.id, assigneeUserIds, tx);
       const analysisRepo = tx.getRepository(ProblemAnalysis);
       await analysisRepo.save(
         analysisRepo.create({
@@ -418,34 +823,9 @@ export class AssignmentsService {
       this.enqueueProblemAnalysis(row.id);
       return row;
     });
-    await this.notifyGroupMembersNewAssignment(assignment, creatorId);
+    await this.notifyAssignmentCreatedRecipients(assignment, assigneeUserIds);
+    await syncAssignmentDeadlineReminderJobs(assignment.id, assignment.dueAt);
     return assignment;
-  }
-
-  /** 등록자를 제외한 그룹 활성 멤버에게 새 과제 알림을 넣습니다. */
-  private async notifyGroupMembersNewAssignment(assignment: Assignment, creatorId: string): Promise<void> {
-    await this.ensureInitialized();
-    const members = await this.ds.getRepository(GroupMember).find({
-      where: { groupId: assignment.groupId, leftAt: IsNull() },
-    });
-    const group = await this.ds.getRepository(Group).findOne({ where: { id: assignment.groupId } });
-    const groupName = (group?.name ?? "그룹").trim() || "그룹";
-    const notifRepo = this.ds.getRepository(Notification);
-    const title = `${groupName} 그룹에서 "${assignment.title}" 과제가 등록되었습니다.`;
-    for (const m of members) {
-      if (m.userId === creatorId) continue;
-      await notifRepo.save(
-        notifRepo.create({
-          recipientUserId: m.userId,
-          type: NOTIFICATION_TYPES.ASSIGNMENT_CREATED,
-          payload: {
-            title,
-            groupId: assignment.groupId,
-            assignmentId: assignment.id,
-          },
-        }),
-      );
-    }
   }
 
   async update(
@@ -456,28 +836,46 @@ export class AssignmentsService {
       problemUrl?: string;
       dueAt?: Date;
       allowLateSubmission?: boolean;
+      assigneeUserIds?: string[];
     },
+    actorUserId?: string,
+    actorRole: GroupRole = "OWNER",
   ): Promise<Assignment> {
     await this.ensureInitialized();
-    const repo = this.ds.getRepository(Assignment);
-    const a = await repo.findOne({ where: { id: assignmentId, deletedAt: IsNull() } });
-    if (a === null) throw new NotFoundException("과제를 찾을 수 없습니다.");
-    let urlChanged = false;
-    if (body.title !== undefined) a.title = body.title;
-    if (body.hint !== undefined) a.hintPlain = body.hint;
-    if (body.problemUrl !== undefined && body.problemUrl !== a.problemUrl) {
-      const parsed = parseProblemUrl(body.problemUrl);
-      a.problemUrl = parsed.url;
-      a.platform = parsed.platform;
-      urlChanged = true;
-    }
-    if (body.dueAt !== undefined) a.dueAt = body.dueAt;
-    if (body.allowLateSubmission !== undefined) a.allowLateSubmission = body.allowLateSubmission;
-    const saved = await repo.save(a);
-    if (urlChanged) {
-      await this.ds
-        .getRepository(ProblemAnalysis)
-        .update(
+    let addedAssigneeUserIds: string[] = [];
+    const saved = await this.ds.transaction(async (tx: EntityManager) => {
+      const repo = tx.getRepository(Assignment);
+      const assignment = await repo.findOne({ where: { id: assignmentId, deletedAt: IsNull() } });
+      if (assignment === null) throw new NotFoundException("과제를 찾을 수 없습니다.");
+      let urlChanged = false;
+      if (body.title !== undefined) assignment.title = body.title;
+      if (body.hint !== undefined) assignment.hintPlain = body.hint;
+      if (body.problemUrl !== undefined && body.problemUrl !== assignment.problemUrl) {
+        const parsed = parseProblemUrl(body.problemUrl);
+        assignment.problemUrl = parsed.url;
+        assignment.platform = parsed.platform;
+        urlChanged = true;
+      }
+      if (body.dueAt !== undefined) assignment.dueAt = body.dueAt;
+      if (body.allowLateSubmission !== undefined) assignment.allowLateSubmission = body.allowLateSubmission;
+      const saved = await repo.save(assignment);
+      if (body.assigneeUserIds !== undefined) {
+        const previousAssigneeRows = await tx.getRepository(AssignmentAssignee).find({
+          where: { assignmentId: saved.id },
+          select: ["userId"],
+        });
+        const previousAssigneeUserIdSet = new Set(previousAssigneeRows.map((row: AssignmentAssignee) => row.userId));
+        const nextAssigneeUserIds = await this.resolveAssigneeSnapshot(saved.groupId, body.assigneeUserIds, tx);
+        this.ensureAssigneeActorConstraint(
+          actorUserId ?? saved.createdByUserId,
+          actorRole,
+          nextAssigneeUserIds,
+        );
+        addedAssigneeUserIds = nextAssigneeUserIds.filter((userId) => !previousAssigneeUserIdSet.has(userId));
+        await this.setAssigneeSnapshot(saved.id, nextAssigneeUserIds, tx);
+      }
+      if (urlChanged) {
+        await tx.getRepository(ProblemAnalysis).update(
           { assignmentId: saved.id },
           {
             status: "PENDING",
@@ -487,12 +885,20 @@ export class AssignmentsService {
             } satisfies ProblemMetadata,
           },
         );
-      this.enqueueProblemAnalysis(saved.id);
+        this.enqueueProblemAnalysis(saved.id);
+      }
+      if (body.dueAt !== undefined) {
+        await tx
+          .getRepository(CalendarEvent)
+          .update({ assignmentId: saved.id }, { eventDate: toDateOnly(saved.dueAt) });
+      }
+      return saved;
+    });
+    if (addedAssigneeUserIds.length > 0) {
+      await this.notifyAssignmentCreatedRecipients(saved, addedAssigneeUserIds);
     }
     if (body.dueAt !== undefined) {
-      await this.ds
-        .getRepository(CalendarEvent)
-        .update({ assignmentId: saved.id }, { eventDate: toDateOnly(saved.dueAt) });
+      await syncAssignmentDeadlineReminderJobs(saved.id, saved.dueAt);
     }
     return saved;
   }
@@ -539,7 +945,7 @@ export class AssignmentsService {
     const submissions = await this.ds
       .getRepository(Submission)
       .find({ where: { assignmentId }, select: ["id"] });
-    const submissionIds = submissions.map((s) => s.id);
+    const submissionIds = submissions.map((s: Submission) => s.id);
     let reviewCount = 0;
     let commentCount = 0;
     if (submissionIds.length > 0) {
@@ -566,10 +972,10 @@ export class AssignmentsService {
     if (a.title !== confirmTitle) {
       throw new BadRequestException("과제명 확인이 일치하지 않습니다.");
     }
-    return this.ds.transaction(async (tx) => {
+    const result = await this.ds.transaction(async (tx: EntityManager) => {
       const submissionIds = (
         await tx.getRepository(Submission).find({ where: { assignmentId }, select: ["id"] })
-      ).map((s) => s.id);
+      ).map((s: Submission) => s.id);
       const reviewIds =
         submissionIds.length === 0
           ? []
@@ -577,7 +983,7 @@ export class AssignmentsService {
               await tx
                 .getRepository(Review)
                 .find({ where: { submissionId: In(submissionIds) }, select: ["id"] })
-            ).map((r) => r.id);
+            ).map((r: Review) => r.id);
       if (reviewIds.length > 0) {
         await tx.getRepository(ReviewReply).delete({ reviewId: In(reviewIds) });
         await tx.getRepository(Review).delete({ id: In(reviewIds) });
@@ -592,10 +998,13 @@ export class AssignmentsService {
       await tx.getRepository(Comment).delete({ assignmentId });
       await tx.getRepository(CalendarEvent).delete({ assignmentId });
       await tx.getRepository(ProblemAnalysis).delete({ assignmentId });
+      await tx.getRepository(AssignmentAssignee).delete({ assignmentId });
       await tx.getRepository(AssignmentPolicyOverride).delete({ assignmentId });
       await tx.getRepository(Assignment).softDelete({ id: assignmentId });
       return { deleted: true } as const;
     });
+    await removeAssignmentDeadlineReminderJobs(assignmentId);
+    return result;
   }
 
   enqueueProblemAnalysis(assignmentId: string): void {
@@ -604,7 +1013,10 @@ export class AssignmentsService {
     console.log(`[problem-analysis] enqueue assignmentId=${assignmentId}`);
   }
 
-  async autofillFromAi(problemUrl: string): Promise<AssignmentAutofill> {
+  async autofillFromAi(
+    problemUrl: string,
+    hintLocale: AutofillHintLocale = "ko",
+  ): Promise<AssignmentAutofill> {
     const parsedUrl = parseProblemUrl(problemUrl);
     const problemHtml = await fetchText(parsedUrl.url);
     if (problemHtml.length === 0) {
@@ -640,16 +1052,16 @@ export class AssignmentsService {
           messages: [
             {
               role: "system",
-              content:
-                "너는 알고리즘 과제 자동 입력 도우미다. 내용을 확인할 수 없으면 절대 추측하지 않는다. 반드시 JSON만 출력한다. 형식: {\"status\":\"ok|unavailable\",\"title\":\"...\",\"hint\":\"...\",\"algorithms\":[\"...\"],\"difficulty\":\"...\",\"reason\":\"...\"}. hint는 문제 원문 요약이 아니라 풀이 접근 힌트로 작성한다. algorithms는 반드시 1개 이상 반환한다. 과제 제목(title)은 Programmers·BOJ·LeetCode에서는 서버가 문제 페이지 HTML에서 공식 명칭을 추출하므로, 해당 플랫폼일 때는 title을 반드시 빈 문자열 \"\" 로 둔다. Other 플랫폼만 title에 한 줄 과제명을 적는다.",
+              content: buildAutofillSystemPrompt(hintLocale),
             },
             {
               role: "user",
-              content: `문제 URL: ${problemUrl}\n플랫폼: ${parsedUrl.platform}\n문제 페이지 본문(일부):\n${contextText}\n\n참고: 위 본문은 서버의 사전 검증을 통과한 문제 페이지 텍스트다. 네트워크 경고/로그인/실행 UI 문구가 섞여 있으면 무시하고 문제 본문만 근거로 판단해라.\n${
-                parsedUrl.platform === "Other"
-                  ? "한국어로 title(과제명 한 줄)·hint·algorithms를 채워라."
-                  : "title 필드는 \"\" 로만 두어라(공식 문제명은 서버가 HTML에서 추출한다). hint·algorithms만 채워라."
-              }\nhint는 "이 문제를 어떤 방식으로 풀면 되는지"를 안내하는 힌트여야 한다.\nalgorithms는 반드시 1개 이상 넣어라.\nalgorithms는 아래 목록 중에서만 고르고 정확히 같은 문자열로 반환해라.\n${ALGORITHM_KEYWORDS.join(", ")}\n난이도는 플랫폼 규칙에 맞춰 작성해.\n- BOJ: B1~R5\n- Programmers: Lv. 0~Lv. 5\n- LeetCode: Easy/Medium/Hard\n\n중요: 문제 본문이 사실상 비어 있는 경우에만 status를 unavailable로 반환하고, 그 외에는 status를 ok로 반환해라.`,
+              content: buildAutofillUserPrompt(
+                hintLocale,
+                problemUrl,
+                parsedUrl.platform,
+                contextText,
+              ),
             },
           ],
         });
@@ -737,6 +1149,8 @@ export class AssignmentsService {
       difficulty = getProgrammersDifficultyFromHtml(problemHtml);
     } else if (parsedUrl.platform === "BOJ") {
       difficulty = getBojDifficultyFromHtml(problemHtml);
+    } else if (parsedUrl.platform === "LeetCode") {
+      difficulty = getLeetCodeDifficultyFromHtml(problemHtml);
     } else {
       difficulty = normalizeDifficulty(parsedUrl.platform, difficultyRaw);
     }

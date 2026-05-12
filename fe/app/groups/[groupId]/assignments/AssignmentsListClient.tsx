@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import type { AssignmentDto } from "../../../../src/assignments/server";
 import type { GroupMember } from "../../../../src/groups/server";
 import { AssignmentList } from "../../../../src/assignments/AssignmentList";
@@ -26,7 +27,7 @@ type FilterState = {
   solvedFilter: SolvedFilter;
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
-  selectedSubmitterIds: string[];
+  selectedAssigneeIds: string[];
 };
 
 type Props = {
@@ -44,13 +45,13 @@ const getVisibleAlgorithms = (item: AssignmentWithSubmitters): string[] => {
 };
 
 export function AssignmentsListClient({ groupId, groupName, items, members, canCreate }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const emptyFilter: FilterState = {
     query: "",
     solvedFilter: "all",
     selectedPlatforms: [],
     selectedAlgorithms: [],
-    selectedSubmitterIds: [],
+    selectedAssigneeIds: [],
   };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(emptyFilter);
@@ -67,7 +68,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
       ).sort((a, b) => a.localeCompare(b)),
     [items],
   );
-  const submitterOptions = useMemo(
+  const assigneeOptions = useMemo(
     () =>
       members
         .map((member) => ({ userId: member.userId, nickname: member.nickname }))
@@ -98,16 +99,13 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
         }
       }
       if (
-        appliedFilter.selectedSubmitterIds.length > 0 &&
-        !appliedFilter.selectedSubmitterIds.some((id) => item.submitterIds.includes(id))
+        appliedFilter.selectedAssigneeIds.length > 0 &&
+        !appliedFilter.selectedAssigneeIds.some((id) => item.assigneeUserIds.includes(id))
       ) {
         return false;
       }
 
-      const isSolved =
-        appliedFilter.selectedSubmitterIds.length > 0
-          ? appliedFilter.selectedSubmitterIds.some((id) => item.submitterIds.includes(id))
-          : item.hasMySubmission === true;
+      const isSolved = item.hasMySubmission === true;
       if (appliedFilter.solvedFilter === "solved" && !isSolved) return false;
       if (appliedFilter.solvedFilter === "unsolved" && isSolved) return false;
       return true;
@@ -119,7 +117,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
     (appliedFilter.solvedFilter !== "all" ? 1 : 0) +
     (appliedFilter.selectedPlatforms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedAlgorithms.length > 0 ? 1 : 0) +
-    (appliedFilter.selectedSubmitterIds.length > 0 ? 1 : 0);
+    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0);
 
   const openFilterModal = () => {
     setDraftFilter(appliedFilter);
@@ -185,8 +183,8 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
           ) : null}
         </div>
         <div className={styles.activeChipRow}>
-          {appliedFilter.selectedSubmitterIds.map((id) => {
-            const member = submitterOptions.find((option) => option.userId === id);
+          {appliedFilter.selectedAssigneeIds.map((id) => {
+            const member = assigneeOptions.find((option) => option.userId === id);
             if (member === undefined) return null;
             return (
               <Chip
@@ -195,7 +193,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
                 onClick={() =>
                   setAppliedFilter((prev) => ({
                     ...prev,
-                    selectedSubmitterIds: prev.selectedSubmitterIds.filter((item) => item !== id),
+                    selectedAssigneeIds: prev.selectedAssigneeIds.filter((item) => item !== id),
                   }))
                 }
               >
@@ -214,7 +212,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
                 }))
               }
             >
-              {platform}
+              {formatProblemPlatformLabel(locale, platform)}
             </Chip>
           ))}
           {appliedFilter.selectedAlgorithms.map((algorithm) => (
@@ -264,6 +262,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
               title: a.title,
               dueAt: a.dueAt,
               isLate: a.isLate,
+              isAssignedToMe: a.isAssignedToMe,
               hasMySubmission: a.hasMySubmission,
               platform: a.platform,
               difficulty: a.difficulty,
@@ -298,18 +297,18 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
               placeholder={t("assignment.list.searchTitlePlaceholder")}
             />
             <div className={styles.filterSection}>
-              <p className={styles.filterLabel}>{t("assignment.list.submitter")}</p>
+              <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
               <div className={styles.chipRow}>
-                {submitterOptions.map((member) => (
+                {assigneeOptions.map((member) => (
                   <Chip
                     key={member.userId}
-                    active={draftFilter.selectedSubmitterIds.includes(member.userId)}
+                    active={draftFilter.selectedAssigneeIds.includes(member.userId)}
                     onClick={() =>
                       setDraftFilter((prev) => ({
                         ...prev,
-                        selectedSubmitterIds: prev.selectedSubmitterIds.includes(member.userId)
-                          ? prev.selectedSubmitterIds.filter((item) => item !== member.userId)
-                          : [...prev.selectedSubmitterIds, member.userId],
+                        selectedAssigneeIds: prev.selectedAssigneeIds.includes(member.userId)
+                          ? prev.selectedAssigneeIds.filter((item) => item !== member.userId)
+                          : [...prev.selectedAssigneeIds, member.userId],
                       }))
                     }
                   >
@@ -361,7 +360,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
                       }))
                     }
                   >
-                    {platform}
+                    {formatProblemPlatformLabel(locale, platform)}
                   </Chip>
                 ))}
               </div>

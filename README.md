@@ -2,12 +2,17 @@
 
 PS Studio는 알고리즘 스터디를 그룹 단위로 운영하면서 과제, 제출, 코드 리뷰, 댓글, 알림, AI 분석을 한 흐름에서 관리하는 웹 플랫폼입니다.
 
+<br />
+
 ## 구성
 
 - `fe`: Next.js 프론트엔드
 - `be`: NestJS API 서버
 - `worker`: 백그라운드 작업 처리
 - `packages/*`: 공용 패키지
+
+
+<br />
 
 ## 아키텍처
 
@@ -25,6 +30,8 @@ flowchart LR
     BE --> Q[BullMQ]
     Q --> WK[Worker]
 ```
+
+<br />
 
 ## 로컬 실행
 
@@ -63,6 +70,8 @@ docker compose up -d
 - Postgres: `54322`
 - Redis: `6379`
 
+<br />
+
 ## 주요 스크립트
 
 ```bash
@@ -73,12 +82,24 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
+<br />
+
 ## 배포
 
 - 프로덕션 배포는 `docker-compose.prod.yml` 기준으로 동작합니다.
 - GitHub Actions가 `main` 브랜치 푸시를 트리거로 이미지 빌드와 배포를 수행합니다.
 
+<br />
+
 ## 참고
 
 - 설계 문서는 `design/` 아래에 있습니다.
 - 인프라·개발 가이드는 `playbook/` 아래에 있습니다.
+
+<br />
+
+## 릴리즈 노트
+
+버전별 주요 변경사항은 아래 문서에서 확인할 수 있습니다.
+
+- [CHANGELOG.md](CHANGELOG.md)

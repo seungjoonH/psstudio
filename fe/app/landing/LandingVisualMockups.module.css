@@ -188,6 +188,7 @@
 }
 
 .landingHeroNotifyRow:hover {
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
   background: var(--ui-hover-bg);
 }

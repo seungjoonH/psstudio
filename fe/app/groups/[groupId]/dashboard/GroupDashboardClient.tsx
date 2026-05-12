@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { Badge } from "../../../../src/ui/Badge";
 import { UserAvatar } from "../../../../src/ui/UserAvatar";
 import styles from "./GroupDashboardClient.module.css";
@@ -22,6 +23,7 @@ export type DashboardAssignment = {
   platform: string;
   dueAt: string;
   isLate: boolean;
+  assigneeUserIds: string[];
 };
 
 export type DashboardSubmission = {
@@ -53,9 +55,13 @@ type MemberStat = {
 };
 
 type PieSlice = { label: string; value: number; color: string };
+type TrendPoint = { date: string; count: number };
+type TrendSeries = { id: string; label: string; color: string; points: TrendPoint[] };
 
 const RANGE_OPTIONS = [7, 30, 90] as const;
 const PIE_COLORS = ["#60a5fa", "#34d399", "#f59e0b", "#f472b6", "#a78bfa", "#22d3ee"];
+const TOTAL_TREND_COLOR = "#60a5fa";
+const TREND_MEMBER_COLORS = ["#34d399", "#f59e0b", "#f472b6", "#a78bfa", "#22d3ee", "#fb7185", "#84cc16", "#facc15"];
 
 function memberPieMetric(member: MemberStat, sort: "solved" | "submissions" | "onTime" | "streak"): number {
   switch (sort) {
@@ -76,7 +82,7 @@ function memberPieMetric(member: MemberStat, sort: "solved" | "submissions" | "o
 }
 
 export function GroupDashboardClient({ groupId, members, assignments, submissions }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [rangeDays, setRangeDays] = useState<(typeof RANGE_OPTIONS)[number]>(30);
   const [memberSort, setMemberSort] = useState<"solved" | "submissions" | "onTime" | "streak">("solved");
 
@@ -91,11 +97,32 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       const d = new Date(cutoff.getTime() + i * 24 * 3600 * 1000);
       dailyBuckets.set(toDateKey(d), 0);
     }
+    const dailyKeys = Array.from(dailyBuckets.keys());
+    const memberDailyBuckets = new Map<string, Map<string, number>>();
+    for (const member of members) {
+      memberDailyBuckets.set(
+        member.userId,
+        new Map(dailyKeys.map((dateKey) => [dateKey, 0])),
+      );
+    }
     for (const submission of filtered) {
       const key = toDateKey(new Date(submission.createdAt));
       dailyBuckets.set(key, (dailyBuckets.get(key) ?? 0) + 1);
+      const memberBucket = memberDailyBuckets.get(submission.authorUserId);
+      if (memberBucket !== undefined) {
+        memberBucket.set(key, (memberBucket.get(key) ?? 0) + 1);
+      }
     }
     const dailySeries = Array.from(dailyBuckets.entries()).map(([date, count]) => ({ date, count }));
+    const memberTrendSeries: TrendSeries[] = members.map((member, index) => ({
+      id: member.userId,
+      label: member.nickname,
+      color: TREND_MEMBER_COLORS[index % TREND_MEMBER_COLORS.length],
+      points: dailyKeys.map((date) => ({
+        date,
+        count: memberDailyBuckets.get(member.userId)?.get(date) ?? 0,
+      })),
+    }));
 
     const byMember = new Map<string, MemberStat & { assignmentSet: Set<string>; daySet: Set<string> }>();
     for (const member of members) {
@@ -148,7 +175,6 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
     });
 
     const activeMembers = memberStats.filter((member) => member.submissionCount > 0).length;
-    const participationRate = members.length === 0 ? 0 : (activeMembers / members.length) * 100;
     const lateRate = filtered.length === 0 ? 0 : (totalLate / filtered.length) * 100;
 
     const platformCount = new Map<string, number>();
@@ -173,8 +199,17 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       .map((assignment) => {
         const rows = filtered.filter((submission) => submission.assignmentId === assignment.id);
         const participantIds = new Set(rows.map((submission) => submission.authorUserId));
+        const assigneeUserIdSet = new Set(assignment.assigneeUserIds);
+        const actualParticipantIds = new Set(
+          rows
+            .map((submission) => submission.authorUserId)
+            .filter((authorUserId) => assigneeUserIdSet.has(authorUserId)),
+        );
         const participantCount = participantIds.size;
-        const participation = members.length === 0 ? 0 : (participantCount / members.length) * 100;
+        const actualParticipantCount = actualParticipantIds.size;
+        const assigneeCount = assignment.assigneeUserIds.length;
+        const actualProgress = assigneeCount === 0 ? 0 : (actualParticipantCount / assigneeCount) * 100;
+        const progress = assigneeCount === 0 ? 0 : (participantCount / assigneeCount) * 100;
         const lateRateByAssignment = rows.length === 0 ? 0 : (rows.filter((submission) => submission.isLate).length / rows.length) * 100;
         const lastSubmissionAt = rows.length === 0 ? null : rows.reduce((latest, row) => (row.createdAt > latest ? row.createdAt : latest), rows[0].createdAt);
         return {
@@ -182,20 +217,43 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
           title: assignment.title,
           platform: assignment.platform,
           dueAt: assignment.dueAt,
-          participation,
+          actualProgress,
+          progress,
+          assigneeCount,
+          actualParticipantCount,
           participantCount,
           lateRate: lateRateByAssignment,
-          pendingMembers: Math.max(0, members.length - participantCount),
+          pendingAssignees: Math.max(0, assigneeCount - actualParticipantCount),
           lastSubmissionAt,
         };
       })
-      .sort((a, b) => a.participation - b.participation);
+      .sort((a, b) => a.actualProgress - b.actualProgress);
+
+    const totals = assignmentHealth.reduce(
+      (acc, assignment) => {
+        acc.assigneeCount += assignment.assigneeCount;
+        acc.actualParticipantCount += assignment.actualParticipantCount;
+        acc.participantCount += assignment.participantCount;
+        return acc;
+      },
+      {
+        assigneeCount: 0,
+        actualParticipantCount: 0,
+        participantCount: 0,
+      },
+    );
+    const actualProgressRate =
+      totals.assigneeCount === 0 ? 0 : (totals.actualParticipantCount / totals.assigneeCount) * 100;
+    const progressRate =
+      totals.assigneeCount === 0 ? 0 : (totals.participantCount / totals.assigneeCount) * 100;
 
     return {
       filtered,
       memberStats,
+      memberTrendSeries,
       activeMembers,
-      participationRate,
+      actualProgressRate,
+      progressRate,
       lateRate,
       dailySeries,
       pieSlices,
@@ -235,7 +293,10 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
       <section className={styles.kpiGrid}>
         <KpiCard label={t("groupDashboard.kpi.totalSubmissions")} value={analysis.filtered.length.toLocaleString()} />
         <KpiCard label={t("groupDashboard.kpi.activeMembers")} value={`${analysis.activeMembers}/${members.length}`} />
-        <KpiCard label={t("groupDashboard.kpi.participationRate")} value={`${analysis.participationRate.toFixed(1)}%`} />
+        <KpiCard
+          label={`${t("groupDashboard.kpi.progress")} (${t("groupDashboard.kpi.actualProgress")})`}
+          value={`${analysis.actualProgressRate.toFixed(1)}% (${analysis.progressRate.toFixed(1)}%)`}
+        />
         <KpiCard label={t("groupDashboard.kpi.lateRate")} value={`${analysis.lateRate.toFixed(1)}%`} />
       </section>
 
@@ -247,11 +308,17 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
           </header>
           <div className={styles.lineWrap}>
             <SubmissionTrendChart
-              dailySeries={analysis.dailySeries}
+              totalSeries={analysis.dailySeries}
+              memberSeries={analysis.memberTrendSeries}
               peakDaily={peakDaily}
               ariaLabel={t("groupDashboard.chart.submissionTrend")}
-              formatHover={(dateKey, count) =>
-                t("groupDashboard.chart.trendDayHover", { date: dateKey.slice(5), count })
+              totalLabel={t("groupDashboard.chart.totalSeries")}
+              formatHover={(label, dateKey, count) =>
+                t("groupDashboard.chart.trendSeriesHover", {
+                  label,
+                  date: dateKey.slice(5),
+                  count,
+                })
               }
             />
             <div className={styles.lineAxis}>
@@ -317,6 +384,14 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
         </header>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
+            <colgroup>
+              <col className={styles.memberCol} />
+              <col className={styles.metricCol} />
+              <col className={styles.metricCol} />
+              <col className={styles.metricCol} />
+              <col className={styles.metricCol} />
+              <col className={styles.metricCol} />
+            </colgroup>
             <thead>
               <tr>
                 <th>{t("groupDashboard.memberTable.member")}</th>
@@ -331,13 +406,15 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
               {analysis.memberStats.map((member) => (
                 <tr key={member.userId}>
                   <td className={styles.memberCell}>
-                    <UserAvatar
-                      nickname={member.nickname}
-                      imageUrl={member.profileImageUrl}
-                      size={24}
-                      className={styles.avatar}
-                    />
-                    <span>{member.nickname}</span>
+                    <div className={styles.memberCellContent}>
+                      <UserAvatar
+                        nickname={member.nickname}
+                        imageUrl={member.profileImageUrl}
+                        size={24}
+                        className={styles.avatar}
+                      />
+                      <span>{member.nickname}</span>
+                    </div>
                   </td>
                   <td>{member.solvedAssignments}</td>
                   <td>{member.submissionCount}</td>
@@ -359,30 +436,43 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
           </header>
           <ul className={styles.assignmentList}>
             {analysis.assignmentHealth.map((assignment) => (
-              <li key={assignment.id} className={styles.assignmentRow}>
-                <div className={styles.assignmentHead}>
-                  <Link href={`/groups/${groupId}/assignments/${assignment.id}`} className={styles.assignmentLink}>
-                    {assignment.title}
-                  </Link>
-                  <Badge tone="neutral">{assignment.platform}</Badge>
-                </div>
-                <div className={styles.assignmentMeta}>
-                  <span>
-                    {t("groupDashboard.assignmentHealth.participation", {
-                      count: assignment.participantCount,
-                      total: members.length,
-                      rate: normalizedPercent(assignment.participation).toFixed(1),
-                    })}
-                  </span>
-                  <span>{t("groupDashboard.assignmentHealth.lateRate", { rate: assignment.lateRate.toFixed(1) })}</span>
-                  <span>{t("groupDashboard.assignmentHealth.pending", { count: assignment.pendingMembers })}</span>
-                </div>
-                <div className={styles.assignmentProgress}>
-                  <div
-                    className={normalizedPercent(assignment.participation) >= 100 ? styles.progressFillFull : undefined}
-                    style={{ width: `${normalizedPercent(assignment.participation)}%` }}
-                  />
-                </div>
+              <li key={assignment.id} className={styles.assignmentRowItem}>
+                <Link href={`/groups/${groupId}/assignments/${assignment.id}`} className={styles.assignmentRow}>
+                  <div className={styles.assignmentHead}>
+                    <span className={styles.assignmentTitle}>{assignment.title}</span>
+                    <Badge tone="neutral">{formatProblemPlatformLabel(locale, assignment.platform)}</Badge>
+                  </div>
+                  <div className={styles.assignmentMeta}>
+                    <span>
+                      {t("groupDashboard.assignmentHealth.actualProgress", {
+                        count: assignment.actualParticipantCount,
+                        total: assignment.assigneeCount,
+                        rate: assignment.actualProgress.toFixed(1),
+                      })}
+                    </span>
+                    <span>
+                      {t("groupDashboard.assignmentHealth.progress", {
+                        count: assignment.participantCount,
+                        total: assignment.assigneeCount,
+                        rate: assignment.progress.toFixed(1),
+                      })}
+                    </span>
+                    <span>{t("groupDashboard.assignmentHealth.lateRate", { rate: assignment.lateRate.toFixed(1) })}</span>
+                    <span>{t("groupDashboard.assignmentHealth.pending", { count: assignment.pendingAssignees })}</span>
+                  </div>
+                  <div className={styles.assignmentProgress}>
+                    <div
+                      className={normalizedPercent(assignment.actualProgress) >= 100 ? styles.progressFillFull : undefined}
+                      style={{ width: `${normalizedPercent(assignment.actualProgress)}%` }}
+                    />
+                  </div>
+                  <div className={`${styles.assignmentProgress} ${styles.assignmentProgressSecondary}`}>
+                    <div
+                      className={normalizedPercent(assignment.progress) >= 100 ? styles.progressFillFull : undefined}
+                      style={{ width: `${normalizedPercent(assignment.progress)}%` }}
+                    />
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -399,7 +489,7 @@ export function GroupDashboardClient({ groupId, members, assignments, submission
               return (
                 <li key={platform.platform} className={styles.platformRow}>
                   <div className={styles.platformTop}>
-                    <strong>{platform.platform}</strong>
+                    <strong>{formatProblemPlatformLabel(locale, platform.platform)}</strong>
                     <span>{platform.count}</span>
                   </div>
                   <div className={styles.assignmentProgress}>
@@ -422,26 +512,35 @@ const TREND_CHART_W = 640;
 const TREND_CHART_H = 180;
 
 function SubmissionTrendChart({
-  dailySeries,
+  totalSeries,
+  memberSeries,
   peakDaily,
   ariaLabel,
+  totalLabel,
   formatHover,
 }: {
-  dailySeries: Array<{ date: string; count: number }>;
+  totalSeries: TrendPoint[];
+  memberSeries: TrendSeries[];
   peakDaily: number;
   ariaLabel: string;
-  formatHover: (dateKey: string, count: number) => string;
+  totalLabel: string;
+  formatHover: (label: string, dateKey: string, count: number) => string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [hoveredSeriesId, setHoveredSeriesId] = useState<string | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const seriesList: TrendSeries[] = useMemo(
+    () => [{ id: "total", label: totalLabel, color: TOTAL_TREND_COLOR, points: totalSeries }, ...memberSeries],
+    [memberSeries, totalLabel, totalSeries],
+  );
 
-  const linePath = buildLinePath(dailySeries, TREND_CHART_W, TREND_CHART_H, peakDaily);
-  const areaPath = buildAreaPath(dailySeries, TREND_CHART_W, TREND_CHART_H, peakDaily);
+  const totalLinePath = buildLinePath(totalSeries, TREND_CHART_W, TREND_CHART_H, peakDaily);
+  const totalAreaPath = buildAreaPath(totalSeries, TREND_CHART_W, TREND_CHART_H, peakDaily);
   const safeMax = Math.max(1, peakDaily);
-  const n = dailySeries.length;
+  const n = totalSeries.length;
   const step = n <= 1 ? 0 : TREND_CHART_W / (n - 1);
 
-  function updateHover(clientX: number) {
+  function updateHover(clientX: number, seriesId: string) {
     const el = wrapRef.current;
     if (!el || n === 0) return;
     const rect = el.getBoundingClientRect();
@@ -449,10 +548,16 @@ function SubmissionTrendChart({
     const xSvg = ((clientX - rect.left) / width) * TREND_CHART_W;
     let idx = n <= 1 ? 0 : Math.round(xSvg / step);
     idx = Math.max(0, Math.min(n - 1, idx));
+    setHoveredSeriesId(seriesId);
     setHoverIdx(idx);
   }
 
-  const hovered = hoverIdx !== null && dailySeries[hoverIdx] !== undefined ? dailySeries[hoverIdx] : null;
+  const hoveredSeries =
+    hoveredSeriesId !== null ? seriesList.find((series) => series.id === hoveredSeriesId) ?? null : null;
+  const hovered =
+    hoveredSeries !== null && hoverIdx !== null && hoveredSeries.points[hoverIdx] !== undefined
+      ? hoveredSeries.points[hoverIdx]
+      : null;
   const crosshairX = hoverIdx !== null ? hoverIdx * step : null;
   const dotY =
     hovered !== null && crosshairX !== null
@@ -460,37 +565,91 @@ function SubmissionTrendChart({
       : null;
 
   return (
-    <div
-      ref={wrapRef}
-      className={styles.lineChartHit}
-      onMouseMove={(e) => updateHover(e.clientX)}
-      onMouseLeave={() => setHoverIdx(null)}
-    >
-      <svg
-        viewBox={`0 0 ${TREND_CHART_W} ${TREND_CHART_H}`}
-        className={styles.lineChart}
-        role="img"
-        aria-label={ariaLabel}
+    <div className={styles.lineChartBlock}>
+      <div
+        ref={wrapRef}
+        className={styles.lineChartHit}
+        onMouseLeave={() => {
+          setHoveredSeriesId(null);
+          setHoverIdx(null);
+        }}
       >
-        <path d={areaPath} className={styles.lineArea} />
-        <path d={linePath} className={styles.lineStroke} />
-        {crosshairX !== null ? (
-          <line x1={crosshairX} y1={0} x2={crosshairX} y2={TREND_CHART_H} className={styles.crosshair} />
-        ) : null}
-        {crosshairX !== null && dotY !== null ? (
-          <circle cx={crosshairX} cy={dotY} r={5} className={styles.hoverDot} />
-        ) : null}
-      </svg>
-      {hovered !== null ? (
-        <div
-          className={styles.chartTooltip}
-          style={{
-            left: n <= 1 ? "50%" : `${(hoverIdx! / (n - 1)) * 100}%`,
-          }}
+        <svg
+          viewBox={`0 0 ${TREND_CHART_W} ${TREND_CHART_H}`}
+          className={styles.lineChart}
+          role="img"
+          aria-label={ariaLabel}
         >
-          {formatHover(hovered.date, hovered.count)}
-        </div>
-      ) : null}
+          <path
+            d={totalAreaPath}
+            className={`${styles.lineArea} ${
+              hoveredSeriesId !== null && hoveredSeriesId !== "total" ? styles.lineAreaDimmed : ""
+            }`.trim()}
+          />
+          {seriesList.map((series) => {
+            const linePath = buildLinePath(series.points, TREND_CHART_W, TREND_CHART_H, peakDaily);
+            const isActive = hoveredSeriesId === series.id;
+            const isDimmed = hoveredSeriesId !== null && !isActive;
+            return (
+              <g key={series.id}>
+                <path
+                  d={linePath}
+                  className={`${styles.multiLineStroke} ${
+                    series.id === "total" ? styles.totalLineStroke : styles.memberLineStroke
+                  } ${isActive ? styles.multiLineStrokeActive : ""} ${isDimmed ? styles.multiLineStrokeDimmed : ""}`.trim()}
+                  style={{ stroke: series.color }}
+                />
+                <path
+                  d={linePath}
+                  className={styles.lineHitArea}
+                  style={{ strokeWidth: series.id === "total" ? 18 : 14 }}
+                  onMouseEnter={(event) => updateHover(event.clientX, series.id)}
+                  onMouseMove={(event) => updateHover(event.clientX, series.id)}
+                />
+              </g>
+            );
+          })}
+          {crosshairX !== null && hovered !== null ? (
+            <line x1={crosshairX} y1={0} x2={crosshairX} y2={TREND_CHART_H} className={styles.crosshair} />
+          ) : null}
+          {crosshairX !== null && dotY !== null && hoveredSeries !== null ? (
+            <circle cx={crosshairX} cy={dotY} r={5} className={styles.hoverDot} style={{ fill: hoveredSeries.color }} />
+          ) : null}
+        </svg>
+        {hovered !== null && hoveredSeries !== null ? (
+          <div
+            className={styles.chartTooltip}
+            style={{
+              left: n <= 1 ? "50%" : `${(hoverIdx! / (n - 1)) * 100}%`,
+            }}
+          >
+            {formatHover(hoveredSeries.label, hovered.date, hovered.count)}
+          </div>
+        ) : null}
+      </div>
+      <ul className={styles.trendLegend}>
+        {seriesList.map((series) => {
+          const isActive = hoveredSeriesId === series.id;
+          const isDimmed = hoveredSeriesId !== null && !isActive;
+          return (
+            <li key={series.id}>
+              <button
+                type="button"
+                className={`${styles.trendLegendButton} ${isActive ? styles.trendLegendButtonActive : ""} ${
+                  isDimmed ? styles.trendLegendButtonDimmed : ""
+                }`.trim()}
+                onMouseEnter={() => setHoveredSeriesId(series.id)}
+                onMouseLeave={() => setHoveredSeriesId(null)}
+                onFocus={() => setHoveredSeriesId(series.id)}
+                onBlur={() => setHoveredSeriesId(null)}
+              >
+                <span className={styles.trendLegendDot} style={{ background: series.color }} />
+                <span>{series.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

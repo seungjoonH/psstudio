@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
-import { formatAssignmentAlgorithmLabel } from "./algorithmLabels";
+import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
 import { dueBadgeTone } from "../lib/dueBadgeTone";
 import { Badge } from "../ui/Badge";
 import { DifficultyBadge } from "../ui/DifficultyBadge";
@@ -18,6 +18,7 @@ export type AssignmentListItem = {
   title: string;
   dueAt: string;
   isLate: boolean;
+  isAssignedToMe: boolean;
   hasMySubmission?: boolean;
   platform: string;
   difficulty: string | null;
@@ -49,6 +50,7 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
   const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
   const statusLabel = item.isLate ? t("assignment.list.late") : `D-${daysLeft}`;
   const dueTone = dueBadgeTone(item.isLate, daysLeft);
+  const platformLabel = formatProblemPlatformLabel(locale, item.platform);
   const algorithmsVisible =
     (item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true;
   const showAlgorithmBadges = algorithmsVisible && (item.algorithms?.length ?? 0) > 0;
@@ -60,19 +62,16 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
           <div className={styles.headMain}>
             <div className={styles.titleRow}>
               <span className={styles.title}>
-                <Icon name="book" size={16} className={styles.titleIcon} />
-                {item.title}
+                <Icon name="task" size={16} className={styles.titleIcon} />
+                <span className={styles.titleText}>{item.title}</span>
               </span>
+              {showGroupName && item.groupName ? <span className={styles.groupInline}>{item.groupName}</span> : null}
+              {item.isAssignedToMe ? <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span> : null}
               <div className={styles.titleNear}>
                 <Badge tone="neutral" chipIndex={1}>
-                  {item.platform}
+                  {platformLabel}
                 </Badge>
                 <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
-                {showGroupName && item.groupName ? (
-                  <Badge tone="neutral" chipIndex={0}>
-                    {item.groupName}
-                  </Badge>
-                ) : null}
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
 import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
+import { useNotificationStream } from "../../src/notifications/useNotificationStream";
 import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../../src/ui/DeadlineSoonNotificationGlyph";
 import { Button } from "../../src/ui/Button";
@@ -31,6 +32,10 @@ function formatDateTime(value: string, locale: string): string {
 export function NotificationsClient({ items }: Props) {
   const { locale, t } = useI18n();
   const router = useRouter();
+
+  useNotificationStream(() => {
+    router.refresh();
+  });
 
   async function onDeleteOne(id: string) {
     try {

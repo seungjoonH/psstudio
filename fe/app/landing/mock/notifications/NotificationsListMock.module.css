@@ -23,11 +23,13 @@
   border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
   background: var(--color-surface-paper);
   transition:
+    transform var(--ui-duration) var(--ui-ease),
     border-color 0.15s ease,
     background-color 0.15s ease;
 }
 
 .row:has(a.rowMain:hover) {
+  transform: translateY(var(--ui-hover-lift-y));
   border-color: var(--ui-hover-border);
   background: var(--ui-hover-bg);
 }
