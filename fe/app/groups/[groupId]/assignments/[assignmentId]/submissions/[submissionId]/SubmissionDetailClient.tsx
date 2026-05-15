@@ -104,6 +104,18 @@ export function SubmissionDetailClient({
     await actions.createCommentReply(commentId, body);
     refresh();
   };
+  const handleCreateComment = async (formData: FormData) => {
+    if (commentDraft.trim().length === 0) return;
+    try {
+      await actions.createComment(formData);
+      setCommentDraft("");
+      setCommentTab("write");
+      setCommentComposerOpen(false);
+      refresh();
+    } catch {
+      /* 실패 시 작성 중인 내용 유지 */
+    }
+  };
   const byteLen = new Blob([draft]).size;
   const hasCodeChanges = draft !== lastSavedDraft;
 
@@ -419,7 +431,7 @@ export function SubmissionDetailClient({
           </Button>
         </div>
         {commentComposerOpen ? (
-          <form action={actions.createComment} className={styles.commentForm}>
+          <form action={handleCreateComment} className={styles.commentForm}>
             <input type="hidden" name="body" value={commentDraft} />
             <div className={styles.commentBox}>
               <div className={styles.commentTabs}>

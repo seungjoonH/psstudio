@@ -28,6 +28,7 @@ import styles from "./page.module.css";
 type RecentSubmission = {
   id: string;
   title: string;
+  assignmentTitle: string;
   language: string;
   createdAt: string;
   href: string;
@@ -208,9 +209,20 @@ export function HomeClient({
                   <li key={s.id}>
                     <Link href={s.href} className={styles.feedRow}>
                       <div className={styles.feedMain}>
-                        <span className={styles.listTitle}>{s.title}</span>
-                        <span className={styles.listMeta}>
-                          <Badge tone="neutral">{resolveShikiLanguage(s.language)}</Badge>
+                        <span className={styles.listDoneTextStack}>
+                          <span className={styles.listTitle} title={s.assignmentTitle.trim() || s.title}>
+                            {s.assignmentTitle.trim().length > 0 ? s.assignmentTitle : s.title}
+                          </span>
+                          <span className={styles.listAssignmentLangRow}>
+                            {s.assignmentTitle.trim().length > 0 ? (
+                              <span className={styles.listAssignmentTitle} title={s.title}>
+                                {s.title}
+                              </span>
+                            ) : null}
+                            <Badge tone="neutral" className={styles.listDoneLangBadge}>
+                              {resolveShikiLanguage(s.language)}
+                            </Badge>
+                          </span>
                           <span className={styles.listTime}>{formatKstDateTime(s.createdAt, locale)}</span>
                         </span>
                       </div>

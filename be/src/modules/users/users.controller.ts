@@ -403,6 +403,7 @@ export class UsersController {
         "s.created_at AS created_at",
         "s.assignment_id AS assignment_id",
         "a.group_id AS group_id",
+        "a.title AS assignment_title",
       ])
       .limit(query.limit)
       .getRawMany<{
@@ -412,12 +413,14 @@ export class UsersController {
         created_at: Date;
         assignment_id: string;
         group_id: string;
+        assignment_title: string;
       }>();
     return {
       success: true,
       data: rows.map((row) => ({
         id: row.id,
         title: row.title,
+        assignmentTitle: row.assignment_title,
         language: row.language,
         createdAt: new Date(row.created_at).toISOString(),
         href: `/groups/${row.group_id}/assignments/${row.assignment_id}/submissions/${row.id}`,

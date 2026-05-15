@@ -40,6 +40,7 @@ export type HomeRecentNotification = {
 export type HomeRecentSubmission = {
   id: string;
   title: string;
+  assignmentTitle: string;
   language: string;
   createdAt: string;
   href: string;
@@ -131,8 +132,16 @@ export async function fetchRecentSubmissionsServer(
   });
   if (res.status === 401) return [];
   if (!res.ok) return [];
-  const body = (await res.json()) as { success: boolean; data: HomeRecentSubmission[] };
-  return Array.isArray(body.data) ? body.data : [];
+  const body = (await res.json()) as { success: boolean; data: unknown };
+  const rows = Array.isArray(body.data) ? body.data : [];
+  return rows.map((raw: Record<string, unknown>) => ({
+    id: String(raw.id ?? ""),
+    title: String(raw.title ?? ""),
+    assignmentTitle: typeof raw.assignmentTitle === "string" ? raw.assignmentTitle : "",
+    language: typeof raw.language === "string" ? raw.language : "",
+    createdAt: String(raw.createdAt ?? ""),
+    href: typeof raw.href === "string" ? raw.href : "",
+  }));
 }
 
 export async function updateNicknameServer(nickname: string): Promise<MeResponse> {
