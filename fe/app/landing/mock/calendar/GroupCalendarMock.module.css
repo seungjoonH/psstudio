@@ -420,6 +420,11 @@
 }
 
 .modalAssignmentTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);

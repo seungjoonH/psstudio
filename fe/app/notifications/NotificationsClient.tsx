@@ -10,6 +10,7 @@ import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
 import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
 import { useNotificationStream } from "../../src/notifications/useNotificationStream";
+import { NotificationTitle } from "../../src/notifications/NotificationTitle";
 import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../../src/ui/DeadlineSoonNotificationGlyph";
 import { Button } from "../../src/ui/Button";
@@ -80,7 +81,12 @@ export function NotificationsClient({ items }: Props) {
               ) : null;
             const body = (
               <div className={styles.rowBody}>
-                <span className={styles.title}>{n.title}</span>
+                <NotificationTitle
+                  type={n.type}
+                  title={n.title}
+                  actorNickname={n.actorNickname}
+                  className={styles.title}
+                />
                 <span className={styles.time}>{formatKstDateTime(n.createdAt, locale)}</span>
               </div>
             );

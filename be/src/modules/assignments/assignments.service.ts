@@ -131,6 +131,7 @@ const ALGORITHM_KEYWORDS = [
   "최대유량",
   "이분매칭",
   "네트워크플로우",
+  "기타",
 ] as const;
 
 const AUTOFILL_FETCH_USER_AGENTS = [

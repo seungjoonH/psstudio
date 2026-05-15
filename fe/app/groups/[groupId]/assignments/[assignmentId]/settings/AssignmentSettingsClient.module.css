@@ -46,6 +46,12 @@
   font-weight: 700;
 }
 
+.fieldHint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
 .urlRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

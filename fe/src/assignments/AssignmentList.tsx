@@ -60,22 +60,27 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
     <li className={buildCls(styles.row, item.isLate ? styles.rowPastDue : undefined)}>
       <Link href={item.href} className={styles.link}>
         <div className={styles.head}>
-          <div className={styles.headMain}>
-            <div className={styles.titleRow}>
-              <span className={styles.title}>
-                <Icon name="task" size={16} className={styles.titleIcon} />
-                <span className={styles.titleText}>{item.title}</span>
+          <div className={styles.headLead}>
+            <span className={styles.title}>
+              <Icon name="task" size={16} className={styles.titleIcon} />
+              <span className={styles.titleText}>{item.title}</span>
+            </span>
+            <div className={styles.headChips}>
+            {showGroupName && item.groupName ? (
+              <span className={styles.groupSlot}>
+                <span className={styles.groupInline} title={item.groupName}>
+                  {item.groupName}
+                </span>
               </span>
-              {showGroupName && item.groupName ? <span className={styles.groupInline}>{item.groupName}</span> : null}
-              {item.isAssignedToMe ? <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span> : null}
-              <div className={styles.titleNear}>
-                <Badge tone="neutral" chipIndex={1}>
-                  {platformLabel}
-                </Badge>
-                <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
-              </div>
+            ) : null}
+            {item.isAssignedToMe ? <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span> : null}
+            <Badge tone="neutral" chipIndex={1}>
+              {platformLabel}
+            </Badge>
+            <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
             </div>
           </div>
+          <div className={styles.headSpacer} aria-hidden />
           <div className={styles.headRight}>
             {item.analysisStatus !== undefined && item.analysisStatus !== "DONE" ? (
               <Badge tone="warning">{t("assignment.list.analysis", { status: item.analysisStatus })}</Badge>

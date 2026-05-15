@@ -1,6 +1,6 @@
 /* 홈 화면 레이아웃 스타일입니다. */
 .dashboard {
-  --home-list-item-height: 120px;
+  --home-list-item-height: 100px;
   display: grid;
   gap: var(--space-5);
 }
@@ -319,19 +319,13 @@
 
 .feedMain {
   display: grid;
-  gap: 5px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
 
 .notifTitle {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--color-text);
-  white-space: normal;
-  word-break: keep-all;
-  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .todoCardRow {
@@ -374,21 +368,36 @@
 }
 
 .todoMetaRow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.todoMetaRow > :not(.todoGroupSlot) {
+  flex-shrink: 0;
+}
+
+.todoGroupSlot {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .todoGroupInline {
-  display: inline-flex;
-  align-items: center;
+  display: block;
+  width: 100%;
   min-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 20px;
   color: var(--color-muted);
-  white-space: nowrap;
 }
 
 .kanbanItemTitle {

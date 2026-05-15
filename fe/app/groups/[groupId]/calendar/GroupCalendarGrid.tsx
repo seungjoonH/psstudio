@@ -209,7 +209,9 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
                   >
                     <div className={styles.modalAssignmentHead}>
                       <div className={styles.modalAssignmentTop}>
-                        <span className={styles.modalAssignmentTitle}>{assignment.title}</span>
+                        <span className={styles.modalAssignmentTitle} title={assignment.title}>
+                          {assignment.title}
+                        </span>
                         {assignment.isAssignedToMe ? (
                           <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
                         ) : null}

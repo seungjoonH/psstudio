@@ -1,0 +1,33 @@
+/* 알림 제목 줄바꿈·말줄임 표시 스타일입니다. */
+.root {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.plain,
+.assignmentCreated {
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.assignmentCreatedClamp,
+.plain {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.measuring {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.fixed {
+  font-weight: inherit;
+}

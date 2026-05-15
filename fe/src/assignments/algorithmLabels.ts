@@ -51,6 +51,7 @@ export const ASSIGNMENT_ALGORITHM_KEYWORDS = [
   "최대유량",
   "이분매칭",
   "네트워크플로우",
+  "기타",
 ] as const;
 
 const EN_LABELS: Record<string, string> = {
@@ -105,6 +106,7 @@ const EN_LABELS: Record<string, string> = {
   최대유량: "Max Flow",
   이분매칭: "Bipartite Matching",
   네트워크플로우: "Network Flow",
+  기타: "Others",
 };
 
 const PLATFORM_LABELS: Record<string, { ko: string; en: string }> = {

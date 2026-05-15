@@ -1,4 +1,6 @@
 // 과제 상태 enum입니다.
+export const ASSIGNMENT_TITLE_MAX_LENGTH = 80;
+
 export const ASSIGNMENT_STATUS = {
   SCHEDULED: "SCHEDULED",
   IN_PROGRESS: "IN_PROGRESS",

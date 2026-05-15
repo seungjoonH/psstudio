@@ -1,6 +1,7 @@
 "use client";
 
 // 과제 수정/메타데이터/삭제 폼 컴포넌트입니다.
+import { ASSIGNMENT_TITLE_MAX_LENGTH } from "@psstudio/shared";
 import { useState } from "react";
 import type {
   AssignmentDto,
@@ -11,6 +12,10 @@ import {
   isAssigneeSelectionValid,
   type AssignmentAssigneeMember,
 } from "../../../../../../src/assignments/AssignmentAssigneePicker";
+import {
+  AssignmentAlgorithmTagInput,
+  normalizeAlgorithmTagList,
+} from "../../../../../../src/assignments/AssignmentAlgorithmTagInput";
 import { useI18n } from "../../../../../../src/i18n/I18nProvider";
 import {
   formatKstPseudoDateTimeLocalInput,
@@ -144,8 +149,8 @@ export function AssignmentSettingsClient({
   const [periodDays, setPeriodDays] = useState<(typeof DAY_OPTIONS)[number] | null>(initialSchedule.periodDays);
   const [weekday, setWeekday] = useState<(typeof WEEKDAY_OPTIONS)[number] | null>(initialSchedule.weekday);
   const [dueAtLocal, setDueAtLocal] = useState(initialDueAtLocal);
-  const [algorithms, setAlgorithms] = useState(
-    (assignment.metadata.algorithms ?? []).join(", "),
+  const [algorithms, setAlgorithms] = useState<string[]>(() =>
+    normalizeAlgorithmTagList(assignment.metadata.algorithms ?? []),
   );
   const [hintHiddenUntilSubmit, setHintHiddenUntilSubmit] = useState(
     assignment.metadata.hintHiddenUntilSubmit ?? true,
@@ -166,12 +171,10 @@ export function AssignmentSettingsClient({
   };
   const hasRequiredFields =
     title.trim().length > 0 &&
+    title.length <= ASSIGNMENT_TITLE_MAX_LENGTH &&
     problemUrl.trim().length > 0 &&
     difficulty.trim().length > 0 &&
-    algorithms
-      .split(",")
-      .map((token) => token.trim())
-      .filter((token) => token.length > 0).length > 0;
+    algorithms.length > 0;
   const isSaveDisabled =
     !hasRequiredFields || !isAssigneeSelectionValid(myRole, meUserId, selectedAssigneeUserIds);
   const isDeleteConfirmMatched = deleteConfirmTitle === assignment.title;
@@ -181,11 +184,13 @@ export function AssignmentSettingsClient({
       setAutofillLoading(true);
       setAutoFillError(null);
       const result = await actions.autofill(problemUrl, locale);
-      if (result.title.trim().length > 0) setTitle(result.title);
+      if (result.title.trim().length > 0) {
+        setTitle(result.title.trim().slice(0, ASSIGNMENT_TITLE_MAX_LENGTH));
+      }
       if (result.hint.trim().length > 0) setHint(result.hint);
       if (result.difficulty.trim().length > 0) setDifficulty(result.difficulty);
       // AI 자동 채우기에서는 기존 알고리즘을 유지하지 않고 새 결과로 덮어쓴다.
-      setAlgorithms(result.algorithms.join(", "));
+      setAlgorithms(normalizeAlgorithmTagList(result.algorithms));
     } catch (error) {
       setAutoFillError((error as Error).message);
       window.setTimeout(() => setAutoFillError(null), 2600);
@@ -205,11 +210,14 @@ export function AssignmentSettingsClient({
             <div className={styles.leftCol}>
               <label className={styles.label}>
                 {t("assignment.settings.fieldTitle")}
+                <span className={styles.fieldHint}>
+                  {t("assignment.settings.fieldTitleMax", { max: ASSIGNMENT_TITLE_MAX_LENGTH })}
+                </span>
                 <input
                   name="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  maxLength={200}
+                  maxLength={ASSIGNMENT_TITLE_MAX_LENGTH}
                   required
                   className={styles.input}
                 />
@@ -248,21 +256,20 @@ export function AssignmentSettingsClient({
                   placeholder={t("assignment.new.fieldDifficultyPlaceholder")}
                 />
               </label>
-              <label className={styles.label}>
+              <div className={styles.label}>
                 {t("assignment.new.fieldAlgorithms")}
                 <span className={styles.visibilityHint}>
                   {algorithmsHiddenUntilSubmit
                     ? t("assignment.new.visibilityPrivateStatus")
                     : t("assignment.new.visibilityPublicStatus")}
                 </span>
-                <input
-                  name="algorithmsVisible"
+                <AssignmentAlgorithmTagInput
                   value={algorithms}
-                  onChange={(e) => setAlgorithms(e.target.value)}
-                  className={`${styles.input} ${algorithmsHiddenUntilSubmit ? styles.privateField : styles.publicField}`}
+                  onChange={setAlgorithms}
+                  tone={algorithmsHiddenUntilSubmit ? "private" : "public"}
                 />
-              </label>
-              <input type="hidden" name="algorithms" value={algorithms} />
+              </div>
+              <input type="hidden" name="algorithms" value={algorithms.join(",")} />
               <label className={`${styles.label} ${styles.descLabel}`}>
                 {t("assignment.settings.fieldHint")}
                 <span className={styles.visibilityHint}>

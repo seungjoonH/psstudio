@@ -374,13 +374,12 @@ export class SubmissionsController {
   ) {
     const detail = await this.submissions.getDetail(submissionId);
     const assignment = await this.assignments.getById(detail.assignmentId);
-    const role = await this.groups.requireRole(assignment.groupId, me.id);
+    await this.groups.requireRole(assignment.groupId, me.id);
     const group = await this.groups.getById(assignment.groupId);
     if (!group.ruleUseAiFeedback) {
       throw new ForbiddenException("AI 피드백이 비활성화된 그룹입니다.");
     }
-    const canRequest = detail.authorUserId === me.id || canPerform(role, "SUBMISSION_DELETE_ANY");
-    if (!canRequest) {
+    if (detail.authorUserId !== me.id) {
       throw new ForbiddenException("AI 리뷰 요청 권한이 없습니다.");
     }
     return {

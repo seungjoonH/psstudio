@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import { useRouter } from "next/navigation";
 import { codeToHtml } from "shiki";
 import type { CohortSubmissionArtifact } from "../../../src/assignments/server";
@@ -32,6 +33,7 @@ import { formatCalendarWeekRangeLabel } from "../../../src/lib/formatCalendarWee
 import { computeJsTsBlockCommentLineMask } from "../../../src/lib/jsBlockCommentLineMask";
 import { resolveShikiLanguage } from "../../../src/lib/shikiLanguage";
 import { dueBadgeTone } from "../../../src/lib/dueBadgeTone";
+import { NotificationTitle } from "../../../src/notifications/NotificationTitle";
 import landingPageStyles from "../landing.module.css";
 import { AssignmentNotificationGlyph } from "../../../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../../../src/ui/DeadlineSoonNotificationGlyph";
@@ -424,6 +426,12 @@ export function MiniNotifyList({
       <UserAvatar nickname={item.actor ?? ""} imageUrl="" size={40} className={avatarClass} />
     );
 
+  const notifyTypeForKind = (kind: HeroNotifyKind): string => {
+    if (kind === "assignment") return NOTIFICATION_TYPES.ASSIGNMENT_CREATED;
+    if (kind === "deadline") return NOTIFICATION_TYPES.DEADLINE_SOON;
+    return "";
+  };
+
   if (compact) {
     return (
       <div
@@ -436,7 +444,12 @@ export function MiniNotifyList({
               <div className={h.feedRowStatic}>
                 {rowFace(item, h.feedAvatar)}
                 <div className={h.feedMain}>
-                  <span className={h.notifTitle}>{item.title}</span>
+                  <NotificationTitle
+                    type={notifyTypeForKind(item.kind)}
+                    title={item.title}
+                    actorNickname={item.actor}
+                    className={h.notifTitle}
+                  />
                   <span className={h.listTime}>{item.when}</span>
                 </div>
               </div>
@@ -465,7 +478,12 @@ export function MiniNotifyList({
           <div className={buildCls(nf.rowMain, styles.landingHeroNotifyRowMain)}>
             {rowFace(item, nf.avatar)}
             <div className={nf.rowBody}>
-              <span className={nf.title}>{item.title}</span>
+              <NotificationTitle
+                type={notifyTypeForKind(item.kind)}
+                title={item.title}
+                actorNickname={item.actor}
+                className={nf.title}
+              />
               <span className={nf.time}>{item.when}</span>
             </div>
           </div>
@@ -491,7 +509,12 @@ export function MiniNotifyList({
             <div className={buildCls(nf.rowMain, styles.landingHeroNotifyRowMain)}>
               {rowFace(item, nf.avatar)}
               <div className={nf.rowBody}>
-                <span className={nf.title}>{item.title}</span>
+                <NotificationTitle
+                type={notifyTypeForKind(item.kind)}
+                title={item.title}
+                actorNickname={item.actor}
+                className={nf.title}
+              />
                 <span className={nf.time}>{item.when}</span>
               </div>
             </div>

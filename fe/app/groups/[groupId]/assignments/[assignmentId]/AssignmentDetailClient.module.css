@@ -282,6 +282,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  min-width: 120px;
   max-width: min(100%, 520px);
   min-height: 22px;
   border-radius: 999px;

@@ -20,6 +20,7 @@ import { DeadlineSoonNotificationGlyph } from "../src/ui/DeadlineSoonNotificatio
 import { Badge } from "../src/ui/Badge";
 import { DifficultyBadge } from "../src/ui/DifficultyBadge";
 import { Icon } from "../src/ui/Icon";
+import { NotificationTitle } from "../src/notifications/NotificationTitle";
 import { UserAvatar } from "../src/ui/UserAvatar";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
@@ -156,7 +157,11 @@ export function HomeClient({
                               </span>
                             </div>
                             <div className={styles.todoMetaRow}>
-                              <span className={styles.todoGroupInline}>{item.groupName}</span>
+                              <span className={styles.todoGroupSlot}>
+                                <span className={styles.todoGroupInline} title={item.groupName}>
+                                  {item.groupName}
+                                </span>
+                              </span>
                               <Badge tone="neutral" chipIndex={1}>
                                 {formatProblemPlatformLabel(locale, item.platform)}
                               </Badge>
@@ -259,7 +264,12 @@ export function HomeClient({
                     ) : null;
                   const card = (
                     <div className={styles.feedMain}>
-                      <span className={styles.notifTitle}>{n.title}</span>
+                      <NotificationTitle
+                        type={n.type}
+                        title={n.title}
+                        actorNickname={n.actorNickname}
+                        className={styles.notifTitle}
+                      />
                       <span className={styles.listTime}>{formatKstDateTime(n.createdAt, locale)}</span>
                     </div>
                   );

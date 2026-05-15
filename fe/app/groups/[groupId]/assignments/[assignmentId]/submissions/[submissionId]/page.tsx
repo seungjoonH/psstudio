@@ -49,7 +49,7 @@ export default async function SubmissionDetailPage({ params }: Props) {
       detail.currentVersionNo > 0 ? await listSubmissionReviews(submissionId, detail.currentVersionNo) : [];
     const isOwner = detail.authorUserId === me.id;
     const isManager = group.myRole === "OWNER" || group.myRole === "MANAGER";
-    const canRequestAiFeedback = group.rules.useAiFeedback && (isOwner || isManager);
+    const canRequestAiFeedback = group.rules.useAiFeedback && isOwner;
     const createReviewAction = async (formData: FormData) => {
       "use server";
       const versionNo = Number(formData.get("versionNo"));

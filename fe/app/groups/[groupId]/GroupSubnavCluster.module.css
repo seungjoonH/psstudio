@@ -16,14 +16,15 @@
   border-radius: 12px;
   background: var(--color-surface);
   min-width: 0;
+  overflow: visible;
 }
 
 .crumbSlot {
-  flex: 1 1 200px;
   min-width: 0;
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  overflow: visible;
 }
 
 .crumbSlot > * {
@@ -37,7 +38,7 @@
   }
 
   .crumbSlot {
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 }
 

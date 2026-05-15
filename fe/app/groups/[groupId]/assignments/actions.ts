@@ -1,6 +1,7 @@
 "use server";
 
 // 과제 관련 서버 액션입니다.
+import { ASSIGNMENT_TITLE_MAX_LENGTH } from "@psstudio/shared";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -40,7 +41,14 @@ export async function createAssignmentAction(groupId: string, formData: FormData
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
-  if (title.length === 0 || problemUrl.length === 0 || dueAtLocal.length === 0) return;
+  if (
+    title.length === 0 ||
+    title.length > ASSIGNMENT_TITLE_MAX_LENGTH ||
+    problemUrl.length === 0 ||
+    dueAtLocal.length === 0
+  ) {
+    return;
+  }
   const dueAt = kstDateTimeLocalInputToUtcIso(dueAtLocal);
   if (dueAt === null) return;
   const created = await createAssignment(groupId, {
@@ -84,6 +92,7 @@ export async function updateAssignmentAction(
   const allowLateSubmission = formData.get("allowLateSubmission") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
   const dueAt = dueAtLocal.length > 0 ? kstDateTimeLocalInputToUtcIso(dueAtLocal) : undefined;
+  if (title.length > ASSIGNMENT_TITLE_MAX_LENGTH) return;
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
     hint,
@@ -114,6 +123,7 @@ export async function updateAssignmentCombinedAction(
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
   const assigneeUserIds = parseAssigneeUserIds(formData);
   const dueAt = dueAtLocal.length > 0 ? kstDateTimeLocalInputToUtcIso(dueAtLocal) : undefined;
+  if (title.length > ASSIGNMENT_TITLE_MAX_LENGTH) return;
 
   await updateAssignment(assignmentId, {
     title: title.length > 0 ? title : undefined,
@@ -145,6 +155,7 @@ export async function updateMetadataAction(
     .filter((t) => t.length > 0);
   const hintHiddenUntilSubmit = formData.get("hintHiddenUntilSubmit") === "on";
   const algorithmsHiddenUntilSubmit = formData.get("algorithmsHiddenUntilSubmit") === "on";
+  if (title.length > ASSIGNMENT_TITLE_MAX_LENGTH) return;
   await updateAssignmentMetadata(assignmentId, {
     title: title.length > 0 ? title : undefined,
     difficulty: difficulty.length > 0 ? difficulty : undefined,

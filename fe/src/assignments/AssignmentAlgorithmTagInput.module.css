@@ -1,0 +1,105 @@
+.tagsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, outline-color 0.15s ease;
+}
+
+.tagsWrap:focus-within {
+  border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-text);
+  border-radius: 8px;
+  padding: 4px 4px 4px 8px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.tagChipLabel {
+  user-select: none;
+}
+
+.tagChipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tagChipRemove:hover {
+  background: color-mix(in oklab, var(--color-text) 12%, transparent);
+}
+
+.tagChipRemove:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 1px;
+}
+
+.tagInput {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  min-width: 140px;
+  flex: 1;
+}
+
+.tagInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.tagPresetRow {
+  display: none;
+}
+
+.presetChip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.presetChip:hover {
+  color: var(--color-text);
+  background: var(--ui-hover-bg);
+  border-color: var(--ui-hover-border);
+}
+
+.privateField {
+  border-color: color-mix(in oklab, var(--color-text) 18%, var(--color-border));
+  background: var(--color-surface-muted);
+}
+
+.publicField {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}

@@ -32,12 +32,13 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import { AuthGuard } from "../auth/guards/auth.guard.js";
 import { GroupsService } from "../groups/groups.service.js";
 import { canPerform } from "../groups/permissions.js";
+import { ASSIGNMENT_TITLE_MAX_LENGTH } from "@psstudio/shared";
 import { normalizeCohortReportLocale } from "./cohort-analysis-bundle.js";
 import { AssignmentCohortAnalysisService } from "./assignment-cohort-analysis.service.js";
 import { AssignmentsService } from "./assignments.service.js";
 
 class CreateAssignmentBody {
-  @IsString() @MinLength(1) @MaxLength(200) title!: string;
+  @IsString() @MinLength(1) @MaxLength(ASSIGNMENT_TITLE_MAX_LENGTH) title!: string;
   @IsOptional() @IsString() @MaxLength(2000) hint?: string;
   @IsUrl({ require_protocol: true }) problemUrl!: string;
   @IsDateString() @Matches(/(?:Z|[+-]\d{2}:\d{2})$/) dueAt!: string;
@@ -46,7 +47,7 @@ class CreateAssignmentBody {
 }
 
 class UpdateAssignmentBody {
-  @IsOptional() @IsString() @MinLength(1) @MaxLength(200) title?: string;
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(ASSIGNMENT_TITLE_MAX_LENGTH) title?: string;
   @IsOptional() @IsString() @MaxLength(2000) hint?: string;
   @IsOptional() @IsUrl({ require_protocol: true }) problemUrl?: string;
   @IsOptional() @IsDateString() @Matches(/(?:Z|[+-]\d{2}:\d{2})$/) dueAt?: string;
@@ -55,7 +56,7 @@ class UpdateAssignmentBody {
 }
 
 class UpdateMetadataBody {
-  @IsOptional() @IsString() @MaxLength(200) title?: string;
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(ASSIGNMENT_TITLE_MAX_LENGTH) title?: string;
   @IsOptional() @IsString() @MaxLength(50) difficulty?: string;
   @IsOptional() @IsIn(["BOJ", "Programmers", "LeetCode", "Other"]) platform?: ProblemPlatform;
   @IsOptional() @IsArray() @IsString({ each: true }) algorithms?: string[];

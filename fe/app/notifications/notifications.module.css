@@ -54,12 +54,7 @@ a.rowMain:hover {
 }
 
 .title {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--color-text);
-  white-space: normal;
-  word-break: keep-all;
+  min-width: 0;
 }
 
 .time {
