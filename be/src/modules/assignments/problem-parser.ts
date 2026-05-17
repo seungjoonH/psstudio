@@ -28,15 +28,19 @@ export function parseProblemUrl(input: string): ParsedProblem {
   }
   if (host === "programmers.co.kr" || host.endsWith(".programmers.co.kr")) {
     const m = url.pathname.match(/\/learn\/courses\/(\d+)\/lessons\/(\d+)/);
+    const canonicalUrl =
+      m === null
+        ? url.toString()
+        : `https://${host}/learn/courses/${m[1]}/lessons/${m[2]}`;
     return {
       platform: "Programmers",
       externalId: m === null ? null : `${m[1]}-${m[2]}`,
       inferredTitle: null,
-      url: url.toString(),
+      url: canonicalUrl,
     };
   }
   if (host === "leetcode.com" || host.endsWith(".leetcode.com") || host === "leetcode.cn") {
-    const m = url.pathname.match(/\/problems\/([^/]+)\/?/);
+    const m = url.pathname.match(/\/problems\/([^/]+)/);
     if (m === null) {
       return { platform: "LeetCode", externalId: null, inferredTitle: null, url: url.toString() };
     }
@@ -45,7 +49,16 @@ export function parseProblemUrl(input: string): ParsedProblem {
       .split("-")
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
       .join(" ");
-    return { platform: "LeetCode", externalId: slug, inferredTitle: inferred, url: url.toString() };
+    const base =
+      host === "leetcode.cn" || host.endsWith(".leetcode.cn")
+        ? "https://leetcode.cn"
+        : "https://leetcode.com";
+    return {
+      platform: "LeetCode",
+      externalId: slug,
+      inferredTitle: inferred,
+      url: `${base}/problems/${slug}/`,
+    };
   }
   return { platform: "Other", externalId: null, inferredTitle: null, url: url.toString() };
 }

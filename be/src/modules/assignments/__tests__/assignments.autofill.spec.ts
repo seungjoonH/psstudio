@@ -20,16 +20,33 @@ import { AssignmentsService } from "../assignments.service.js";
 
 const assignments = new AssignmentsService();
 
-const LEETCODE_TWO_SUM_HTML = String.raw`<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>Two Sum - LeetCode</title>
-    <meta property="og:title" content="Two Sum - LeetCode" />
-  </head>
-  <body>
-    <script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"dehydratedState":{"queries":[{"state":{"data":{"question":{"title":"Two Sum","difficulty":"Easy","content":"\u003cp\u003eGiven an array of integers \u003ccode\u003enums\u003c/code\u003e and an integer \u003ccode\u003etarget\u003c/code\u003e, return the indices of the two numbers such that they add up to \u003ccode\u003etarget\u003c/code\u003e.\u003c/p\u003e\u003cp\u003e\u003cstrong class=\"example\"\u003eExample 1:\u003c/strong\u003e\u003c/p\u003e\u003cpre\u003e\u003cstrong\u003eInput:\u003c/strong\u003e nums = [2,7,11,15], target = 9\u003cstrong\u003eOutput:\u003c/strong\u003e [0,1]\u003c/pre\u003e\u003cp\u003e\u003cstrong\u003eConstraints:\u003c/strong\u003e\u003c/p\u003e\u003cul\u003e\u003cli\u003e2 \u0026lt;= nums.length \u0026lt;= 10^4\u003c/li\u003e\u003c/ul\u003e","exampleTestcaseList":["[2,7,11,15]\n9"],"codeSnippets":[{"langSlug":"typescript","code":"function twoSum(nums: number[], target: number): number[] {\\n    \\n};"}]}}}}]}}}}</script>
-  </body>
-</html>`;
+const LEETCODE_GRAPHQL_TWO_SUM = {
+  title: "Two Sum",
+  translatedTitle: null,
+  difficulty: "Easy",
+  content:
+    "<p>Given an array of integers <code>nums</code> and an integer <code>target</code>, return the indices of the two numbers such that they add up to <code>target</code>.</p><p><strong class=\"example\">Example 1:</strong></p><pre><strong>Input:</strong> nums = [2,7,11,15], target = 9<strong>Output:</strong> [0,1]</pre><p><strong>Constraints:</strong></p><ul><li>2 &lt;= nums.length &lt;= 10^4</li></ul>",
+  translatedContent: null,
+  exampleTestcaseList: ["[2,7,11,15]\n9"],
+  codeSnippets: [{ langSlug: "typescript", code: "function twoSum() {}" }],
+};
+
+function mockLeetCodeGraphqlFetch(question = LEETCODE_GRAPHQL_TWO_SUM) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string | URL | { url: string }, init?: RequestInit) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes("/graphql") && init?.method === "POST") {
+        return new Response(JSON.stringify({ data: { question } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("", { status: 403 });
+    }),
+  );
+}
 
 const PROGRAMMERS_HTML = String.raw`<!DOCTYPE html>
 <html lang="ko">
@@ -62,11 +79,8 @@ describe("AssignmentsService.autofillFromAi", () => {
     vi.unstubAllGlobals();
   });
 
-  it("__NEXT_DATA__ 기반 LeetCode HTML에서도 자동 채우기를 계속한다", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(LEETCODE_TWO_SUM_HTML, { status: 200 })),
-    );
+  it("LeetCode GraphQL로 description·쿼리 URL 자동 채우기를 수행한다", async () => {
+    mockLeetCodeGraphqlFetch();
     requestLlmChatMock.mockResolvedValue({
       content: JSON.stringify({
         status: "ok",
@@ -78,7 +92,7 @@ describe("AssignmentsService.autofillFromAi", () => {
     });
 
     const result = await assignments.autofillFromAi(
-      "https://leetcode.com/problems/two-sum/description/",
+      "https://leetcode.com/problems/two-sum/description/?envType=daily-question&envId=2026-05-17",
       "ko",
     );
 
@@ -98,10 +112,7 @@ describe("AssignmentsService.autofillFromAi", () => {
   });
 
   it("영문 locale이면 영어 힌트 작성을 프롬프트에 명시한다", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(LEETCODE_TWO_SUM_HTML, { status: 200 })),
-    );
+    mockLeetCodeGraphqlFetch();
     requestLlmChatMock.mockResolvedValue({
       content: JSON.stringify({
         status: "ok",

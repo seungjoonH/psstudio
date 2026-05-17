@@ -25,8 +25,12 @@ import { Assignment } from "./assignment.entity.js";
 import { AssignmentAssignee } from "./assignment-assignee.entity.js";
 import { AssignmentPolicyOverride } from "./assignment-policy-override.entity.js";
 import { ProblemAnalysis, type ProblemMetadata } from "./problem-analysis.entity.js";
+import {
+  fetchLeetCodeAutofillHtml,
+  type LeetCodeQuestionPayload,
+} from "./leetcode-question-fetch.js";
 import { extractOfficialProblemTitle } from "./problem-official-title.js";
-import { parseProblemUrl } from "./problem-parser.js";
+import { parseProblemUrl, type ParsedProblem } from "./problem-parser.js";
 
 function toDateOnly(d: Date): string {
   return new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -141,14 +145,6 @@ const AUTOFILL_FETCH_USER_AGENTS = [
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:125.0) Gecko/20100101 Firefox/125.0",
 ] as const;
 
-type LeetCodeQuestionPayload = {
-  title: string;
-  difficulty: string;
-  contentHtml: string;
-  exampleTestcaseList: string[];
-  hasCodeSnippets: boolean;
-};
-
 type AutofillHintLocale = "ko" | "en";
 
 function solvedAcLevelToBojCode(level: number): string {
@@ -212,6 +208,13 @@ async function fetchText(url: string): Promise<string> {
   } catch {
     return "";
   }
+}
+
+async function loadProblemHtmlForAutofill(parsed: ParsedProblem): Promise<string> {
+  if (parsed.platform === "LeetCode" && parsed.externalId !== null) {
+    return fetchLeetCodeAutofillHtml(parsed.externalId, parsed.url);
+  }
+  return fetchText(parsed.url);
 }
 
 function decodeHtmlEntities(input: string): string {
@@ -1019,7 +1022,7 @@ export class AssignmentsService {
     hintLocale: AutofillHintLocale = "ko",
   ): Promise<AssignmentAutofill> {
     const parsedUrl = parseProblemUrl(problemUrl);
-    const problemHtml = await fetchText(parsedUrl.url);
+    const problemHtml = await loadProblemHtmlForAutofill(parsedUrl);
     if (problemHtml.length === 0) {
       throw new BadRequestException("문제 페이지를 불러오지 못했습니다. URL을 확인해 주세요.");
     }
