@@ -9,17 +9,9 @@ node_modules/
 !/env.example
 !**/env.example
 
-# --- 에이전트·로컬 가이드 (원격/릴리스 트리에서 제외) ---
-.cursor/
-CLAUDE.md
-AGENTS.md
-EXAMPLES.md
-PLAYBOOK.md
-
 # --- 내부 운영 문서(배포 메모 등, 레포 스냅샷에서 제외) ---
 docs/
-design/
-playbook/
+design/*
 
 # --- 빌드·번들 산출물 ---
 **/.next/

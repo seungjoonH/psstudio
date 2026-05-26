@@ -3,6 +3,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { buildCls } from "../lib/buildCls";
 import { Icon } from "./Icon";
 import styles from "./Modal.module.css";
@@ -17,6 +18,7 @@ type ModalProps = {
 };
 
 export function Modal({ open, title, children, onClose, footer, dialogClassName }: ModalProps) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function Modal({ open, title, children, onClose, footer, dialogClassName 
       <div className={styles.panel} role="document">
         <header className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
-          <button type="button" aria-label="close" onClick={onClose} className={styles.close}>
+          <button type="button" aria-label={t("common.close")} onClick={onClose} className={styles.close}>
             <Icon name="close" />
           </button>
         </header>

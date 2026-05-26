@@ -1,0 +1,60 @@
+.stack {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.avatar {
+  position: relative;
+  box-sizing: border-box;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+}
+
+.avatar + .avatar,
+.more {
+  margin-left: -8px;
+}
+
+.avatar:nth-child(1) {
+  z-index: 1;
+}
+
+.avatar:nth-child(2) {
+  z-index: 2;
+}
+
+.avatar:nth-child(3) {
+  z-index: 3;
+}
+
+.avatar:nth-child(4) {
+  z-index: 4;
+}
+
+.avatar:nth-child(5) {
+  z-index: 5;
+}
+
+.avatar:nth-child(6) {
+  z-index: 6;
+}
+
+.more {
+  position: relative;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 2px solid var(--color-surface);
+  background: color-mix(in oklab, var(--color-muted) 18%, var(--color-surface));
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
+}

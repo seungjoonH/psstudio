@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "banner",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "5555", "/Users/seungjoonh/Documents/code/project/web/psstudio/.claude"],
+      "port": 5555
+    }
+  ]
+}

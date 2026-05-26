@@ -1,0 +1,16 @@
+language: ko
+frontend: nextjs
+css: css-module
+backend: nestjs
+db:
+  - postgres
+  - redis
+  - supabase
+infra:
+  - gcp
+docs:
+  - security
+  - testing
+ai:
+  - agents
+  - examples

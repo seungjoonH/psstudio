@@ -23,6 +23,16 @@ function isNotificationCreatedEvent(value: unknown): value is NotificationCreate
   );
 }
 
+function parseNotificationCreatedEvent(raw: string): NotificationCreatedEvent | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+  return isNotificationCreatedEvent(parsed) ? parsed : null;
+}
+
 @Injectable()
 export class NotificationsStreamService implements OnModuleInit, OnModuleDestroy {
   private readonly userStreams = new Map<string, Set<Subject<MessageEvent>>>();
@@ -70,19 +80,15 @@ export class NotificationsStreamService implements OnModuleInit, OnModuleDestroy
   }
 
   private handlePubSubMessage(raw: string): void {
-    try {
-      const parsed = JSON.parse(raw) as unknown;
-      if (!isNotificationCreatedEvent(parsed)) return;
-      const subjects = this.userStreams.get(parsed.recipientUserId);
-      if (subjects === undefined || subjects.size === 0) return;
-      for (const subject of subjects) {
-        subject.next({
-          type: parsed.event,
-          data: parsed,
-        });
-      }
-    } catch {
-      // 다른 메시지 형식은 무시합니다.
+    const parsed = parseNotificationCreatedEvent(raw);
+    if (parsed === null) return;
+    const subjects = this.userStreams.get(parsed.recipientUserId);
+    if (subjects === undefined || subjects.size === 0) return;
+    for (const subject of subjects) {
+      subject.next({
+        type: parsed.event,
+        data: parsed,
+      });
     }
   }
 }

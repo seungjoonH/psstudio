@@ -1,0 +1,20 @@
+.root {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+}
+
+.chipRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modalBody {
+  margin: 0;
+}

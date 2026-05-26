@@ -4,18 +4,22 @@
 import type { HomeRecentNotification } from "../../src/auth/api.server";
 import { NOTIFICATION_TYPES } from "@psstudio/shared";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { formatKstDateTime } from "../../src/i18n/formatDateTime";
 import { useI18n } from "../../src/i18n/I18nProvider";
 import { notificationActorDisplayName } from "../../src/lib/notificationActorDisplayName";
 import { notificationUsesAssignmentGlyph } from "../../src/lib/notificationUsesAssignmentGlyph";
+import {
+  useDeleteAllNotificationsMutation,
+  useDeleteNotificationMutation,
+  useInvalidateNotifications,
+  useNotificationsQuery,
+} from "../../src/notifications/hooks";
 import { useNotificationStream } from "../../src/notifications/useNotificationStream";
 import { NotificationTitle } from "../../src/notifications/NotificationTitle";
 import { AssignmentNotificationGlyph } from "../../src/ui/AssignmentNotificationGlyph";
 import { DeadlineSoonNotificationGlyph } from "../../src/ui/DeadlineSoonNotificationGlyph";
 import { Button } from "../../src/ui/Button";
 import { UserAvatar } from "../../src/ui/UserAvatar";
-import { deleteAllNotificationsAction, deleteNotificationAction } from "./actions";
 import styles from "./notifications.module.css";
 
 type Props = {
@@ -24,16 +28,19 @@ type Props = {
 
 export function NotificationsClient({ items }: Props) {
   const { locale, t } = useI18n();
-  const router = useRouter();
+  const notificationsQuery = useNotificationsQuery(100, items);
+  const deleteOne = useDeleteNotificationMutation();
+  const deleteAll = useDeleteAllNotificationsMutation();
+  const invalidateNotifications = useInvalidateNotifications();
+  const rows = notificationsQuery.data ?? [];
 
   useNotificationStream(() => {
-    router.refresh();
+    void invalidateNotifications();
   });
 
   async function onDeleteOne(id: string) {
     try {
-      await deleteNotificationAction(id);
-      router.refresh();
+      await deleteOne.mutateAsync(id);
     } catch {
       window.alert(t("notifications.deleteFailed"));
     }
@@ -42,8 +49,7 @@ export function NotificationsClient({ items }: Props) {
   async function onDeleteAll() {
     if (!window.confirm(t("notifications.deleteAllConfirm"))) return;
     try {
-      await deleteAllNotificationsAction();
-      router.refresh();
+      await deleteAll.mutateAsync();
     } catch {
       window.alert(t("notifications.deleteFailed"));
     }
@@ -51,18 +57,18 @@ export function NotificationsClient({ items }: Props) {
 
   return (
     <div>
-      {items.length > 0 ? (
+      {rows.length > 0 ? (
         <div className={styles.toolbar}>
-          <Button type="button" variant="danger" onClick={() => void onDeleteAll()}>
+          <Button type="button" variant="danger" onClick={() => void onDeleteAll()} disabled={deleteAll.isPending}>
             {t("notifications.deleteAll")}
           </Button>
         </div>
       ) : null}
-      {items.length === 0 ? (
+      {rows.length === 0 ? (
         <p className={styles.empty}>{t("notifications.empty")}</p>
       ) : (
         <ul className={styles.list}>
-          {items.map((n) => {
+          {rows.map((n) => {
             const showActorFace =
               n.type !== NOTIFICATION_TYPES.ASSIGNMENT_CREATED && n.type !== NOTIFICATION_TYPES.DEADLINE_SOON;
             const useAssignmentGlyph = notificationUsesAssignmentGlyph(n.type);
@@ -109,6 +115,7 @@ export function NotificationsClient({ items }: Props) {
                   className={styles.deleteBtn}
                   aria-label={t("notifications.deleteOneAria")}
                   onClick={() => void onDeleteOne(n.id)}
+                  disabled={deleteOne.isPending}
                 >
                   {t("notifications.deleteOne")}
                 </Button>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 1400px; height: 320px; background: #0f172a; }
+
+    .banner {
+      width: 1400px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 110px;
+      /* 다크모드 bg → surface 그라디언트 */
+      background: linear-gradient(120deg, #1e293b 0%, #111827 45%, #0f172a 100%);
+      border-radius: 24px;
+      border: 1.5px solid #334155;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* primary(#60a5fa) 빛 반사 */
+    .banner::before {
+      content: '';
+      position: absolute;
+      top: -160px; right: 200px;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(96,165,250,0.10) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .banner::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; left: 80px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .left {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 1;
+    }
+
+    h1 {
+      font-size: 78px;
+      font-weight: 800;
+      color: #e5e7eb;
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+
+    .subtitle {
+      display: inline-flex;
+      align-items: center;
+      background: #1e293b;
+      border: 1.5px solid #334155;
+      border-radius: 999px;
+      padding: 11px 26px;
+      color: #94a3b8;
+      font-size: 17px;
+      font-weight: 500;
+      width: fit-content;
+    }
+
+    .logo-wrap { z-index: 1; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="banner">
+  <div class="left">
+    <h1>PS Studio</h1>
+    <div class="subtitle">그룹으로 함께하는 알고리즘 스터디</div>
+  </div>
+
+  <div class="logo-wrap">
+    <svg width="210" height="210" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 배경: surface-muted -->
+      <rect x="8" y="8" width="194" height="194" rx="38" fill="#1e293b"/>
+      <rect x="8" y="8" width="194" height="194" rx="38" stroke="#334155" stroke-width="1.5"/>
+
+      <!-- 왼쪽 브라켓 [ — primary #60a5fa -->
+      <rect x="30" y="34" width="38" height="13" rx="6.5" fill="#60a5fa"/>
+      <rect x="30" y="34" width="13" height="142" rx="6.5" fill="#60a5fa"/>
+      <rect x="30" y="163" width="38" height="13" rx="6.5" fill="#60a5fa"/>
+
+      <!-- 오른쪽 브라켓 ] — primary #60a5fa -->
+      <rect x="142" y="34" width="38" height="13" rx="6.5" fill="#60a5fa"/>
+      <rect x="167" y="34" width="13" height="142" rx="6.5" fill="#60a5fa"/>
+      <rect x="142" y="163" width="38" height="13" rx="6.5" fill="#60a5fa"/>
+
+      <!-- 프로펠러 날개 3개 — text color #e5e7eb -->
+      <rect x="97.5" y="58" width="15" height="52" rx="7.5" fill="#e5e7eb"/>
+      <rect x="97.5" y="58" width="15" height="52" rx="7.5" fill="#e5e7eb"
+            transform="rotate(120 105 105)"/>
+      <rect x="97.5" y="58" width="15" height="52" rx="7.5" fill="#e5e7eb"
+            transform="rotate(240 105 105)"/>
+
+      <!-- 중심 원 -->
+      <circle cx="105" cy="105" r="13" fill="#e5e7eb"/>
+      <circle cx="105" cy="105" r="6"  fill="#1e293b"/>
+    </svg>
+  </div>
+</div>
+</body>
+</html>

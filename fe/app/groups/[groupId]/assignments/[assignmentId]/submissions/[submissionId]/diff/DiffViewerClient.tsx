@@ -17,6 +17,7 @@ import { InlineAddButton } from "../../../../../../../../src/ui/InlineAddButton"
 import { MarkdownPreview } from "../../../../../../../../src/ui/MarkdownPreview";
 import { UserAvatar } from "../../../../../../../../src/ui/UserAvatar";
 import { CommentCard } from "../../../../../../../../src/ui/comments/CommentCard";
+import { CopyButton } from "../../../../../../../../src/ui/CopyButton";
 import styles from "./DiffViewerClient.module.css";
 
 type DiffRow = {
@@ -92,6 +93,7 @@ type Props = {
   sameVersionCode?: string | null;
   sameVersionLanguage?: string | null;
   showRangeSelector?: boolean;
+  showCopyButton?: boolean;
   collapseReviewsByDefault?: boolean;
   createReviewAction: (formData: FormData) => Promise<void>;
   createReplyAction: (reviewId: string, body: string) => Promise<void>;
@@ -113,6 +115,7 @@ export function DiffViewerClient({
   sameVersionCode,
   sameVersionLanguage,
   showRangeSelector = true,
+  showCopyButton = true,
   collapseReviewsByDefault = false,
   createReviewAction,
   createReplyAction,
@@ -125,6 +128,13 @@ export function DiffViewerClient({
     if (isSameVersion) return buildSameVersionRows(sameVersionCode ?? "");
     return parseUnifiedDiff(diffText);
   }, [isSameVersion, sameVersionCode, diffText]);
+  const copyableCode = useMemo(() => {
+    if (isSameVersion) return sameVersionCode ?? "";
+    return rows
+      .filter((row) => row.kind !== "meta" && row.kind !== "remove" && row.newLine !== null)
+      .map((row) => splitDiffLine(row.text).content)
+      .join("\n");
+  }, [isSameVersion, sameVersionCode, rows]);
   const reviewMap = useMemo(() => {
     const map = new Map<number, SubmissionReviewDto[]>();
     for (const review of reviews) {
@@ -298,11 +308,15 @@ export function DiffViewerClient({
       ? committedEndVersion
       : Math.max(pendingStartVersion, pendingFocusVersion ?? pendingStartVersion);
 
+  const showToolbar = showRangeSelector || (showCopyButton && copyableCode.length > 0);
+
   return (
     <section className={styles.root}>
-      <div className={styles.rangeSelector}>
-        {showRangeSelector ? (
-          <>
+      {showToolbar ? (
+        <div className={styles.rangeSelector}>
+          <div className={styles.rangeToolbarRow}>
+            {showRangeSelector ? (
+              <div className={styles.rangeToolbarMain}>
             <div
               className={`${styles.rangeHeader} ${
                 pendingStartVersion !== null ? styles.rangeHeaderPending : ""
@@ -362,9 +376,18 @@ export function DiffViewerClient({
                 );
               })}
             </div>
-          </>
-        ) : null}
-      </div>
+              </div>
+            ) : null}
+            {showCopyButton && copyableCode.length > 0 ? (
+              <CopyButton
+                text={copyableCode}
+                copyAriaLabel={t("submission.detail.copyCodeAria")}
+                copyDoneAriaLabel={t("group.copyDoneAria")}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <div className={styles.tableWrap}>
         <table className={styles.table}>

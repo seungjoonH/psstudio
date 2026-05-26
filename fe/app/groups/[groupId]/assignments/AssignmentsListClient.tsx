@@ -7,6 +7,12 @@ import { useI18n } from "../../../../src/i18n/I18nProvider";
 import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import type { AssignmentDto } from "../../../../src/assignments/server";
 import type { GroupMember } from "../../../../src/groups/server";
+import { AssigneeFilterSection } from "../../../../src/assignments/AssigneeFilterSection";
+import {
+  type AssigneeMatchMode,
+  isAssignedToWholeGroup,
+  matchesAssigneeFilter,
+} from "../../../../src/assignments/assignmentAssigneeDisplay";
 import { AssignmentList } from "../../../../src/assignments/AssignmentList";
 import { AppShell } from "../../../../src/shell/AppShell";
 import { Button } from "../../../../src/ui/Button";
@@ -28,6 +34,7 @@ type FilterState = {
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
   selectedAssigneeIds: string[];
+  assigneeMatchMode: AssigneeMatchMode;
 };
 
 type Props = {
@@ -52,6 +59,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
     selectedPlatforms: [],
     selectedAlgorithms: [],
     selectedAssigneeIds: [],
+    assigneeMatchMode: "any",
   };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(emptyFilter);
@@ -68,6 +76,7 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
       ).sort((a, b) => a.localeCompare(b)),
     [items],
   );
+  const memberUserIds = useMemo(() => members.map((member) => member.userId), [members]);
   const assigneeOptions = useMemo(
     () =>
       members
@@ -99,8 +108,11 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
         }
       }
       if (
-        appliedFilter.selectedAssigneeIds.length > 0 &&
-        !appliedFilter.selectedAssigneeIds.some((id) => item.assigneeUserIds.includes(id))
+        !matchesAssigneeFilter(
+          item.assigneeUserIds,
+          appliedFilter.selectedAssigneeIds,
+          appliedFilter.assigneeMatchMode,
+        )
       ) {
         return false;
       }
@@ -183,6 +195,20 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
           ) : null}
         </div>
         <div className={styles.activeChipRow}>
+          {appliedFilter.selectedAssigneeIds.length >= 2 &&
+          appliedFilter.assigneeMatchMode === "all" ? (
+            <Chip
+              className={styles.activeChip}
+              onClick={() =>
+                setAppliedFilter((prev) => ({
+                  ...prev,
+                  assigneeMatchMode: "any",
+                }))
+              }
+            >
+              {t("assignment.list.assigneeMatchAll")}
+            </Chip>
+          ) : null}
           {appliedFilter.selectedAssigneeIds.map((id) => {
             const member = assigneeOptions.find((option) => option.userId === id);
             if (member === undefined) return null;
@@ -191,10 +217,14 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
                 key={id}
                 className={styles.activeChip}
                 onClick={() =>
-                  setAppliedFilter((prev) => ({
-                    ...prev,
-                    selectedAssigneeIds: prev.selectedAssigneeIds.filter((item) => item !== id),
-                  }))
+                  setAppliedFilter((prev) => {
+                    const nextIds = prev.selectedAssigneeIds.filter((item) => item !== id);
+                    return {
+                      ...prev,
+                      selectedAssigneeIds: nextIds,
+                      assigneeMatchMode: nextIds.length < 2 ? "any" : prev.assigneeMatchMode,
+                    };
+                  })
                 }
               >
                 {member.nickname}
@@ -263,7 +293,8 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
               dueAt: a.dueAt,
               isLate: a.isLate,
               isAssignedToMe: a.isAssignedToMe,
-              hasMySubmission: a.hasMySubmission,
+              isAssignedToWholeGroup: isAssignedToWholeGroup(a.assigneeUserIds, memberUserIds),
+              assignees: a.assignees,
               platform: a.platform,
               difficulty: a.difficulty,
               algorithms: getVisibleAlgorithms(a),
@@ -296,27 +327,17 @@ export function AssignmentsListClient({ groupId, groupName, items, members, canC
               }
               placeholder={t("assignment.list.searchTitlePlaceholder")}
             />
-            <div className={styles.filterSection}>
-              <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
-              <div className={styles.chipRow}>
-                {assigneeOptions.map((member) => (
-                  <Chip
-                    key={member.userId}
-                    active={draftFilter.selectedAssigneeIds.includes(member.userId)}
-                    onClick={() =>
-                      setDraftFilter((prev) => ({
-                        ...prev,
-                        selectedAssigneeIds: prev.selectedAssigneeIds.includes(member.userId)
-                          ? prev.selectedAssigneeIds.filter((item) => item !== member.userId)
-                          : [...prev.selectedAssigneeIds, member.userId],
-                      }))
-                    }
-                  >
-                    {member.nickname}
-                  </Chip>
-                ))}
-              </div>
-            </div>
+            <AssigneeFilterSection
+              classNames={{
+                section: styles.filterSection,
+                label: styles.filterLabel,
+                chipRow: styles.chipRow,
+              }}
+              assigneeOptions={assigneeOptions}
+              selectedAssigneeIds={draftFilter.selectedAssigneeIds}
+              assigneeMatchMode={draftFilter.assigneeMatchMode}
+              onChange={(next) => setDraftFilter((prev) => ({ ...prev, ...next }))}
+            />
             <div className={styles.filterSection}>
               <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
               <div className={styles.chipRow}>

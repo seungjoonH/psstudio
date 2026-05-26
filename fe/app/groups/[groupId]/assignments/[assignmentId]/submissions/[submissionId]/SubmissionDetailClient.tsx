@@ -16,6 +16,7 @@ import { useI18n } from "../../../../../../../src/i18n/I18nProvider";
 import { Badge } from "../../../../../../../src/ui/Badge";
 import { Button } from "../../../../../../../src/ui/Button";
 import { Icon } from "../../../../../../../src/ui/Icon";
+import { CopyButton } from "../../../../../../../src/ui/CopyButton";
 import { SubmitButton } from "../../../../../../../src/ui/SubmitButton";
 import { SubmissionCodeEditor } from "../../../../../../../src/ui/SubmissionCodeEditor";
 import { Modal } from "../../../../../../../src/ui/Modal";
@@ -183,6 +184,13 @@ export function SubmissionDetailClient({
             </div>
           )}
           <div className={styles.heroActions}>
+            {!editing && submission.latestCode.length > 0 ? (
+              <CopyButton
+                text={submission.latestCode}
+                copyAriaLabel={t("submission.detail.copyCodeAria")}
+                copyDoneAriaLabel={t("group.copyDoneAria")}
+              />
+            ) : null}
             {canRequestAiFeedback ? (
               <Button
                 type="button"
@@ -279,6 +287,7 @@ export function SubmissionDetailClient({
           sameVersionCode={submission.latestCode}
           sameVersionLanguage={submission.language}
           showRangeSelector={false}
+          showCopyButton={false}
           collapseReviewsByDefault={true}
           createReviewAction={actions.createReview}
           createReplyAction={actions.createReviewReply}

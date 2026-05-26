@@ -11,6 +11,7 @@ import { Badge } from "../ui/Badge";
 import { DifficultyBadge } from "../ui/DifficultyBadge";
 import { buildCls } from "../lib/buildCls";
 import { Icon } from "../ui/Icon";
+import { AssigneeAvatarStack, type AssigneeAvatar } from "./AssigneeAvatarStack";
 import styles from "./AssignmentList.module.css";
 
 export type AssignmentListItem = {
@@ -20,6 +21,8 @@ export type AssignmentListItem = {
   dueAt: string;
   isLate: boolean;
   isAssignedToMe: boolean;
+  isAssignedToWholeGroup?: boolean;
+  assignees?: AssigneeAvatar[];
   hasMySubmission?: boolean;
   platform: string;
   difficulty: string | null;
@@ -73,7 +76,14 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
                 </span>
               </span>
             ) : null}
-            {item.isAssignedToMe ? <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span> : null}
+            {item.assignees && item.assignees.length > 0 ? (
+              <AssigneeAvatarStack assignees={item.assignees} size={22} />
+            ) : null}
+            {item.isAssignedToWholeGroup ? (
+              <span className={styles.groupBadge}>{t("assignment.list.assignedToWholeGroup")}</span>
+            ) : item.isAssignedToMe ? (
+              <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span>
+            ) : null}
             <Badge tone="neutral" chipIndex={1}>
               {platformLabel}
             </Badge>

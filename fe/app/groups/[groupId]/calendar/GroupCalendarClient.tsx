@@ -5,6 +5,11 @@ import { useMemo, useState } from "react";
 import type { GroupMember } from "../../../../src/groups/server";
 import { formatKstMonthLabel, toKstPseudoDate } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { AssigneeFilterSection } from "../../../../src/assignments/AssigneeFilterSection";
+import {
+  type AssigneeMatchMode,
+  matchesAssigneeFilter,
+} from "../../../../src/assignments/assignmentAssigneeDisplay";
 import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
 import { Button } from "../../../../src/ui/Button";
 import { Chip } from "../../../../src/ui/Chip";
@@ -23,6 +28,7 @@ type FilterState = {
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
   selectedAssigneeIds: string[];
+  assigneeMatchMode: AssigneeMatchMode;
 };
 
 type Props = {
@@ -67,6 +73,7 @@ export function GroupCalendarClient({
     selectedPlatforms: [],
     selectedAlgorithms: [],
     selectedAssigneeIds: [],
+    assigneeMatchMode: "any",
   };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedFilter, setAppliedFilter] = useState<FilterState>(emptyFilter);
@@ -113,8 +120,11 @@ export function GroupCalendarClient({
           return false;
         }
         if (
-          appliedFilter.selectedAssigneeIds.length > 0 &&
-          !appliedFilter.selectedAssigneeIds.some((id) => assignment.assigneeUserIds.includes(id))
+          !matchesAssigneeFilter(
+            assignment.assigneeUserIds,
+            appliedFilter.selectedAssigneeIds,
+            appliedFilter.assigneeMatchMode,
+          )
         ) {
           return false;
         }
@@ -169,6 +179,20 @@ export function GroupCalendarClient({
       </header>
 
       <div className={styles.activeChipRow}>
+        {appliedFilter.selectedAssigneeIds.length >= 2 &&
+        appliedFilter.assigneeMatchMode === "all" ? (
+          <Chip
+            className={styles.activeChip}
+            onClick={() =>
+              setAppliedFilter((prev) => ({
+                ...prev,
+                assigneeMatchMode: "any",
+              }))
+            }
+          >
+            {t("assignment.list.assigneeMatchAll")}
+          </Chip>
+        ) : null}
         {appliedFilter.selectedAssigneeIds.map((id) => {
           const member = assigneeOptions.find((option) => option.userId === id);
           if (member === undefined) return null;
@@ -177,10 +201,14 @@ export function GroupCalendarClient({
               key={id}
               className={styles.activeChip}
               onClick={() =>
-                setAppliedFilter((prev) => ({
-                  ...prev,
-                  selectedAssigneeIds: prev.selectedAssigneeIds.filter((item) => item !== id),
-                }))
+                setAppliedFilter((prev) => {
+                  const nextIds = prev.selectedAssigneeIds.filter((item) => item !== id);
+                  return {
+                    ...prev,
+                    selectedAssigneeIds: nextIds,
+                    assigneeMatchMode: nextIds.length < 2 ? "any" : prev.assigneeMatchMode,
+                  };
+                })
               }
             >
               {member.nickname}
@@ -280,27 +308,17 @@ export function GroupCalendarClient({
             onChange={(event) => setDraftFilter((prev) => ({ ...prev, query: event.target.value }))}
             placeholder={t("assignment.list.searchTitlePlaceholder")}
           />
-          <div className={styles.filterSection}>
-            <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
-            <div className={styles.chipRow}>
-              {assigneeOptions.map((member) => (
-                <Chip
-                  key={member.userId}
-                  active={draftFilter.selectedAssigneeIds.includes(member.userId)}
-                  onClick={() =>
-                    setDraftFilter((prev) => ({
-                      ...prev,
-                      selectedAssigneeIds: prev.selectedAssigneeIds.includes(member.userId)
-                        ? prev.selectedAssigneeIds.filter((item) => item !== member.userId)
-                        : [...prev.selectedAssigneeIds, member.userId],
-                    }))
-                  }
-                >
-                  {member.nickname}
-                </Chip>
-              ))}
-            </div>
-          </div>
+          <AssigneeFilterSection
+            classNames={{
+              section: styles.filterSection,
+              label: styles.filterLabel,
+              chipRow: styles.chipRow,
+            }}
+            assigneeOptions={assigneeOptions}
+            selectedAssigneeIds={draftFilter.selectedAssigneeIds}
+            assigneeMatchMode={draftFilter.assigneeMatchMode}
+            onChange={(next) => setDraftFilter((prev) => ({ ...prev, ...next }))}
+          />
           <div className={styles.filterSection}>
             <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
             <div className={styles.chipRow}>

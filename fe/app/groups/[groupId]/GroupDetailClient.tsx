@@ -9,6 +9,8 @@ import { Badge } from "../../../src/ui/Badge";
 import { Button } from "../../../src/ui/Button";
 import { SubmitButton } from "../../../src/ui/SubmitButton";
 import { Icon } from "../../../src/ui/Icon";
+import { CopyButton } from "../../../src/ui/CopyButton";
+import { CopyValueRow } from "../../../src/ui/CopyValueRow";
 import { Modal } from "../../../src/ui/Modal";
 import { SegmentedControl } from "../../../src/ui/SegmentedControl";
 import { Switch } from "../../../src/ui/Switch";
@@ -42,8 +44,6 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [codeModalOpen, setCodeModalOpen] = useState(false);
   const [transferTarget, setTransferTarget] = useState<GroupMember | null>(null);
-  const [codeCopied, setCodeCopied] = useState(false);
-  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [creatorRole, setCreatorRole] = useState(group.rules.assignmentCreatorRoles);
   const [deadlineTime, setDeadlineTime] = useState(group.rules.defaultDeadlineTime);
   const [joinCodeOn, setJoinCodeOn] = useState(group.joinMethods.code);
@@ -83,18 +83,6 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
     setJoinCodeOn(group.joinMethods.code);
     setJoinLinkOn(group.joinMethods.link);
   }, [group.joinMethods.code, group.joinMethods.link]);
-
-  useEffect(() => {
-    if (!codeCopied) return;
-    const timer = window.setTimeout(() => setCodeCopied(false), 1000);
-    return () => window.clearTimeout(timer);
-  }, [codeCopied]);
-
-  useEffect(() => {
-    if (copiedLinkId === null) return;
-    const timer = window.setTimeout(() => setCopiedLinkId(null), 1000);
-    return () => window.clearTimeout(timer);
-  }, [copiedLinkId]);
 
   const activeSection: "members" | "settings" = searchParams.get("tab") === "settings" ? "settings" : "members";
 
@@ -238,35 +226,13 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                             {t("groupNew.join.code")}
                           </Switch>
                         </div>
-                        <div className={styles.joinMethodValue}>
-                          <div className={styles.joinValueContent}>
-                            <code className={styles.code}>{group.groupCode}</code>
-                            <button
-                              type="button"
-                              className={styles.copyBtn}
-                              disabled={!joinCodeOn}
-                              title={!joinCodeOn ? t("group.copyCodeDisabledOff") : undefined}
-                              aria-label={
-                                !joinCodeOn
-                                  ? t("group.copyCodeDisabledOff")
-                                  : codeCopied
-                                    ? t("group.copyDoneAria")
-                                    : t("group.copyGroupCodeAria")
-                              }
-                              onClick={async () => {
-                                if (!joinCodeOn) return;
-                                try {
-                                  await navigator.clipboard.writeText(group.groupCode);
-                                  setCodeCopied(true);
-                                } catch {
-                                  setCodeCopied(false);
-                                }
-                              }}
-                            >
-                              <Icon name={codeCopied ? "check" : "copy"} size={16} />
-                            </button>
-                          </div>
-                        </div>
+                        <CopyValueRow
+                          value={group.groupCode}
+                          disabled={!joinCodeOn}
+                          disabledTitle={t("group.copyCodeDisabledOff")}
+                          copyAriaLabel={t("group.copyGroupCodeAria")}
+                          copyDoneAriaLabel={t("group.copyDoneAria")}
+                        />
                       </div>
                       <div className={styles.joinMethodBlock}>
                         <div className={styles.joinMethodRow}>
@@ -286,30 +252,14 @@ export function GroupDetailClient({ meId, group, members, links, actions }: Prop
                               {links.map((l) => (
                                 <li key={l.id} className={styles.joinLinkUrlItem}>
                                   <code className={styles.code}>{l.url}</code>
-                                  <button
-                                    type="button"
+                                  <CopyButton
+                                    text={l.url}
                                     className={styles.copyBtn}
                                     disabled={!joinLinkOn}
-                                    title={!joinLinkOn ? t("group.copyLinkDisabledOff") : undefined}
-                                    aria-label={
-                                      !joinLinkOn
-                                        ? t("group.copyLinkDisabledOff")
-                                        : copiedLinkId === l.id
-                                          ? t("group.copyDoneAria")
-                                          : t("group.copyInviteLinkAria")
-                                    }
-                                    onClick={async () => {
-                                      if (!joinLinkOn) return;
-                                      try {
-                                        await navigator.clipboard.writeText(l.url);
-                                        setCopiedLinkId(l.id);
-                                      } catch {
-                                        setCopiedLinkId(null);
-                                      }
-                                    }}
-                                  >
-                                    <Icon name={copiedLinkId === l.id ? "check" : "copy"} size={16} />
-                                  </button>
+                                    disabledTitle={t("group.copyLinkDisabledOff")}
+                                    copyAriaLabel={t("group.copyInviteLinkAria")}
+                                    copyDoneAriaLabel={t("group.copyDoneAria")}
+                                  />
                                 </li>
                               ))}
                             </ul>

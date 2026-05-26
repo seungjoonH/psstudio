@@ -4,10 +4,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import { buildCls } from "../lib/buildCls";
 import { Button } from "../ui/Button";
+import {
+  useInvalidateNotifications,
+  useUnreadNotificationCountQuery,
+} from "../notifications/hooks";
 import { useNotificationStream } from "../notifications/useNotificationStream";
 import { Icon } from "../ui/Icon";
 import styles from "./AppShell.module.css";
@@ -40,14 +44,6 @@ function AppShellBrandMark() {
 type Vars = Record<string, string | number>;
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION;
 
-function readClientApiBaseUrl(): string {
-  const value = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL 환경변수가 필요합니다.");
-  }
-  return value;
-}
-
 type AppShellProps = {
   children: ReactNode;
   title?: string;
@@ -73,7 +69,8 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const { t } = useI18n();
-  const [liveUnread, setLiveUnread] = useState(unread ?? 0);
+  const unreadQuery = useUnreadNotificationCountQuery(unread);
+  const invalidateNotifications = useInvalidateNotifications();
   const resolvedTitle =
     title ?? (titleKey !== undefined ? t(titleKey, titleVars) : t("shell.defaultTitle"));
   const resolvedSubtitle =
@@ -87,54 +84,11 @@ export function AppShell({
     return prefix?.href ?? null;
   }, [pathname]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function refreshUnread() {
-      try {
-        const res = await fetch(`${readClientApiBaseUrl()}/api/v1/users/me/notifications/unread-count`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (res.status === 401) {
-          if (!cancelled) setLiveUnread(0);
-          return;
-        }
-        if (!res.ok) return;
-        const body = (await res.json()) as { success: boolean; data?: { count?: unknown } };
-        if (!cancelled) {
-          setLiveUnread(typeof body.data?.count === "number" ? body.data.count : 0);
-        }
-      } catch {
-        if (!cancelled) setLiveUnread(0);
-      }
-    }
-    void refreshUnread();
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname]);
-
   useNotificationStream(() => {
-    void (async () => {
-      try {
-        const res = await fetch(`${readClientApiBaseUrl()}/api/v1/users/me/notifications/unread-count`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (res.status === 401) {
-          setLiveUnread(0);
-          return;
-        }
-        if (!res.ok) return;
-        const body = (await res.json()) as { success: boolean; data?: { count?: unknown } };
-        setLiveUnread(typeof body.data?.count === "number" ? body.data.count : 0);
-      } catch {
-        setLiveUnread(0);
-      }
-    })();
+    void invalidateNotifications();
   });
 
-  const unreadCount = liveUnread;
+  const unreadCount = unreadQuery.data ?? 0;
 
   return (
     <div className={styles.root}>

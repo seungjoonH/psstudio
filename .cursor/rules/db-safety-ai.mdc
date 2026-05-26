@@ -1,0 +1,33 @@
+# AI DB safety rule
+
+이 규칙은 AI 에이전트가 코드 수정 중 로컬 DB 데이터를 초기화/삭제하지 못하도록 강제합니다.
+
+## 절대 금지 명령 (사용자 명시 요청 전까지)
+
+아래 명령/행위는 사용자가 **정확한 명령을 직접 지정**하지 않는 한 실행 금지입니다.
+
+- `docker compose down -v`
+- `docker compose rm -v`
+- `pnpm db:revert`, `pnpm --filter be db:revert`, `ALLOW_DB_REVERT=1 ...`
+- `db reset`, `migrate reset`, `prisma migrate reset`, `prisma db push --force-reset`
+- SQL `DROP DATABASE`, `DROP SCHEMA`, `TRUNCATE`, 대량 삭제 스크립트
+- 테스트/스크립트에서 DB를 비우는 모든 커맨드 (`dropDatabase`, `truncate all`, `wipe`, `nuke`)
+
+## 기본 원칙
+
+- 백엔드 코드 수정/재시작(`dev` watch restart)은 허용.
+- 데이터 보존이 기본값이며, 마이그레이션/시드는 파괴적이지 않은 범위에서만 실행.
+- DB/Redis 컨테이너를 내릴 때는 `docker compose down`만 사용. `-v` 금지.
+
+## 승인 절차 (예외)
+
+사용자가 DB 초기화 의도를 명확히 말한 경우에만 실행 가능합니다.
+
+- 사용자 메시지에 초기화 의도가 직접 포함되어야 합니다.
+- 실행 전, 어떤 데이터가 사라지는지 1회 경고하고 확인받습니다.
+- 확인 응답 전에는 어떤 파괴 명령도 실행하지 않습니다.
+
+## 응답 규칙
+
+- 사용자가 "AI가 수정할 때 DB 초기화 금지"를 요청하면 이 규칙을 최우선으로 따릅니다.
+- 파괴 명령이 필요한 상황이어도 안전 대안(볼륨 유지, 비파괴 마이그레이션)을 먼저 제시합니다.

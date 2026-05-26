@@ -21,8 +21,17 @@ vi.mock("../../../shared/redis/redis.client.js", () => ({
 }));
 
 const { SessionService } = await import("./session.service.js");
+const { SESSION_SCAN_PATTERN, SESSION_TTL_SECONDS, sessionRedisKey } = await import(
+  "./session-redis-keys.js"
+);
 
 describe("SessionService", () => {
+  it("Redis 세션 키와 TTL 정책을 단일 규칙으로 노출한다", () => {
+    expect(sessionRedisKey("abc")).toBe("session:abc");
+    expect(SESSION_SCAN_PATTERN).toBe("session:*");
+    expect(SESSION_TTL_SECONDS).toBe(60 * 60 * 24 * 30);
+  });
+
   it("create/get/destroy 사이클이 정상 동작한다", async () => {
     fakeStore.clear();
     const svc = new SessionService();

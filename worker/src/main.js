@@ -7,6 +7,10 @@ import { closeRedisClients } from "./redis.js";
 const redisUrl = readRequiredEnv("REDIS_URL");
 const databaseUrl = readRequiredEnv("DATABASE_URL");
 
+function maskConnectionUrl(url) {
+  return url.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:****@");
+}
+
 const deadlineReminderWorker = startDeadlineReminderWorker();
 
 deadlineReminderWorker.on("completed", (job, result) => {
@@ -36,5 +40,5 @@ process.on("SIGTERM", () => {
 });
 
 console.log("Worker booted.");
-console.log(`Redis URL: ${redisUrl}`);
-console.log(`Database URL: ${databaseUrl.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:****@")}`);
+console.log(`Redis URL: ${maskConnectionUrl(redisUrl)}`);
+console.log(`Database URL: ${maskConnectionUrl(databaseUrl)}`);

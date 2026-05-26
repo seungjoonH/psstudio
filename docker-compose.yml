@@ -3,8 +3,8 @@ services:
     image: node:22-alpine
     working_dir: /app
     command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter fe dev"
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+    env_file:
+      - fe/.env.local
     ports:
       - "3000:3000"
     volumes:
@@ -18,14 +18,10 @@ services:
     image: node:22-alpine
     working_dir: /app
     command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter be dev"
+    env_file:
+      - be/.env.local
     environment:
       BE_PORT: 4000
-      LLM_PROVIDER: ${LLM_PROVIDER:-openrouter}
-      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY:-}
-      REQUESTY_API_KEY: ${REQUESTY_API_KEY:-}
-      REQUESTY_BASE_URL: ${REQUESTY_BASE_URL:-https://router.requesty.ai/v1/chat/completions}
-      LLM_MODEL_PROBLEM_ANALYZE: ${LLM_MODEL_PROBLEM_ANALYZE:-openai/gpt-4o-mini}
-      LLM_MODEL_SUBMISSION_REVIEW: ${LLM_MODEL_SUBMISSION_REVIEW:-openai/gpt-4o-mini}
       DATABASE_URL: postgres://postgres:postgres@supabase:5432/postgres
       REDIS_URL: redis://redis:6379
     ports:
@@ -43,6 +39,8 @@ services:
     image: node:22-alpine
     working_dir: /app
     command: sh -lc "corepack enable && pnpm install --frozen-lockfile && pnpm --filter worker dev"
+    env_file:
+      - worker/.env.local
     environment:
       DATABASE_URL: postgres://postgres:postgres@supabase:5432/postgres
       REDIS_URL: redis://redis:6379

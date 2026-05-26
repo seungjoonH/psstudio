@@ -83,11 +83,6 @@
   outline-offset: 2px;
 }
 
-.removeButton svg {
-  width: 16px;
-  height: 16px;
-}
-
 .input {
   min-width: 96px;
   flex: 1 1 96px;

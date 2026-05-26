@@ -29,6 +29,15 @@ function extractErrorMessage(payload: unknown, status: number): string {
   return `요청 실패 (${status})`;
 }
 
+function parseJsonOrNull(text: string): unknown | null {
+  if (text.length === 0) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const headers: Record<string, string> = {
     cookie: await buildCookieHeader(),
@@ -45,12 +54,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit & { json?: un
     headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
   });
   const text = await res.text();
-  let parsed: unknown = null;
-  try {
-    parsed = text.length === 0 ? null : JSON.parse(text);
-  } catch {
-    parsed = null;
-  }
+  const parsed = parseJsonOrNull(text);
   const envelope = parsed as { success?: boolean; data?: T; error?: { code: string; message: string } } | null;
   if (!res.ok || parsed === null || envelope?.success !== true) {
     const message = extractErrorMessage(parsed, res.status);

@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import type { MeResponse } from "@psstudio/shared";
 import { ENV } from "../config/env";
+import type { NotificationListItem } from "../notifications/types";
 
 function apiBase(): string {
   return ENV.apiBaseUrl();
@@ -26,16 +27,7 @@ export async function fetchMeServer(): Promise<MeResponse | null> {
   return body.data;
 }
 
-export type HomeRecentNotification = {
-  id: string;
-  type: string;
-  title: string;
-  isRead: boolean;
-  createdAt: string;
-  href: string | null;
-  actorNickname: string | null;
-  actorProfileImageUrl: string | null;
-};
+export type HomeRecentNotification = NotificationListItem;
 
 export type HomeRecentSubmission = {
   id: string;

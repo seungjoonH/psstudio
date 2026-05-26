@@ -154,21 +154,31 @@
   color: var(--color-muted);
 }
 
-.myBadge {
+.myBadge,
+.groupBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 16px;
   padding: 0 5px;
   border-radius: 5px;
-  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
-  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
-  color: color-mix(in oklab, var(--color-primary) 88%, var(--color-text));
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.02em;
   flex-shrink: 0;
+}
+
+.myBadge {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-primary) 88%, var(--color-text));
+}
+
+.groupBadge {
+  border: 1px solid color-mix(in oklab, var(--color-warning) 36%, var(--color-border));
+  background: color-mix(in oklab, var(--color-warning) 12%, var(--color-surface));
+  color: color-mix(in oklab, var(--color-warning) 88%, var(--color-text));
 }
 
 .titleIcon {

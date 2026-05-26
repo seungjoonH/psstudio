@@ -13,6 +13,8 @@ import {
   toKstPseudoDate,
 } from "../i18n/formatDateTime";
 import { useI18n } from "../i18n/I18nProvider";
+import { AssigneeFilterSection } from "./AssigneeFilterSection";
+import { type AssigneeMatchMode, matchesAssigneeFilter } from "./assignmentAssigneeDisplay";
 import { AssignmentList, type AssignmentListItem } from "./AssignmentList";
 import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
 import { buildCls } from "../lib/buildCls";
@@ -51,6 +53,7 @@ type FilterState = {
   selectedAlgorithms: string[];
   selectedGroupIds: string[];
   selectedAssigneeIds: string[];
+  assigneeMatchMode: AssigneeMatchMode;
 };
 
 type Props = {
@@ -117,6 +120,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     selectedAlgorithms: [],
     selectedGroupIds: [],
     selectedAssigneeIds: [],
+    assigneeMatchMode: "any",
   };
 
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
@@ -181,8 +185,11 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
         return false;
       }
       if (
-        appliedFilter.selectedAssigneeIds.length > 0 &&
-        !appliedFilter.selectedAssigneeIds.some((id) => item.assigneeUserIds.includes(id))
+        !matchesAssigneeFilter(
+          item.assigneeUserIds,
+          appliedFilter.selectedAssigneeIds,
+          appliedFilter.assigneeMatchMode,
+        )
       ) {
         return false;
       }
@@ -306,6 +313,20 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       </div>
 
       <div className={styles.activeChipRow}>
+        {appliedFilter.selectedAssigneeIds.length >= 2 &&
+        appliedFilter.assigneeMatchMode === "all" ? (
+          <Chip
+            className={styles.activeChip}
+            onClick={() =>
+              setAppliedFilter((prev) => ({
+                ...prev,
+                assigneeMatchMode: "any",
+              }))
+            }
+          >
+            {t("assignment.list.assigneeMatchAll")}
+          </Chip>
+        ) : null}
         {appliedFilter.selectedAssigneeIds.map((userId) => {
           const option = assigneeOptions.find((item) => item.userId === userId);
           if (option === undefined) return null;
@@ -314,10 +335,14 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
               key={userId}
               className={styles.activeChip}
               onClick={() =>
-                setAppliedFilter((prev) => ({
-                  ...prev,
-                  selectedAssigneeIds: prev.selectedAssigneeIds.filter((id) => id !== userId),
-                }))
+                setAppliedFilter((prev) => {
+                  const nextIds = prev.selectedAssigneeIds.filter((id) => id !== userId);
+                  return {
+                    ...prev,
+                    selectedAssigneeIds: nextIds,
+                    assigneeMatchMode: nextIds.length < 2 ? "any" : prev.assigneeMatchMode,
+                  };
+                })
               }
             >
               {option.nickname}
@@ -562,27 +587,17 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
               ))}
             </div>
           </div>
-          <div className={styles.filterSection}>
-            <p className={styles.filterLabel}>{t("assignment.list.assignee")}</p>
-            <div className={styles.chipRow}>
-              {assigneeOptions.map((assignee) => (
-                <Chip
-                  key={assignee.userId}
-                  active={draftFilter.selectedAssigneeIds.includes(assignee.userId)}
-                  onClick={() =>
-                    setDraftFilter((prev) => ({
-                      ...prev,
-                      selectedAssigneeIds: prev.selectedAssigneeIds.includes(assignee.userId)
-                        ? prev.selectedAssigneeIds.filter((item) => item !== assignee.userId)
-                        : [...prev.selectedAssigneeIds, assignee.userId],
-                    }))
-                  }
-                >
-                  {assignee.nickname}
-                </Chip>
-              ))}
-            </div>
-          </div>
+          <AssigneeFilterSection
+            classNames={{
+              section: styles.filterSection,
+              label: styles.filterLabel,
+              chipRow: styles.chipRow,
+            }}
+            assigneeOptions={assigneeOptions}
+            selectedAssigneeIds={draftFilter.selectedAssigneeIds}
+            assigneeMatchMode={draftFilter.assigneeMatchMode}
+            onChange={(next) => setDraftFilter((prev) => ({ ...prev, ...next }))}
+          />
           <div className={styles.filterSection}>
             <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
             <div className={styles.chipRow}>

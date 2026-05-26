@@ -8,6 +8,20 @@
   gap: 10px;
 }
 
+.rangeToolbarRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rangeToolbarMain {
+  display: grid;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .rangeHeader {
   display: inline-flex;
   align-items: center;
