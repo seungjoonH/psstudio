@@ -69,8 +69,9 @@ export default async function HomePage() {
           })),
         )
         .map(async (item) => {
-          const mine = await listSubmissions(item.id, { authorId: me.id, sort: "createdAtDesc" });
-          return { ...item, hasMySubmission: mine.length > 0 };
+          const submissions = await listSubmissions(item.id, { sort: "createdAtDesc" });
+          const submitterIds = Array.from(new Set(submissions.map((submission) => submission.authorUserId)));
+          return { ...item, hasMySubmission: submitterIds.includes(me.id), submitterIds };
         }),
     )
   ).filter((item) => item.isAssignedToMe && !item.hasMySubmission);
@@ -87,6 +88,10 @@ export default async function HomePage() {
       difficulty: item.difficulty,
       algorithms: item.metadata?.algorithms ?? [],
       algorithmsHiddenUntilSubmit: item.metadata?.algorithmsHiddenUntilSubmit,
+      submissionProgress: {
+        submitted: item.submitterIds.length,
+        total: item.assigneeUserIds.length,
+      },
       dueAt: item.dueAt,
       href: `/groups/${item.groupId}/assignments/${item.id}`,
     }));

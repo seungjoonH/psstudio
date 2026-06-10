@@ -308,7 +308,8 @@ export function DiffViewerClient({
       ? committedEndVersion
       : Math.max(pendingStartVersion, pendingFocusVersion ?? pendingStartVersion);
 
-  const showToolbar = showRangeSelector || (showCopyButton && copyableCode.length > 0);
+  const showCodeCopy = showCopyButton && copyableCode.length > 0;
+  const showToolbar = showRangeSelector;
 
   return (
     <section className={styles.root}>
@@ -378,18 +379,21 @@ export function DiffViewerClient({
             </div>
               </div>
             ) : null}
-            {showCopyButton && copyableCode.length > 0 ? (
-              <CopyButton
-                text={copyableCode}
-                copyAriaLabel={t("submission.detail.copyCodeAria")}
-                copyDoneAriaLabel={t("group.copyDoneAria")}
-              />
-            ) : null}
           </div>
         </div>
       ) : null}
 
       <div className={styles.tableWrap}>
+        {showCodeCopy ? (
+          <div className={styles.codeToolbar}>
+            <CopyButton
+              text={copyableCode}
+              copyAriaLabel={t("submission.detail.copyCodeAria")}
+              copyDoneAriaLabel={t("group.copyDoneAria")}
+              className={styles.codeCopyBtn}
+            />
+          </div>
+        ) : null}
         <table className={styles.table}>
           <tbody>
             {rows.map((row) => {

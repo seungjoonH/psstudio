@@ -42,7 +42,8 @@
 }
 
 .link {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 14px 16px;
   text-decoration: none;
@@ -63,36 +64,39 @@
   }
 }
 
-.head {
+.headRow {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
   min-width: 0;
 }
 
-.headSpacer {
-  flex: 1 1 0;
-  min-width: var(--space-4);
-}
-
-.headLead {
+.headLeft {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  min-width: 0;
+  gap: 6px 8px;
   flex: 1 1 auto;
-  overflow: hidden;
+  min-width: 0;
 }
 
 .headChips {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
   flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
+}
+
+.dueGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .headChips > :not(.groupSlot) {
@@ -106,21 +110,6 @@
   overflow: hidden;
 }
 
-.headRight {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.topRight {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
 .title {
   display: flex;
   align-items: center;
@@ -128,7 +117,6 @@
   flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
   font-weight: 700;
   font-size: 15px;
   color: var(--color-text);
@@ -200,14 +188,90 @@
   border-radius: 999px;
 }
 
-.meta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  color: var(--color-muted);
-  font-size: 13px;
-  /* 알고리즘 비공개·태그 없음이어도 배지 한 줄과 동일한 높이 유지 */
-  min-height: 22px;
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  min-width: 0;
 }
 
+.algoGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.progressFooter {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  width: 112px;
+  min-width: 88px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.progressLabel {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-muted) 18%, var(--color-surface));
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-primary) 72%, var(--color-success));
+}
+
+@media (max-width: 700px) {
+  .link {
+    padding: 14px 12px;
+  }
+
+  .headLeft {
+    gap: 6px;
+  }
+
+  .headLeft .title {
+    flex-basis: 100%;
+  }
+
+  .titleText {
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .progressFooter {
+    width: 86px;
+    min-width: 74px;
+  }
+
+  .progressLabel {
+    font-size: 11px;
+  }
+
+  .progressTrack {
+    height: 4px;
+  }
+}

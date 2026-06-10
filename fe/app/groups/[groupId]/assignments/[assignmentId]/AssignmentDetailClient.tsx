@@ -215,6 +215,21 @@ export function AssignmentDetailClient({
                 ) : null}
               </div>
             </div>
+            <div className={styles.creatorBlock}>
+              <span className={styles.creatorBlockLabel}>{t("assignment.list.creator")}</span>
+              <span
+                className={styles.creatorAvatarOnly}
+                title={`${t("assignment.list.creator")}: ${a.createdByUser.nickname}`}
+                aria-label={`${t("assignment.list.creator")} ${a.createdByUser.nickname}`}
+              >
+                <UserAvatar
+                  nickname={a.createdByUser.nickname}
+                  imageUrl={a.createdByUser.profileImageUrl}
+                  size={18}
+                  className={styles.creatorAvatar}
+                />
+              </span>
+            </div>
             <div className={styles.heroTop}>
               <div className={styles.badgeRow}>
                 <Badge tone="neutral" chipIndex={1}>

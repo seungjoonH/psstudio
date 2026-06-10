@@ -42,6 +42,10 @@ type HomeTodoItem = {
   difficulty: string | null;
   algorithms: string[];
   algorithmsHiddenUntilSubmit?: boolean;
+  submissionProgress: {
+    submitted: number;
+    total: number;
+  };
   dueAt: string;
   href: string;
 };
@@ -138,6 +142,10 @@ export function HomeClient({
                   /* 이 열은 미제출 과제만 포함하므로, 과제 목록과 동일 정책이면 `algorithmsHiddenUntilSubmit`이 true일 때 알고리즘 행을 숨깁니다. */
                   const showAlgoRow =
                     algorithms.length > 0 && !(item.algorithmsHiddenUntilSubmit ?? true);
+                  const submittedCount = item.submissionProgress.submitted;
+                  const assigneeCount = item.submissionProgress.total;
+                  const progressPercent =
+                    assigneeCount > 0 ? Math.min(100, Math.round((submittedCount / assigneeCount) * 100)) : 0;
                   return (
                     <li key={item.id}>
                       <Link
@@ -146,37 +154,59 @@ export function HomeClient({
                       >
                         <div className={styles.todoCardRow}>
                           <div className={styles.todoCardMain}>
-                            <div className={styles.todoTitleStrip}>
-                              <div className={styles.todoTitleLeft}>
+                            <div className={styles.todoHeadRow}>
+                              <div className={styles.todoHeadLeft}>
                                 <span className={styles.kanbanItemTitle}>
                                   <Icon name="task" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
                                   <span className={styles.kanbanItemTitleText}>{item.title}</span>
                                 </span>
+                                <div className={styles.todoChipRow}>
+                                  <span className={styles.todoGroupSlot}>
+                                    <span className={styles.todoGroupInline} title={item.groupName}>
+                                      {item.groupName}
+                                    </span>
+                                  </span>
+                                  <Badge tone="neutral" chipIndex={1}>
+                                    {formatProblemPlatformLabel(locale, item.platform)}
+                                  </Badge>
+                                  <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
+                                </div>
                               </div>
-                              <span className={styles.todoTitleDue}>
+                              <div className={styles.todoDueGroup}>
                                 <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
-                              </span>
+                              </div>
                             </div>
                             <div className={styles.todoMetaRow}>
-                              <span className={styles.todoGroupSlot}>
-                                <span className={styles.todoGroupInline} title={item.groupName}>
-                                  {item.groupName}
-                                </span>
-                              </span>
-                              <Badge tone="neutral" chipIndex={1}>
-                                {formatProblemPlatformLabel(locale, item.platform)}
-                              </Badge>
-                              <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
-                            </div>
-                            {showAlgoRow ? (
-                              <div className={styles.todoMetaRow}>
-                                {algorithms.map((tag, index) => (
-                                  <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
-                                    {formatAssignmentAlgorithmLabel(locale, tag)}
-                                  </Badge>
-                                ))}
+                              <div className={styles.todoAlgoRow}>
+                                {showAlgoRow
+                                  ? algorithms.map((tag, index) => (
+                                      <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
+                                        {formatAssignmentAlgorithmLabel(locale, tag)}
+                                      </Badge>
+                                    ))
+                                  : null}
                               </div>
-                            ) : null}
+                              <div className={styles.todoProgressBlock}>
+                                <span className={styles.todoProgressLabel}>
+                                  {assigneeCount > 0
+                                    ? t("assignment.list.submissionProgress", {
+                                        submitted: submittedCount,
+                                        total: assigneeCount,
+                                      })
+                                    : t("assignment.list.submissionProgressNoTarget", {
+                                        submitted: submittedCount,
+                                      })}
+                                </span>
+                                {assigneeCount > 0 ? (
+                                  <div className={styles.todoProgressTrack} aria-hidden>
+                                    <div
+                                      className={styles.todoProgressFill}
+                                      style={{ width: `${progressPercent}%` }}
+                                    />
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </Link>

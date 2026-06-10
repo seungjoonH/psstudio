@@ -88,13 +88,13 @@
   font-size: 10px;
 }
 
-/* 세 열 리스트 카드 동일 높이 + 내용 세로 중앙 */
+/* 세 열 리스트 카드 동일 최소 높이(해야 할 일 카드는 내용에 따라 늘어남) */
 .board .feedRow,
 .board .feedRowStatic {
   box-sizing: border-box;
-  height: var(--home-list-item-height);
   min-height: var(--home-list-item-height);
-  align-items: center;
+  height: auto;
+  align-items: stretch;
 }
 
 .board .cardEmpty {
@@ -341,43 +341,59 @@
   flex: 1;
   min-width: 0;
   width: 100%;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-height: calc(var(--home-list-item-height) - 20px);
 }
 
-.todoTitleStrip {
+.todoHeadRow {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  align-items: flex-start;
+  gap: 8px;
   min-width: 0;
   width: 100%;
 }
 
-.todoTitleLeft {
-  display: inline-flex;
-  align-items: center;
+.todoHeadLeft {
+  display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px 8px;
+  flex: 1 1 auto;
   min-width: 0;
-  flex: 1;
 }
 
-.todoTitleDue {
+.todoChipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.todoChipRow > :not(.todoGroupSlot) {
+  flex-shrink: 0;
+}
+
+.todoDueGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .todoMetaRow {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: auto;
   min-width: 0;
-  overflow: hidden;
-}
-
-.todoMetaRow > :not(.todoGroupSlot) {
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .todoGroupSlot {
@@ -400,12 +416,52 @@
   color: var(--color-muted);
 }
 
+.todoAlgoRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.todoProgressBlock {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  width: min(140px, 100%);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.todoProgressLabel {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-muted);
+}
+
+.todoProgressTrack {
+  width: 100%;
+  min-width: 74px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-muted) 20%, transparent);
+}
+
+.todoProgressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-success) 72%, var(--color-primary));
+}
+
 .kanbanItemTitle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 8rem;
   max-width: 100%;
   font-size: 13px;
   font-weight: 600;
@@ -484,5 +540,20 @@
 @media (max-width: 1100px) {
   .board {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .todoHeadLeft .kanbanItemTitle {
+    flex-basis: 100%;
+  }
+
+  .kanbanItemTitleText {
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }

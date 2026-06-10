@@ -95,6 +95,7 @@ function serialize(a: Awaited<ReturnType<AssignmentsService["getById"]>>) {
     dueAt: a.dueAt.toISOString(),
     allowLateSubmission: a.allowLateSubmission,
     createdByUserId: a.createdByUserId,
+    createdByUser: a.createdByUser,
     createdAt: a.createdAt.toISOString(),
     metadata: a.metadata,
     analysisStatus: a.analysisStatus,

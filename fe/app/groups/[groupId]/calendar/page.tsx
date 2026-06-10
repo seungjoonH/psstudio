@@ -134,6 +134,7 @@ export default async function GroupCalendarPage({ params, searchParams }: Props)
           hasLateSubmission: a.hasLateSubmission ?? false,
           assigneeUserIds: a.assigneeUserIds,
           assignees: a.assignees,
+          createdByUser: a.createdByUser,
           solvedAssignees: a.assignees.filter((assignee) => a.submitterIds.includes(assignee.userId)),
           unsolvedAssignees: a.assignees.filter((assignee) => !a.submitterIds.includes(assignee.userId)),
           isAssignedToMe: a.isAssignedToMe,

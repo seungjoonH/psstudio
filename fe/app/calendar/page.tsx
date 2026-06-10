@@ -73,6 +73,7 @@ export default async function CalendarPage() {
             submitterIds: item.submitterIds,
             assigneeUserIds: item.assigneeUserIds,
             assignees: item.assignees,
+            createdByUser: item.createdByUser,
           }))}
           mode="calendar"
         />

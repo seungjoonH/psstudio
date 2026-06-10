@@ -98,6 +98,7 @@ export default async function AssignmentsPage({ searchParams }: Props) {
             submitterIds: item.submitterIds,
             assigneeUserIds: item.assigneeUserIds,
             assignees: item.assignees,
+            createdByUser: item.createdByUser,
           }))}
           mode={query.view === "calendar" ? "calendar" : "list"}
         />

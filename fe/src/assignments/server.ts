@@ -13,6 +13,11 @@ export type AssignmentDto = {
   dueAt: string;
   allowLateSubmission: boolean;
   createdByUserId: string;
+  createdByUser: {
+    userId: string;
+    nickname: string;
+    profileImageUrl: string;
+  };
   createdAt: string;
   metadata: {
     title?: string;

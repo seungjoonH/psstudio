@@ -6,7 +6,7 @@ services:
     env_file:
       - fe/.env.local
     ports:
-      - "3000:3000"
+      - "3100:3100"
     volumes:
       - .:/app
       - pnpm-store:/root/.local/share/pnpm/store

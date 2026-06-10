@@ -1,12 +1,20 @@
 // Next.js 앱의 기본 런타임 구성을 정의합니다.
 import type { NextConfig } from "next";
-import workspacePackageJson from "../package.json";
+import fePackageJson from "./package.json";
+
+function readAppVersion(): string {
+  const version = (fePackageJson as { version?: string }).version;
+  if (typeof version !== "string" || version.length === 0) {
+    throw new Error("Missing version in fe/package.json");
+  }
+  return version;
+}
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@psstudio/shared"],
   env: {
-    NEXT_PUBLIC_APP_VERSION: workspacePackageJson.version,
+    NEXT_PUBLIC_APP_VERSION: readAppVersion(),
   },
   webpack: (config) => {
     config.resolve = config.resolve ?? {};

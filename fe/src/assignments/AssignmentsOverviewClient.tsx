@@ -18,6 +18,7 @@ import { type AssigneeMatchMode, matchesAssigneeFilter } from "./assignmentAssig
 import { AssignmentList, type AssignmentListItem } from "./AssignmentList";
 import { formatAssignmentAlgorithmLabel, formatProblemPlatformLabel } from "./algorithmLabels";
 import { buildCls } from "../lib/buildCls";
+import { dueBadgeTone } from "../lib/dueBadgeTone";
 import { formatCalendarWeekRangeLabel } from "../lib/formatCalendarWeekRangeLabel";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -53,6 +54,7 @@ type FilterState = {
   selectedAlgorithms: string[];
   selectedGroupIds: string[];
   selectedAssigneeIds: string[];
+  selectedCreatorIds: string[];
   assigneeMatchMode: AssigneeMatchMode;
 };
 
@@ -85,6 +87,11 @@ function getCalendarAssignmentAssigneeBuckets(assignment: OverviewItem) {
     solvedAssignees: assignment.assignees.filter((assignee) => submitterIdSet.has(assignee.userId)),
     unsolvedAssignees: assignment.assignees.filter((assignee) => !submitterIdSet.has(assignee.userId)),
   };
+}
+
+function getSubmissionProgressPercent(submitted: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.max(0, (submitted / total) * 100));
 }
 
 const getVisibleAlgorithms = (item: OverviewItem): string[] => {
@@ -120,6 +127,7 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     selectedAlgorithms: [],
     selectedGroupIds: [],
     selectedAssigneeIds: [],
+    selectedCreatorIds: [],
     assigneeMatchMode: "any",
   };
 
@@ -159,6 +167,20 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       ).sort((a, b) => a.nickname.localeCompare(b.nickname)),
     [items],
   );
+  const creatorOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          items.map((item) => [
+            item.createdByUser?.userId,
+            item.createdByUser,
+          ]),
+        ).values(),
+      )
+        .filter((creator): creator is NonNullable<OverviewItem["createdByUser"]> => creator !== undefined)
+        .sort((a, b) => a.nickname.localeCompare(b.nickname)),
+    [items],
+  );
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = appliedFilter.query.trim().toLowerCase();
@@ -193,6 +215,12 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
       ) {
         return false;
       }
+      if (
+        appliedFilter.selectedCreatorIds.length > 0 &&
+        !appliedFilter.selectedCreatorIds.includes(item.createdByUser?.userId ?? "")
+      ) {
+        return false;
+      }
       if (appliedFilter.solvedFilter === "solved" && item.hasMySubmission !== true) return false;
       if (appliedFilter.solvedFilter === "unsolved" && item.hasMySubmission === true) return false;
       return true;
@@ -205,7 +233,8 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
     (appliedFilter.selectedPlatforms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedAlgorithms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedGroupIds.length > 0 ? 1 : 0) +
-    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0);
+    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0) +
+    (appliedFilter.selectedCreatorIds.length > 0 ? 1 : 0);
 
   const groupedByDate = useMemo(() => {
     return filteredItems.reduce<Record<string, OverviewItem[]>>((acc, item) => {
@@ -349,6 +378,24 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
             </Chip>
           );
         })}
+        {appliedFilter.selectedCreatorIds.map((userId) => {
+          const option = creatorOptions.find((item) => item.userId === userId);
+          if (option === undefined) return null;
+          return (
+            <Chip
+              key={userId}
+              className={styles.activeChip}
+              onClick={() =>
+                setAppliedFilter((prev) => ({
+                  ...prev,
+                  selectedCreatorIds: prev.selectedCreatorIds.filter((id) => id !== userId),
+                }))
+              }
+            >
+              {option.nickname}
+            </Chip>
+          );
+        })}
         {appliedFilter.selectedGroupIds.map((groupId) => {
           const option = groupOptions.find((item) => item.groupId === groupId);
           if (option === undefined) return null;
@@ -419,7 +466,16 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
         filteredItems.length === 0 ? (
           <EmptyState titleKey="assignments.emptyTitle" descriptionKey="assignment.list.emptyByFilterDesc" />
         ) : (
-          <AssignmentList items={filteredItems} showGroupName />
+          <AssignmentList
+            items={filteredItems.map((item) => ({
+              ...item,
+              submissionProgress: {
+                submitted: item.submitterIds.length,
+                total: item.assigneeUserIds.length,
+              },
+            }))}
+            showGroupName
+          />
         )
       ) : (
         <section className={styles.calendarCard}>
@@ -599,6 +655,27 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
             onChange={(next) => setDraftFilter((prev) => ({ ...prev, ...next }))}
           />
           <div className={styles.filterSection}>
+            <p className={styles.filterLabel}>{t("assignment.list.creator")}</p>
+            <div className={styles.chipRow}>
+              {creatorOptions.map((creator) => (
+                <Chip
+                  key={creator.userId}
+                  active={draftFilter.selectedCreatorIds.includes(creator.userId)}
+                  onClick={() =>
+                    setDraftFilter((prev) => ({
+                      ...prev,
+                      selectedCreatorIds: prev.selectedCreatorIds.includes(creator.userId)
+                        ? prev.selectedCreatorIds.filter((item) => item !== creator.userId)
+                        : [...prev.selectedCreatorIds, creator.userId],
+                    }))
+                  }
+                >
+                  {creator.nickname}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div className={styles.filterSection}>
             <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
             <div className={styles.chipRow}>
               <Chip
@@ -685,6 +762,15 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                 getCalendarAssignmentAssigneeBuckets(assignment);
               const tone = getCalendarAssignmentTone(assignment);
               const platformLabel = formatProblemPlatformLabel(locale, assignment.platform);
+              const visibleAlgorithms = getVisibleAlgorithms(assignment);
+              const submittedCount = assignment.submitterIds.length;
+              const assigneeCount = assignment.assigneeUserIds.length;
+              const progressPercent = getSubmissionProgressPercent(submittedCount, assigneeCount);
+              const due = new Date(assignment.dueAt);
+              const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
+              const isLate = due.getTime() < Date.now();
+              const dueLabel = isLate ? t("assignment.list.late") : `D-${daysLeft}`;
+              const showMetaRow = visibleAlgorithms.length > 0 || assigneeCount > 0 || submittedCount > 0;
               return (
                 <li key={assignment.id} className={styles.modalAssignmentRow}>
                   <Link
@@ -703,28 +789,84 @@ export function AssignmentsOverviewClient({ items, mode }: Props) {
                     )}
                     onClick={() => setSelectedDateCell(null)}
                   >
-                    <div className={styles.modalAssignmentHead}>
-                      <div className={styles.modalAssignmentTop}>
+                    <div className={styles.modalHeadRow}>
+                      <div className={styles.modalHeadLeft}>
                         <span className={styles.modalAssignmentTitle} title={assignment.title}>
                           {assignment.title}
                         </span>
-                        {assignment.isAssignedToMe ? (
-                          <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
-                        ) : null}
+                        <div className={styles.modalChipRow}>
+                          {assignment.groupName ? (
+                            <span className={styles.modalAssignmentGroup}>{assignment.groupName}</span>
+                          ) : null}
+                          <Badge tone="neutral" chipIndex={1}>
+                            {platformLabel}
+                          </Badge>
+                          <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                          {assignment.createdByUser ? (
+                            <span
+                              className={styles.modalCreator}
+                              title={`${t("assignment.list.creator")}: ${assignment.createdByUser.nickname}`}
+                            >
+                              <UserAvatar
+                                nickname={assignment.createdByUser.nickname}
+                                imageUrl={assignment.createdByUser.profileImageUrl}
+                                size={18}
+                              />
+                              <span className={styles.modalCreatorName}>{assignment.createdByUser.nickname}</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className={styles.modalAssignmentMeta}>
-                        {assignment.groupName ? (
-                          <span className={styles.modalAssignmentGroup}>{assignment.groupName}</span>
-                        ) : null}
-                        <Badge tone="neutral" chipIndex={1}>
-                          {platformLabel}
-                        </Badge>
-                        <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                      <div className={styles.modalDueGroup}>
+                        <div className={styles.modalDueBadges}>
+                          {assignment.isAssignedToMe ? (
+                            <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
+                          ) : null}
+                          {assignment.isAssignedToMe ? (
+                            <Badge tone={assignment.hasMySubmission ? "success" : "danger"}>
+                              {assignment.hasMySubmission
+                                ? t("assignment.list.solved")
+                                : t("assignment.list.unsolved")}
+                            </Badge>
+                          ) : null}
+                          <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
+                        </div>
+                        <span className={styles.modalDueAt}>
+                          {t("groupCalendar.modalDueLabel")} {formatKstDateTime(assignment.dueAt, locale)}
+                        </span>
                       </div>
                     </div>
-                    <span className={styles.modalAssignmentDue}>
-                      {t("groupCalendar.modalDueLabel")} {formatKstDateTime(assignment.dueAt, locale)}
-                    </span>
+                    {showMetaRow ? (
+                      <div className={styles.modalMetaRow}>
+                        <div className={styles.modalAlgoGroup}>
+                          {visibleAlgorithms.map((tag) => (
+                            <Badge key={tag} tone="neutral">
+                              {formatAssignmentAlgorithmLabel(locale, tag)}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className={styles.modalProgressBlock}>
+                          <span className={styles.modalProgressLabel}>
+                            {assigneeCount > 0
+                              ? t("assignment.list.submissionProgress", {
+                                  submitted: submittedCount,
+                                  total: assigneeCount,
+                                })
+                              : t("assignment.list.submissionProgressNoTarget", {
+                                  submitted: submittedCount,
+                                })}
+                          </span>
+                          {assigneeCount > 0 ? (
+                            <div className={styles.modalProgressTrack} aria-hidden>
+                              <div
+                                className={styles.modalProgressFill}
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
                     {assignment.isAssignedToMe ? (
                       <div className={styles.modalAssigneeGroups}>
                         {solvedAssignees.length > 0 ? (

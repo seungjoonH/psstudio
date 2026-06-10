@@ -1,5 +1,5 @@
 // Google OAuth code 교환과 userinfo 조회 클라이언트입니다.
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { ENV } from "../../../config/env.js";
 
 export type GoogleProfile = {
@@ -8,6 +8,19 @@ export type GoogleProfile = {
   displayName: string;
   profileImageUrl: string;
 };
+
+async function readGoogleOAuthErrorMessage(res: Response, step: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: string; error_description?: string };
+    const detail = body.error_description ?? body.error;
+    if (typeof detail === "string" && detail.length > 0) {
+      return `Google OAuth ${step} 실패: ${detail}`;
+    }
+  } catch {
+    /* ignore parse error */
+  }
+  return `Google OAuth ${step} 실패 (HTTP ${res.status})`;
+}
 
 @Injectable()
 export class GoogleOAuthClient {
@@ -39,17 +52,17 @@ export class GoogleOAuthClient {
       }).toString(),
     });
     if (!tokenRes.ok) {
-      throw new Error(`google token exchange failed: ${tokenRes.status}`);
+      throw new BadRequestException(await readGoogleOAuthErrorMessage(tokenRes, "토큰 교환"));
     }
     const token = (await tokenRes.json()) as { access_token?: string };
     if (typeof token.access_token !== "string") {
-      throw new Error("google token response missing access_token");
+      throw new BadRequestException("Google OAuth 토큰 응답에 access_token이 없습니다.");
     }
     const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { authorization: `Bearer ${token.access_token}` },
     });
     if (!userRes.ok) {
-      throw new Error(`google userinfo failed: ${userRes.status}`);
+      throw new BadRequestException(await readGoogleOAuthErrorMessage(userRes, "userinfo 조회"));
     }
     const profile = (await userRes.json()) as {
       id?: string;
@@ -58,7 +71,7 @@ export class GoogleOAuthClient {
       picture?: string;
     };
     if (typeof profile.id !== "string" || typeof profile.email !== "string") {
-      throw new Error("google userinfo missing required fields");
+      throw new BadRequestException("Google userinfo에 id 또는 email이 없습니다.");
     }
     return {
       providerUserId: profile.id,

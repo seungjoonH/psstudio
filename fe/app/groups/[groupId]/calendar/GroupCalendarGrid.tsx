@@ -4,9 +4,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { formatProblemPlatformLabel } from "../../../../src/assignments/algorithmLabels";
+import {
+  formatAssignmentAlgorithmLabel,
+  formatProblemPlatformLabel,
+} from "../../../../src/assignments/algorithmLabels";
 import { formatKstDateTime, formatKstDateWithWeekday } from "../../../../src/i18n/formatDateTime";
 import { useI18n } from "../../../../src/i18n/I18nProvider";
+import { dueBadgeTone } from "../../../../src/lib/dueBadgeTone";
 import { Badge } from "../../../../src/ui/Badge";
 import { DifficultyBadge } from "../../../../src/ui/DifficultyBadge";
 import { InlineAddButton } from "../../../../src/ui/InlineAddButton";
@@ -33,6 +37,7 @@ export type CalendarGridAssignment = {
   hasLateSubmission: boolean;
   assigneeUserIds: string[];
   assignees: CalendarGridAssignee[];
+  createdByUser: CalendarGridAssignee;
   solvedAssignees: CalendarGridAssignee[];
   unsolvedAssignees: CalendarGridAssignee[];
   isAssignedToMe: boolean;
@@ -66,6 +71,11 @@ function getAssignmentTone(
 
   if (!isSolved) return isPastDue ? "overdue" : "unsolved";
   return assignment.hasLateSubmission ? "late" : "solved";
+}
+
+function getSubmissionProgressPercent(submittedCount: number, assigneeCount: number): number {
+  if (assigneeCount <= 0) return 0;
+  return Math.min(100, Math.round((submittedCount / assigneeCount) * 100));
 }
 
 export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: Props) {
@@ -191,6 +201,13 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
             {selected.assignments.map((assignment) => {
               const platformLabel = formatProblemPlatformLabel(locale, assignment.platform);
               const tone = getAssignmentTone(assignment);
+              const submittedCount = assignment.submitterIds.length;
+              const assigneeCount = assignment.assigneeUserIds.length;
+              const progressPercent = getSubmissionProgressPercent(submittedCount, assigneeCount);
+              const due = new Date(assignment.dueAt);
+              const daysLeft = Math.max(0, Math.ceil((due.getTime() - Date.now()) / (24 * 3600 * 1000)));
+              const isLate = due.getTime() < Date.now();
+              const dueLabel = isLate ? t("assignment.list.late") : `D-${daysLeft}`;
               return (
                 <li key={assignment.id} className={styles.modalAssignmentRow}>
                   <Link
@@ -207,24 +224,77 @@ export function GroupCalendarGrid({ groupId, canCreate, cells, gridClassName }: 
                     ].join(" ")}
                     onClick={() => closeModal()}
                   >
-                    <div className={styles.modalAssignmentHead}>
-                      <div className={styles.modalAssignmentTop}>
+                    <div className={styles.modalHeadRow}>
+                      <div className={styles.modalHeadLeft}>
                         <span className={styles.modalAssignmentTitle} title={assignment.title}>
                           {assignment.title}
                         </span>
-                        {assignment.isAssignedToMe ? (
-                          <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
-                        ) : null}
+                        <div className={styles.modalChipRow}>
+                          <Badge tone="neutral">{platformLabel}</Badge>
+                          <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                          <span
+                            className={styles.modalCreator}
+                            title={`${t("assignment.list.creator")}: ${assignment.createdByUser.nickname}`}
+                          >
+                            <UserAvatar
+                              nickname={assignment.createdByUser.nickname}
+                              imageUrl={assignment.createdByUser.profileImageUrl}
+                              size={18}
+                            />
+                            <span className={styles.modalCreatorName}>{assignment.createdByUser.nickname}</span>
+                          </span>
+                        </div>
                       </div>
-                      <div className={styles.modalTagRow}>
-                        <Badge tone="neutral">{platformLabel}</Badge>
-                        <DifficultyBadge platform={assignment.platform} difficulty={assignment.difficulty} />
+                      <div className={styles.modalDueGroup}>
+                        <div className={styles.modalDueBadges}>
+                          {assignment.isAssignedToMe ? (
+                            <span className={styles.modalMyBadge}>{t("assignment.list.assignedToMe")}</span>
+                          ) : null}
+                          {assignment.isAssignedToMe ? (
+                            <Badge tone={assignment.hasMySubmission ? "success" : "danger"}>
+                              {assignment.hasMySubmission
+                                ? t("assignment.list.solved")
+                                : t("assignment.list.unsolved")}
+                            </Badge>
+                          ) : null}
+                          <Badge tone={dueBadgeTone(isLate, daysLeft)}>{dueLabel}</Badge>
+                        </div>
+                        <span className={styles.modalDueAt}>
+                          {t("groupCalendar.modalDueLabel")} {formatKstDateTime(assignment.dueAt, locale)}
+                        </span>
                       </div>
                     </div>
-                    <span className={styles.modalAssignmentDue}>
-                      {t("groupCalendar.modalDueLabel")}{" "}
-                      {formatKstDateTime(assignment.dueAt, locale)}
-                    </span>
+                    {assignment.algorithms.length > 0 || assigneeCount > 0 || submittedCount > 0 ? (
+                      <div className={styles.modalMetaRow}>
+                        <div className={styles.modalAlgoGroup}>
+                          {assignment.algorithms.map((tag) => (
+                            <Badge key={tag} tone="neutral">
+                              {formatAssignmentAlgorithmLabel(locale, tag)}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className={styles.modalProgressBlock}>
+                          <span className={styles.modalProgressLabel}>
+                            {assigneeCount > 0
+                              ? t("assignment.list.submissionProgress", {
+                                  submitted: submittedCount,
+                                  total: assigneeCount,
+                                })
+                              : t("assignment.list.submissionProgressNoTarget", {
+                                  submitted: submittedCount,
+                                })}
+                          </span>
+                          {assigneeCount > 0 ? (
+                            <div className={styles.modalProgressTrack} aria-hidden>
+                              <div
+                                className={styles.modalProgressFill}
+                                style={{ width: `${progressPercent}%` }}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
                     {assignment.isAssignedToMe ? (
                       <div className={styles.modalAssigneeGroups}>
                         {assignment.solvedAssignees.length > 0 ? (

@@ -47,6 +47,7 @@ export type AssignmentDetail = {
   dueAt: Date;
   allowLateSubmission: boolean;
   createdByUserId: string;
+  createdByUser: AssignmentUserPreview;
   createdAt: Date;
   metadata: ProblemMetadata;
   analysisStatus: string;
@@ -56,11 +57,13 @@ export type AssignmentDetail = {
   isAssignedToMe: boolean;
 };
 
-export type AssignmentAssigneePreview = {
+export type AssignmentUserPreview = {
   userId: string;
   nickname: string;
   profileImageUrl: string;
 };
+
+export type AssignmentAssigneePreview = AssignmentUserPreview;
 
 export type DeletionImpact = {
   submissionCount: number;
@@ -684,12 +687,17 @@ export class AssignmentsService {
         order: { createdAt: "ASC" },
       }),
     ]);
-    const assigneeUserIds = Array.from(new Set(assigneeRows.map((row: AssignmentAssignee) => row.userId)));
-    const assigneeUsers =
-      assigneeUserIds.length === 0
+    const userIds = Array.from(
+      new Set([
+        ...assigneeRows.map((row: AssignmentAssignee) => row.userId),
+        ...items.map((item) => item.createdByUserId),
+      ]),
+    );
+    const users =
+      userIds.length === 0
         ? []
         : await this.ds.getRepository(User).find({
-            where: { id: In(assigneeUserIds) },
+            where: { id: In(userIds) },
             select: ["id", "nickname", "profileImageUrl"],
             withDeleted: true,
           });
@@ -697,7 +705,7 @@ export class AssignmentsService {
       analyses.map((analysis: ProblemAnalysis) => [analysis.assignmentId, analysis]),
     );
     const assigneeUserMap = new Map<string, Pick<User, "id" | "nickname" | "profileImageUrl">>(
-      assigneeUsers.map((user: Pick<User, "id" | "nickname" | "profileImageUrl">) => [user.id, user]),
+      users.map((user: Pick<User, "id" | "nickname" | "profileImageUrl">) => [user.id, user]),
     );
     const assigneeMap = new Map<
       string,
@@ -729,6 +737,7 @@ export class AssignmentsService {
         assigneeUserIds: [],
         assignees: [],
       };
+      const creator = assigneeUserMap.get(assignment.createdByUserId);
       return {
         id: assignment.id,
         groupId: assignment.groupId,
@@ -740,6 +749,11 @@ export class AssignmentsService {
         dueAt: assignment.dueAt,
         allowLateSubmission: assignment.allowLateSubmission,
         createdByUserId: assignment.createdByUserId,
+        createdByUser: {
+          userId: assignment.createdByUserId,
+          nickname: creator?.nickname ?? "탈퇴한 사용자",
+          profileImageUrl: creator?.profileImageUrl ?? "",
+        },
         createdAt: assignment.createdAt,
         metadata: analysis?.metadata ?? {},
         analysisStatus: analysis?.status ?? "NONE",

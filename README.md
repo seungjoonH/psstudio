@@ -252,7 +252,7 @@ pnpm dev
 
 ### 기본 포트
 
-- Frontend: `http://localhost:3000`
+- Frontend: `http://localhost:3100`
 - Backend: `http://localhost:4000`
 - PostgreSQL: `54322`
 - Redis: `6379`
@@ -265,7 +265,7 @@ pnpm dev
 # ─── Backend
 BE_PORT=4000
 BE_PUBLIC_BASE_URL=http://localhost:4000
-FE_PUBLIC_BASE_URL=http://localhost:3000
+FE_PUBLIC_BASE_URL=http://localhost:3100
 
 SESSION_COOKIE_NAME=psss
 SESSION_SECRET=

@@ -23,7 +23,12 @@ export type AssignmentListItem = {
   isAssignedToMe: boolean;
   isAssignedToWholeGroup?: boolean;
   assignees?: AssigneeAvatar[];
+  createdByUser?: AssigneeAvatar;
   hasMySubmission?: boolean;
+  submissionProgress?: {
+    submitted: number;
+    total: number;
+  };
   platform: string;
   difficulty: string | null;
   analysisStatus?: string;
@@ -58,79 +63,101 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
   const algorithmsVisible =
     (item.algorithmsHiddenUntilSubmit ?? true) ? item.hasMySubmission === true : true;
   const showAlgorithmBadges = algorithmsVisible && (item.algorithms?.length ?? 0) > 0;
+  const progress = item.submissionProgress;
+  const progressPercent =
+    progress === undefined || progress.total <= 0
+      ? 0
+      : Math.min(100, Math.max(0, (progress.submitted / progress.total) * 100));
 
   return (
     <li className={buildCls(styles.row, item.isLate ? styles.rowPastDue : undefined)}>
       <Link href={item.href} className={styles.link}>
-        <div className={styles.head}>
-          <div className={styles.headLead}>
+        <div className={styles.headRow}>
+          <div className={styles.headLeft}>
             <span className={styles.title}>
               <Icon name="task" size={16} className={styles.titleIcon} />
               <span className={styles.titleText}>{item.title}</span>
             </span>
             <div className={styles.headChips}>
-            {showGroupName && item.groupName ? (
-              <span className={styles.groupSlot}>
-                <span className={styles.groupInline} title={item.groupName}>
-                  {item.groupName}
+              {showGroupName && item.groupName ? (
+                <span className={styles.groupSlot}>
+                  <span className={styles.groupInline} title={item.groupName}>
+                    {item.groupName}
+                  </span>
                 </span>
-              </span>
-            ) : null}
-            {item.assignees && item.assignees.length > 0 ? (
-              <AssigneeAvatarStack assignees={item.assignees} size={22} />
-            ) : null}
-            {item.isAssignedToWholeGroup ? (
-              <span className={styles.groupBadge}>{t("assignment.list.assignedToWholeGroup")}</span>
-            ) : item.isAssignedToMe ? (
-              <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span>
-            ) : null}
-            <Badge tone="neutral" chipIndex={1}>
-              {platformLabel}
-            </Badge>
-            <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
+              ) : null}
+              {item.assignees && item.assignees.length > 0 ? (
+                <AssigneeAvatarStack assignees={item.assignees} size={22} />
+              ) : null}
+              {item.isAssignedToWholeGroup ? (
+                <span className={styles.groupBadge}>{t("assignment.list.assignedToWholeGroup")}</span>
+              ) : item.isAssignedToMe ? (
+                <span className={styles.myBadge}>{t("assignment.list.assignedToMe")}</span>
+              ) : null}
+              <Badge tone="neutral" chipIndex={1}>
+                {platformLabel}
+              </Badge>
+              <DifficultyBadge platform={item.platform} difficulty={item.difficulty} />
             </div>
           </div>
-          <div className={styles.headSpacer} aria-hidden />
-          <div className={styles.headRight}>
+          <div className={styles.dueGroup}>
+            <button
+              type="button"
+              className={styles.dueToggle}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!item.isLate) setShowDueAt((v) => !v);
+              }}
+              aria-label={
+                showDueAt ? t("assignment.detail.dueToggleRemain") : t("assignment.detail.dueToggleDate")
+              }
+            >
+              <Badge tone={dueTone}>
+                {showDueAt && !item.isLate ? formatKstDateTime(due, locale) : statusLabel}
+              </Badge>
+            </button>
             {item.analysisStatus !== undefined && item.analysisStatus !== "DONE" ? (
               <Badge tone="warning">{t("assignment.list.analysis", { status: item.analysisStatus })}</Badge>
             ) : null}
-            <div className={styles.topRight}>
-              <button
-                type="button"
-                className={styles.dueToggle}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (!item.isLate) setShowDueAt((v) => !v);
-                }}
-                aria-label={
-                  showDueAt ? t("assignment.detail.dueToggleRemain") : t("assignment.detail.dueToggleDate")
-                }
-              >
-                <Badge tone={dueTone}>
-                  {showDueAt && !item.isLate ? formatKstDateTime(due, locale) : statusLabel}
-                </Badge>
-              </button>
-              {item.hasMySubmission !== undefined ? (
-                <Badge tone={item.hasMySubmission ? "success" : "danger"}>
-                  {item.hasMySubmission ? t("assignment.list.solved") : t("assignment.list.unsolved")}
-                </Badge>
-              ) : null}
-            </div>
+            {item.hasMySubmission !== undefined ? (
+              <Badge tone={item.hasMySubmission ? "success" : "danger"}>
+                {item.hasMySubmission ? t("assignment.list.solved") : t("assignment.list.unsolved")}
+              </Badge>
+            ) : null}
           </div>
         </div>
-        <div
-          className={styles.meta}
-          aria-hidden={!showAlgorithmBadges}
-        >
-          {showAlgorithmBadges
-            ? (item.algorithms ?? []).map((tag, index) => (
-                <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
-                  {formatAssignmentAlgorithmLabel(locale, tag)}
-                </Badge>
-              ))
-            : null}
-        </div>
+        {showAlgorithmBadges || progress !== undefined ? (
+          <div className={styles.metaRow}>
+            <div className={styles.algoGroup}>
+              {showAlgorithmBadges
+                ? (item.algorithms ?? []).map((tag, index) => (
+                    <Badge key={`${item.id}-algo-${tag}-${index}`} tone="neutral">
+                      {formatAssignmentAlgorithmLabel(locale, tag)}
+                    </Badge>
+                  ))
+                : null}
+            </div>
+            {progress !== undefined ? (
+              <div className={styles.progressFooter}>
+                <span className={styles.progressLabel}>
+                  {progress.total > 0
+                    ? t("assignment.list.submissionProgress", {
+                        submitted: progress.submitted,
+                        total: progress.total,
+                      })
+                    : t("assignment.list.submissionProgressNoTarget", {
+                        submitted: progress.submitted,
+                      })}
+                </span>
+                {progress.total > 0 ? (
+                  <div className={styles.progressTrack} aria-hidden>
+                    <div className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </Link>
     </li>
   );

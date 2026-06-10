@@ -28,6 +28,7 @@ type FilterState = {
   selectedPlatforms: string[];
   selectedAlgorithms: string[];
   selectedAssigneeIds: string[];
+  selectedCreatorIds: string[];
   assigneeMatchMode: AssigneeMatchMode;
 };
 
@@ -73,6 +74,7 @@ export function GroupCalendarClient({
     selectedPlatforms: [],
     selectedAlgorithms: [],
     selectedAssigneeIds: [],
+    selectedCreatorIds: [],
     assigneeMatchMode: "any",
   };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -97,6 +99,21 @@ export function GroupCalendarClient({
         .map((member) => ({ userId: member.userId, nickname: member.nickname }))
         .sort((a, b) => a.nickname.localeCompare(b.nickname)),
     [members],
+  );
+  const creatorOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          flatAssignments.map((assignment) => [
+            assignment.createdByUser.userId,
+            {
+              userId: assignment.createdByUser.userId,
+              nickname: assignment.createdByUser.nickname,
+            },
+          ]),
+        ).values(),
+      ).sort((a, b) => a.nickname.localeCompare(b.nickname)),
+    [flatAssignments],
   );
 
   const filteredCells = useMemo(() => {
@@ -128,6 +145,12 @@ export function GroupCalendarClient({
         ) {
           return false;
         }
+        if (
+          appliedFilter.selectedCreatorIds.length > 0 &&
+          !appliedFilter.selectedCreatorIds.includes(assignment.createdByUser.userId)
+        ) {
+          return false;
+        }
         const isSolved = assignment.hasMySubmission;
         if (appliedFilter.solvedFilter === "solved" && !isSolved) return false;
         if (appliedFilter.solvedFilter === "unsolved" && isSolved) return false;
@@ -141,7 +164,8 @@ export function GroupCalendarClient({
     (appliedFilter.solvedFilter !== "all" ? 1 : 0) +
     (appliedFilter.selectedPlatforms.length > 0 ? 1 : 0) +
     (appliedFilter.selectedAlgorithms.length > 0 ? 1 : 0) +
-    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0);
+    (appliedFilter.selectedAssigneeIds.length > 0 ? 1 : 0) +
+    (appliedFilter.selectedCreatorIds.length > 0 ? 1 : 0);
 
   const openFilterModal = () => {
     setDraftFilter(appliedFilter);
@@ -212,6 +236,24 @@ export function GroupCalendarClient({
               }
             >
               {member.nickname}
+            </Chip>
+          );
+        })}
+        {appliedFilter.selectedCreatorIds.map((id) => {
+          const creator = creatorOptions.find((option) => option.userId === id);
+          if (creator === undefined) return null;
+          return (
+            <Chip
+              key={id}
+              className={styles.activeChip}
+              onClick={() =>
+                setAppliedFilter((prev) => ({
+                  ...prev,
+                  selectedCreatorIds: prev.selectedCreatorIds.filter((item) => item !== id),
+                }))
+              }
+            >
+              {creator.nickname}
             </Chip>
           );
         })}
@@ -319,6 +361,27 @@ export function GroupCalendarClient({
             assigneeMatchMode={draftFilter.assigneeMatchMode}
             onChange={(next) => setDraftFilter((prev) => ({ ...prev, ...next }))}
           />
+          <div className={styles.filterSection}>
+            <p className={styles.filterLabel}>{t("assignment.list.creator")}</p>
+            <div className={styles.chipRow}>
+              {creatorOptions.map((creator) => (
+                <Chip
+                  key={creator.userId}
+                  active={draftFilter.selectedCreatorIds.includes(creator.userId)}
+                  onClick={() =>
+                    setDraftFilter((prev) => ({
+                      ...prev,
+                      selectedCreatorIds: prev.selectedCreatorIds.includes(creator.userId)
+                        ? prev.selectedCreatorIds.filter((item) => item !== creator.userId)
+                        : [...prev.selectedCreatorIds, creator.userId],
+                    }))
+                  }
+                >
+                  {creator.nickname}
+                </Chip>
+              ))}
+            </div>
+          </div>
           <div className={styles.filterSection}>
             <p className={styles.filterLabel}>{t("assignment.list.solvedFilter")}</p>
             <div className={styles.chipRow}>
