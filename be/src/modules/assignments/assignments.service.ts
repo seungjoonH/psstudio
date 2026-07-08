@@ -506,7 +506,7 @@ function getLeetCodeDifficultyFromHtml(html: string): string {
   return normalizeDifficulty("LeetCode", payload.difficulty);
 }
 
-function buildAutofillSystemPrompt(locale: AutofillHintLocale): string {
+export function buildAutofillSystemPrompt(locale: AutofillHintLocale): string {
   if (locale === "en") {
     return [
       "You are an algorithm assignment autofill assistant.",
@@ -532,7 +532,7 @@ function buildAutofillSystemPrompt(locale: AutofillHintLocale): string {
   ].join(" ");
 }
 
-function buildAutofillUserPrompt(
+export function buildAutofillUserPrompt(
   locale: AutofillHintLocale,
   problemUrl: string,
   platform: ProblemPlatform,

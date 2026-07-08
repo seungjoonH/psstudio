@@ -47,3 +47,8 @@ Thumbs.db
 *.dump
 *.sql.gz
 .acommit/
+
+scripts/port.sh
+
+# --- LLM 실험 산출물 ---
+experiments/

@@ -158,7 +158,9 @@ export function HomeClient({
                               <div className={styles.todoHeadLeft}>
                                 <span className={styles.kanbanItemTitle}>
                                   <Icon name="task" size={14} className={styles.kanbanItemTitleIcon} aria-hidden />
-                                  <span className={styles.kanbanItemTitleText}>{item.title}</span>
+                                  <span className={styles.kanbanItemTitleText} title={item.title}>
+                                    {item.title}
+                                  </span>
                                 </span>
                                 <div className={styles.todoChipRow}>
                                   <span className={styles.todoGroupSlot}>

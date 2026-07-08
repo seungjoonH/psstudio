@@ -393,11 +393,24 @@
   color: var(--color-muted);
 }
 
+.todoTitleLeft .kanbanItemTitle {
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  width: 100%;
+  max-width: 100%;
+  align-items: flex-start;
+}
+
 .kanbanItemTitleText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .listTitle {

@@ -400,14 +400,17 @@
 }
 
 .assignmentTitle {
-  display: block;
   min-width: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .dotRow {
@@ -570,12 +573,22 @@
   min-width: 0;
 }
 
+.modalHeadLeft .modalAssignmentTitle {
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
 .modalAssignmentTitle {
-  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
@@ -752,18 +765,6 @@
 }
 
 @media (max-width: 520px) {
-  .modalHeadLeft .modalAssignmentTitle {
-    flex-basis: 100%;
-  }
-
-  .modalAssignmentTitle {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-
   .modalDueAt {
     white-space: normal;
   }

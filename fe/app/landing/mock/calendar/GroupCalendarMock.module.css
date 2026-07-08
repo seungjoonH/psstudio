@@ -419,12 +419,22 @@
   border-color: var(--ui-hover-border);
 }
 
+.modalHeadLeft .modalAssignmentTitle {
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
 .modalAssignmentTitle {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);

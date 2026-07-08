@@ -110,6 +110,14 @@
   overflow: hidden;
 }
 
+.headLeft .title {
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  width: 100%;
+  max-width: 100%;
+  align-items: flex-start;
+}
+
 .title {
   display: flex;
   align-items: center;
@@ -123,10 +131,15 @@
 }
 
 .titleText {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .groupInline {
@@ -247,19 +260,6 @@
 
   .headLeft {
     gap: 6px;
-  }
-
-  .headLeft .title {
-    flex-basis: 100%;
-  }
-
-  .titleText {
-    white-space: normal;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
   }
 
   .progressFooter {

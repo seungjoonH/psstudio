@@ -76,7 +76,7 @@ function AssignmentListRow({ item, showGroupName }: { item: AssignmentListItem; 
           <div className={styles.headLeft}>
             <span className={styles.title}>
               <Icon name="task" size={16} className={styles.titleIcon} />
-              <span className={styles.titleText}>{item.title}</span>
+              <span className={styles.titleText} title={item.title}>{item.title}</span>
             </span>
             <div className={styles.headChips}>
               {showGroupName && item.groupName ? (
