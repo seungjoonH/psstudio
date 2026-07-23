@@ -735,7 +735,6 @@ export const messages = {
         /** vars: time — HH:MM:SS */
         sidebarDeadlineCountdown: "마감 {time} 남음",
         sidebarSubmitLate: "늦게라도 제출하기",
-        sidebarSubmitSolvedComplete: "해결 완료",
         sidebarSubmitClosed: "마감된 과제입니다",
         sidebarFullPage: "전체 화면으로 보기",
         sidebarEmpty: "아직 제출이 없습니다.",
@@ -1675,7 +1674,6 @@ export const messages = {
         /** vars: time — HH:MM:SS */
         sidebarDeadlineCountdown: "{time} until the deadline",
         sidebarSubmitLate: "Submit anyway (late)",
-        sidebarSubmitSolvedComplete: "Completed",
         sidebarSubmitClosed: "This assignment is closed",
         sidebarFullPage: "Open full list",
         sidebarEmpty: "No submissions yet.",

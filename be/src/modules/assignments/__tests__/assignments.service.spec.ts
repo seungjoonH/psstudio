@@ -7,6 +7,7 @@ import { GroupsService } from "../../groups/groups.service.js";
 import { CalendarEvent } from "../../calendar/calendar-event.entity.js";
 import { GroupMember } from "../../groups/group-member.entity.js";
 import { Notification } from "../../notifications/notification.entity.js";
+import { Submission } from "../../submissions/submission.entity.js";
 import { User } from "../../users/user.entity.js";
 import { AssignmentsService } from "../assignments.service.js";
 import { AssignmentAssignee } from "../assignment-assignee.entity.js";
@@ -99,6 +100,36 @@ describe("AssignmentsService", () => {
     const after = await assignments.getById(a.id);
     expect(after.platform).toBe("LeetCode");
     expect(after.analysisStatus).toBe("PENDING");
+  });
+
+  it("update는 마감 연장 후 더 이상 지각이 아닌 제출의 지각 딱지를 제거한다", async () => {
+    const owner = await makeUser(testSuffix("owner-late-clear"));
+    const group = await groups.create(owner.id, { name: `지각정리 ${testSuffix("g")}` });
+    const a = await assignments.create(group.id, owner.id, {
+      title: "지각 정리 과제",
+      problemUrl: "https://www.acmicpc.net/problem/1000",
+      dueAt: new Date("2026-01-01T00:00:00.000Z"),
+      allowLateSubmission: true,
+    });
+    const submissionRepo = dataSource.getRepository(Submission);
+    const lateSubmission = await submissionRepo.save(
+      submissionRepo.create({
+        assignmentId: a.id,
+        authorUserId: owner.id,
+        title: "늦은 풀이",
+        language: "python",
+        latestCode: "print(1)",
+        noteMarkdown: "",
+        isLate: true,
+        currentVersionNo: 1,
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      }),
+    );
+
+    await assignments.update(a.id, { dueAt: new Date("2026-01-03T00:00:00.000Z") });
+
+    const updated = await submissionRepo.findOneByOrFail({ id: lateSubmission.id });
+    expect(updated.isLate).toBe(false);
   });
 
   it("updateMetadata는 메타데이터를 머지하고 DONE으로 마킹한다", async () => {

@@ -7,6 +7,7 @@ import { AssignmentsService } from "../../assignments/assignments.service.js";
 import { ReactionsService } from "../../reactions/reactions.service.js";
 import { ReviewsService } from "../../reviews/reviews.service.js";
 import { User } from "../../users/user.entity.js";
+import { Assignment } from "../../assignments/assignment.entity.js";
 import { SubmissionsService } from "../submissions.service.js";
 import { Submission } from "../submission.entity.js";
 import { SubmissionVersion } from "../submission-version.entity.js";
@@ -84,6 +85,27 @@ describe("SubmissionsService", () => {
     expect(second.title).toMatch(/^제출-owner-[a-z0-9]{8}의 풀이 #2$/);
   });
 
+  it("create는 지각 제출 허용 과제의 마감 후 제출을 여러 번 받는다", async () => {
+    const { owner, assignment } = await setup();
+    await dataSource
+      .getRepository(Assignment)
+      .update({ id: assignment.id }, { dueAt: new Date(Date.now() - 1000) });
+
+    const first = await submissions.create(assignment.id, owner.id, {
+      language: "python",
+      code: "print(1)",
+    });
+    const second = await submissions.create(assignment.id, owner.id, {
+      language: "python",
+      code: "print(2)",
+    });
+
+    expect(first.isLate).toBe(true);
+    expect(second.isLate).toBe(true);
+    expect(first.id).not.toBe(second.id);
+    expect(second.title).toMatch(/^제출-owner-[a-z0-9]{8}의 풀이 #2$/);
+  });
+
   it("updateCode는 새 버전 row를 추가한다", async () => {
     const { owner, assignment } = await setup();
     const s = await submissions.create(assignment.id, owner.id, {
@@ -98,6 +120,26 @@ describe("SubmissionsService", () => {
     const updated = await dataSource.getRepository(Submission).findOneByOrFail({ id: s.id });
     expect(updated.currentVersionNo).toBe(2);
     expect(updated.latestCode).toBe("print(2)");
+  });
+
+  it("updateCode는 마감 전 제출한 row를 마감 후 수정해도 지각 제출로 바꾸지 않는다", async () => {
+    const { owner, assignment } = await setup();
+    const s = await submissions.create(assignment.id, owner.id, {
+      language: "python",
+      code: "print(1)",
+    });
+    await dataSource
+      .getRepository(Assignment)
+      .update({ id: assignment.id }, { dueAt: new Date(Date.now() - 1000) });
+
+    await submissions.updateCode(s.id, owner.id, {
+      language: "python",
+      code: "print(2)",
+    });
+
+    const updated = await dataSource.getRepository(Submission).findOneByOrFail({ id: s.id });
+    expect(updated.isLate).toBe(false);
+    expect(updated.currentVersionNo).toBe(2);
   });
 
   it("updateCode는 본인이 아니면 거부한다", async () => {

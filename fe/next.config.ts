@@ -1,11 +1,11 @@
 // Next.js 앱의 기본 런타임 구성을 정의합니다.
 import type { NextConfig } from "next";
-import fePackageJson from "./package.json";
+import rootPackageJson from "../package.json";
 
 function readAppVersion(): string {
-  const version = (fePackageJson as { version?: string }).version;
+  const version = (rootPackageJson as { version?: string }).version;
   if (typeof version !== "string" || version.length === 0) {
-    throw new Error("Missing version in fe/package.json");
+    throw new Error("Missing version in package.json");
   }
   return version;
 }

@@ -104,10 +104,8 @@ export function AssignmentDetailClient({
   const showSidebarDeadlineCountdown =
     a.allowLateSubmission && onDueLocalDay && msUntilDue > 0;
   const submitSidebarBlocked = !a.allowLateSubmission && duePassed;
-  const submitSidebarSolvedAfterDeadline =
-    duePassed && a.allowLateSubmission && hasSubmitted;
   const submitSidebarLabel =
-    a.allowLateSubmission && duePassed && !hasSubmitted
+    a.allowLateSubmission && duePassed
       ? t("assignment.detail.sidebarSubmitLate")
       : t("submission.list.new");
 
@@ -415,13 +413,6 @@ export function AssignmentDetailClient({
                   aria-disabled="true"
                 >
                   {t("assignment.detail.sidebarSubmitClosed")}
-                </span>
-              ) : submitSidebarSolvedAfterDeadline ? (
-                <span
-                  className={`${styles.sidePrimaryLink} ${styles.sidePrimaryLinkDisabled}`}
-                  aria-disabled="true"
-                >
-                  {t("assignment.detail.sidebarSubmitSolvedComplete")}
                 </span>
               ) : (
                 <Link href={`${submissionsBase}/new`} className={styles.sidePrimaryLink}>

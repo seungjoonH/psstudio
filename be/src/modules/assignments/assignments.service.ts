@@ -909,6 +909,15 @@ export class AssignmentsService {
         await tx
           .getRepository(CalendarEvent)
           .update({ assignmentId: saved.id }, { eventDate: toDateOnly(saved.dueAt) });
+        await tx
+          .createQueryBuilder()
+          .update(Submission)
+          .set({ isLate: false })
+          .where("assignment_id = :assignmentId", { assignmentId: saved.id })
+          .andWhere("is_late = true")
+          .andWhere("deleted_at IS NULL")
+          .andWhere("created_at <= :dueAt", { dueAt: saved.dueAt })
+          .execute();
       }
       return saved;
     });

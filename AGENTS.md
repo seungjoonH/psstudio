@@ -122,15 +122,15 @@ When creating a new source file:
 
 Why: agents read files selectively, not whole codebases. A one-line Korean header gives instant context so the next session can navigate without re-reading everything.
 
-## 9. Plan + Checklist + Context Notes
+## 9. Plan Only
 
-**Before any non-trivial task, produce three artifacts. Don't start coding without them.**
+**Before any non-trivial task, state a brief plan. Don't create tracking files unless the user explicitly asks.**
 
 - **Plan** - what we're building and why.
-- **Checklist** (`checklist.md`) - concrete tasks as checkboxes. Tick as you go.
-- **Context Notes** (`context-notes.md`) - decisions made during the work and the reasoning behind them. Append continuously.
+- Do not create `checklist.md` or `context-notes.md` by default.
+- If the user explicitly asks for a checklist or context notes, create or update only the requested artifact.
 
-If the user gives only a plan and asks you to start coding, stop and ask: "Should I create the checklist and context notes first?" The next session needs the notes to pick up without re-deriving every decision.
+If the user gives only a plan and asks you to start coding, proceed from that plan unless a required decision is missing.
 
 ## 10. Run Tests Before Marking Complete
 
@@ -155,17 +155,18 @@ Final responses should include:
 
 Do not write "done", "fixed", or "works" unless that claim is backed by a concrete check.
 
-## 12. Semantic Commits
+## 12. Semantic Commits On Request
 
-**Commit when one logical change is complete. Don't wait for the user to ask.**
+**Do not commit automatically. Commit only when the user explicitly asks.**
 
-- The test: "Can I describe this commit in one sentence?" If yes, commit. If no, the changes are still mixed - split them.
+- When the user asks for a commit, keep it to one logical change.
+- The test: "Can I describe this commit in one sentence?" If yes, commit. If no, the changes are still mixed - split them or ask how to proceed.
 - Good: "auth 미들웨어 추가". Bad: "auth 추가하고 UI도 고치고 버그도 수정" (split into 3).
 - Don't accumulate unrelated edits and lose the ability to roll back individually.
 - Don't commit just to commit - meaningful units only.
 - If the environment or user workflow does not allow commits, keep changes uncommitted and clearly summarize them.
 
-Note: For solo prototypes or throwaway scripts, group commits loosely if it slows you down. The point is reversibility, not ceremony.
+Note: For solo prototypes or throwaway scripts, group commits loosely if the user asks for a commit and strict splitting slows you down. The point is reversibility, not ceremony.
 
 ## 13. Read Errors, Don't Guess
 
